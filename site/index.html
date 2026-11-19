@@ -47,6 +47,7 @@
       <a href="/" id="home">SECURITY</a>
       <nav>
         <a href="#areas">Areas</a>
+        <a href="#skills">Skills</a>
         <a href="https://github.com/greenblacked/security-toolbox">GitHub</a>
       </nav>
       <button id="theme-toggle" aria-label="Toggle theme">Theme</button>
@@ -56,7 +57,7 @@
   <main class="wrap">
     <section class="hero">
       <h1>Security checks and best practices.</h1>
-      <p class="lede">Practical reports, policies and guardrails for GCP, Kubernetes, Terraform, GitHub Actions and secrets. Dry-run first. Complements ops-toolbox.</p>
+      <p class="lede">Practical reports, policies and guardrails for GCP, Kubernetes, Terraform, GitHub Actions and secrets. Dry-run first. Complements ops-toolbox. Includes selected AI security skills.</p>
       <div style="margin-top: 2rem;">
         <a class="pill" href="https://github.com/greenblacked/security-toolbox">View on GitHub</a>
       </div>
@@ -74,7 +75,7 @@
         </a>
         <a class="card" href="/terraform/">
           <h2>Terraform / IaC</h2>
-          <p>Checkov, OPA/Conftest and secure module patterns.</p>
+          <p>Checkov, OPA/Conftest and secure module patterns. See iac-review skill.</p>
         </a>
         <a class="card" href="/github/">
           <h2>GitHub & CI</h2>
@@ -82,15 +83,33 @@
         </a>
         <a class="card" href="/secrets/">
           <h2>Secrets</h2>
-          <p>Handling patterns, detection and least-privilege examples.</p>
+          <p>Handling patterns and rotation. See secret-rotation skill.</p>
         </a>
+      </div>
+    </section>
+
+    <section id="skills">
+      <h2 style="font-size: 1.5rem; font-weight: 500; margin-bottom: 1rem;">Skills (from AI repo)</h2>
+      <div class="cards">
+        <div class="card">
+          <h2>iac-review</h2>
+          <p>Terraform plan JSON review, blast radius and destroys first.</p>
+        </div>
+        <div class="card">
+          <h2>image-hardening</h2>
+          <p>Dockerfile and container image hardening ladder and non-negotiables.</p>
+        </div>
+        <div class="card">
+          <h2>secret-rotation</h2>
+          <p>Planned or incident credential rotation without leftover copies.</p>
+        </div>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
     <div class="wrap">
-      <div>Security Toolbox · <a href="https://szolotov.com">szolotov.com</a></div>
+      <div>Security Toolbox · <a href="https://szolotov.com">szolotov.com</a> · skills adapted from <a href="https://github.com/greenblacked/AI">AI</a></div>
     </div>
   </footer>
 
