@@ -76,12 +76,18 @@ Do not assume a class from the vendor name alone; confirm by checking for ACME s
 For a native client, `certbot` is the reference implementation and its defaults already track the shrinking schedule below:
 
 ```bash
-certbot certonly --standalone -d host.example.com --deploy-hook "systemctl reload nginx"
+# nginx already holds port 80, so serve the HTTP-01 challenge through it: webroot, with nginx
+# serving /.well-known/acme-challenge/ from the -w directory (see references/endpoint-playbooks.md)
+certbot certonly --webroot -w /var/www/letsencrypt -d host.example.com --deploy-hook "systemctl reload nginx"
+# or let certbot's nginx plugin answer the challenge through the running nginx
+certbot certonly --nginx -d host.example.com --deploy-hook "systemctl reload nginx"
 certbot renew --dry-run
 
 # The renewal timer's unit name depends on how certbot was installed — find it before enabling it
 systemctl list-timers --all | grep -i certbot
 ```
+
+`--standalone` starts certbot's own web server on port 80 and fails while nginx is listening there. Use it only on a host with no web server, or with `--pre-hook "systemctl stop nginx" --post-hook "systemctl start nginx"`, which takes the site down for each issuance and renewal attempt; certbot saves those hooks in the certificate's renewal configuration, so every future `certbot renew` stops nginx too.
 
 Enable whichever unit that command shows: `certbot-renew.timer` on an EPEL install, `certbot.timer` from Debian or Ubuntu's `apt` package, or `snap.certbot.renew.timer` from the snap. `systemctl` is deliberately left out of this skill's `allowed-tools` alongside `nmap`, since enabling a timer changes host state and should prompt rather than run unattended.
 

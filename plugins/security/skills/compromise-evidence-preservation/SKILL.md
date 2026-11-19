@@ -50,6 +50,8 @@ kubectl get networkpolicy -n NS -o yaml > case-1234-netpol-NS.yaml    # before c
 sha256sum case-1234-*.json case-1234-*.yaml
 ```
 
+If time allows, before the security group swap or policy change, also capture the live connections with trusted tools (`ss -tanp`, or `netstat -anp` where `ss` is unavailable, from the read-only toolkit in gate 6, output written off the host and hashed) and enable or export flow logs for the instance, subnet or node (VPC flow logs, GCP VPC Flow Logs, Hubble or the CNI's flow logs), so the connections the change cuts are on record.
+
 Then isolate with the platform's own controls, and finish each one by proving the traffic stopped.
 
 #### AWS

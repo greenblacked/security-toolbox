@@ -19,8 +19,12 @@ actually serves TLS, not a generic HTTP-01 challenge if the host cannot expose p
 to the internet.
 
 ```bash
-# HTTP-01, for a host that can serve a challenge file on port 80
-certbot certonly --standalone -d host.example.com --deploy-hook "systemctl reload nginx"
+# HTTP-01 through the web server that already holds port 80: webroot, with the nginx
+# location below serving the challenge files from the -w directory
+certbot certonly --webroot -w /var/www/letsencrypt -d host.example.com --deploy-hook "systemctl reload nginx"
+
+# Or let certbot's nginx plugin answer the challenge through the running nginx
+certbot certonly --nginx -d host.example.com --deploy-hook "systemctl reload nginx"
 
 # DNS-01, for a host behind a firewall or for a wildcard certificate
 certbot certonly --dns-route53 -d '*.example.com' -d example.com
@@ -31,6 +35,31 @@ certbot renew --dry-run
 # The renewal timer's unit name depends on how certbot was installed — find it before enabling it
 systemctl list-timers --all | grep -i certbot
 ```
+
+The nginx location for the webroot path, in the port 80 `server` block, ahead of any
+redirect to HTTPS:
+
+```nginx
+location ^~ /.well-known/acme-challenge/ {
+    root /var/www/letsencrypt;
+    default_type text/plain;
+}
+```
+
+`--standalone` runs certbot's own web server on port 80, so it fails while nginx (or
+anything else) is listening there, at issuance and at every renewal. Use it only on a host
+with no web server, or stop the server around it:
+
+```bash
+certbot certonly --standalone -d host.example.com \
+  --pre-hook "systemctl stop nginx" --post-hook "systemctl start nginx"
+```
+
+That costs a short outage on each attempt: `--pre-hook` runs before obtaining or renewing
+and `--post-hook` after the attempt, whether it succeeded or not, and only when a
+certificate is actually due. Certbot saves the hooks in the certificate's renewal
+configuration (`/etc/letsencrypt/renewal/CERTNAME.conf`), so every future `certbot renew`
+stops and starts nginx the same way; change them later with `certbot reconfigure`.
 
 Enable whichever unit that command shows rather than assuming a name: `certbot-renew.timer` on an EPEL install, `certbot.timer` from Debian or Ubuntu's `apt` package, or `snap.certbot.renew.timer` from the snap. `systemctl` changes host state, so it is deliberately outside this skill's `allowed-tools` and should prompt rather than run unattended.
 
