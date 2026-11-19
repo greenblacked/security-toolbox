@@ -25,6 +25,12 @@ env:
   # sha256 of the release tarball, recorded when the pin was set.
   SHELLCHECK_SHA256: '8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198'
   YAMLLINT_VERSION: '1.38.0'
+  OPA_VERSION: '1.22.4'
+  # From opa_linux_amd64_static.sha256 on the release.
+  OPA_SHA256: '35e3b352e715e80624ead6c89930d8585f6f7d94cdc409eb2a9fe36620dcccba'
+  CONFTEST_VERSION: '0.71.1'
+  # From checksums.txt on the release.
+  CONFTEST_SHA256: 'c3f6b2a753bd56e377a1e51a95ae3e057f926f2e9139f7d5b5dfbbaf810f7985'
 
 jobs:
   site:
@@ -132,9 +138,78 @@ jobs:
           yamllint --version
           yamllint --strict .
 
+  policy-tests:
+    name: policy tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/pip
+          key: pip-checkov-${{ runner.os }}-${{ hashFiles('.github/requirements/checkov.txt') }}
+      - name: Install opa, conftest and checkov
+        # opa and conftest are release binaries checked against the published
+        # sha256. checkov and every dependency install with --require-hashes,
+        # into a virtual environment whose python3 the policy tests then use.
+        run: |
+          set -Eeuo pipefail
+          bin="$RUNNER_TEMP/bin"
+          mkdir -p "$bin"
+          fetch() {
+            curl -fsSL --retry 3 --retry-connrefused --retry-delay 2 --retry-max-time 150 \
+              --connect-timeout 20 --max-time 120 -o "$1" "$2"
+          }
+          fetch opa "https://github.com/open-policy-agent/opa/releases/download/v${OPA_VERSION}/opa_linux_amd64_static"
+          echo "${OPA_SHA256}  opa" | sha256sum --check --status
+          install -m 0755 opa "$bin/opa"
+          ct="conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz"
+          fetch "$ct" "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/${ct}"
+          echo "${CONFTEST_SHA256}  ${ct}" | sha256sum --check --status
+          tar -xzf "$ct" -C "$bin" conftest
+          rm -f opa "$ct"
+          venv="$RUNNER_TEMP/checkov"
+          python -m venv "$venv"
+          "$venv/bin/python" -m pip install --quiet --require-hashes --no-deps \
+            -r .github/requirements/checkov.txt
+          "$venv/bin/python" -m pip check
+          echo "$bin" >> "$GITHUB_PATH"
+          echo "$venv/bin" >> "$GITHUB_PATH"
+      - name: Tool versions
+        run: |
+          set -Eeuo pipefail
+          opa version
+          conftest --version
+          checkov --version
+          python3 -c 'import checkov'
+      - name: conftest verify
+        run: |
+          set -Eeuo pipefail
+          conftest verify -p policies/opa
+      - name: Policy tests
+        # policies/test.sh skips checkov when it is missing; here it must run.
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/policy-tests.log"
+          policies/test.sh | tee "$out"
+          if grep -q '^skip - checkov' "$out"; then
+            echo "::error::checkov tests were skipped"
+            exit 1
+          fi
+      - name: Check tests
+        run: |
+          set -Eeuo pipefail
+          checks/test.sh
+
   ci:
     name: ci
-    needs: [site, docs, lint]
+    needs: [site, docs, lint, policy-tests]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -146,10 +221,12 @@ jobs:
           SITE_RESULT: ${{ needs.site.result }}
           DOCS_RESULT: ${{ needs.docs.result }}
           LINT_RESULT: ${{ needs.lint.result }}
+          POLICY_RESULT: ${{ needs.policy-tests.result }}
         run: |
           set -Eeuo pipefail
           failed=0
-          for pair in "site=$SITE_RESULT" "docs=$DOCS_RESULT" "lint=$LINT_RESULT"; do
+          for pair in "site=$SITE_RESULT" "docs=$DOCS_RESULT" "lint=$LINT_RESULT" \
+            "policy-tests=$POLICY_RESULT"; do
             if [[ "${pair#*=}" != "success" ]]; then
               echo "::error::${pair%%=*} job result: ${pair#*=}"
               failed=1
