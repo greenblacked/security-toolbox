@@ -24,6 +24,7 @@ expect pass "opa test" opa test -v --ignore fixtures opa
 expect pass "terraform plan good" conftest test -p opa/terraform -n terraform.gcp opa/terraform/fixtures/plan-good.json
 expect fail "terraform plan bad" conftest test -p opa/terraform -n terraform.gcp opa/terraform/fixtures/plan-bad.json
 # Exact counts so a policy that silently stops matching is caught.
+# shellcheck disable=SC2329  # invoked indirectly through expect
 count_conftest() { # count_conftest <policy dir> <namespace> <file> <failures> <warnings>
   conftest test --no-fail -p "$1" -n "$2" -o json "$3" | python3 -c '
 import json, sys
@@ -43,6 +44,7 @@ if command -v checkov >/dev/null 2>&1; then
   expect fail "checkov bad" checkov -d checkov/fixtures/bad --external-checks-dir checkov/checks --check "$ids" --quiet --compact
   # The bad fixture must fail all four checks on every resource (12), and the
   # good fixture must pass on every resource (6).
+  # shellcheck disable=SC2329  # invoked indirectly through expect
   count_checkov() { # count_checkov <dir> <passed> <failed>
     checkov -d "$1" --external-checks-dir checkov/checks --check "$ids" --compact -o json --soft-fail \
       | python3 -c '
