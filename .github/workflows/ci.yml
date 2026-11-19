@@ -1,0 +1,49 @@
+---
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  site:
+    name: site check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Site HTML is valid enough
+        run: |
+          set -Eeuo pipefail
+          # Minimal check: required files exist
+          test -f site/index.html
+          test -f deploy/wrangler.json
+          echo "site skeleton ok"
+
+  ci:
+    name: ci
+    needs: [site]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: CI gate
+        run: |
+          if [[ "${{ needs.site.result }}" != "success" ]]; then
+            exit 1
+          fi
+          echo "CI passed"
