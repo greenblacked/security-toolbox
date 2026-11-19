@@ -54,7 +54,7 @@ aws accessanalyzer list-findings-v2 --analyzer-arn ANALYZER_ARN_EXAMPLE
 # External access: which resources are reachable from outside the account or organisation
 aws accessanalyzer list-findings-v2 --analyzer-arn EXTERNAL_ANALYZER_ARN_EXAMPLE
 
-# The authority when you need exact actions by an exact principal
+# Exact actions by an exact principal, from event history: last 90 days of management events only
 aws cloudtrail lookup-events \
   --lookup-attributes AttributeKey=Username,AttributeValue=example-orders-role \
   --start-time 2026-06-01 --max-results 200
@@ -68,7 +68,9 @@ aws cloudtrail lookup-events \
 | CloudTrail | Exact API call, caller, source IP | Minutes; data events only if enabled | What actually happened |
 
 The trap: CloudTrail records management events by default and **data events only when
-you enable them**. A role that reads objects all day looks entirely unused if you are
+you enable them**. `lookup-events` reads event history, which holds 90 days of management
+events; anything older, and every data event, has to come from a trail's log bucket or
+an event data store, and only from the date it started recording. A role that reads objects all day looks entirely unused if you are
 reading management events alone. Confirm which event types the trail captures before
 concluding anything about a data-plane permission.
 
@@ -89,14 +91,16 @@ gcloud asset analyze-iam-policy \
 gcloud policy-intelligence query-activity \
   --activity-type=serviceAccountLastAuthentication --project=example-project
 
-# The authority: audit logs for one principal
+# The authority: audit logs for one principal. --freshness cannot reach past the bucket's
+# retention: _Default keeps 30 days unless raised, _Required (Admin Activity) 400 days
 gcloud logging read \
   'protoPayload.authenticationInfo.principalEmail="svc-orders@example-project.iam.gserviceaccount.com"' \
   --freshness=90d --format='value(protoPayload.methodName)' | sort | uniq -c | sort -rn
 ```
 
-The trap: data-access audit logs are **not enabled by default** for most services, so
-reads are invisible until somebody turns them on. Check the configuration before reading
+The trap: data-access audit logs are **not enabled by default** for any service except
+BigQuery, so reads are invisible until somebody turns them on, and once on they land in
+`_Default` with its 30-day retention unless routed or retained longer. Check the configuration before reading
 absence as evidence. `analyze-iam-policy` is the tool that expands group membership and
 inheritance — a project-level binding on a group is where "who can do this" stops being
 answerable by reading one policy.
@@ -139,13 +143,14 @@ endpoint.
 ## GitHub
 
 ```bash
-# Organisation members and their role
+# Organisation members, and the admins among them
 gh api /orgs/example-org/members --paginate -q '.[].login'
+gh api '/orgs/example-org/members?role=admin' --paginate -q '.[].login'
 
 # Installed apps and the permissions each holds
 gh api /orgs/example-org/installations --paginate -q '.installations[] | {app: .app_slug, perms: .permissions}'
 
-# Audit log: who did what, including token and key events
+# Audit log: who did what, including token and key events (REST API on GitHub Enterprise Cloud)
 gh api '/orgs/example-org/audit-log?phrase=action:org.add_member' --paginate
 ```
 

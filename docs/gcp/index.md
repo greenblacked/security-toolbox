@@ -33,11 +33,13 @@ done
 - `compute.vmExternalIpAccess` restricts which VMs may have public IPs; Cloud NAT for egress.
 - Private Google Access on subnets; VPC Service Controls perimeters around projects holding sensitive data.
 - VPC flow logs and firewall rule logging on production VPCs.
+- Firewall rule order: the lowest priority number wins, and at equal priority a deny beats an allow. Hierarchical firewall policies are evaluated before VPC firewall rules, and network firewall policies before or after them depending on the network's enforcement order, so review the effective rules (`gcloud compute instances network-interfaces get-effective-firewalls`). Rule changes apply to new connections only.
 
 ## Logging and detection
 
-- Cloud Audit Logs: Admin Activity is always on; enable Data Access logs for IAM, KMS, Secret Manager and Storage in production.
-- Organisation-level aggregated sink to a locked log bucket or a separate logging project, with retention matching your incident-response needs.
+- Cloud Audit Logs: Admin Activity is always on; Data Access logs are off by default for every service except BigQuery, so enable them for IAM, KMS, Secret Manager and Storage in production.
+- Retention: the `_Required` bucket keeps Admin Activity and System Event logs for 400 days; the `_Default` bucket keeps everything else, including Data Access logs, for 30 days unless you raise it. Raising it is not retroactive.
+- Organisation-level aggregated sink to a locked log bucket or a separate logging project, with retention matching your incident-response needs. Set the retention and lock before an incident; locking a log bucket is irreversible.
 - Security Command Center for misconfiguration findings; alert on IAM policy changes, key creation and firewall changes. See the `detection-engineering` skill for rule hygiene.
 
 ## Organisation policies worth enforcing

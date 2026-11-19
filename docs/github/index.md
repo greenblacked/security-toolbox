@@ -10,7 +10,7 @@ The full workflow guidance is in [`checks/github/actions-hardening.md`](https://
 - Dependabot security updates plus version updates for `github-actions` and each package ecosystem, with a cooldown.
 - Code scanning (CodeQL) where the plan supports it; otherwise run the same linters in CI without SARIF upload.
 - Actions settings: default workflow permissions read-only; Actions cannot approve pull requests; allowed actions limited to GitHub, verified creators and an allow-list; SHA pinning required where available.
-- Tag protection for release tags (`v*`) and environments with required reviewers and deployment branch/tag policies for production.
+- A tag ruleset for release tags (`refs/tags/v*`; the old tag protection rules were retired in 2024 and migrated to rulesets) and environments with required reviewers and deployment branch/tag policies for production.
 
 ## Organisation baseline
 

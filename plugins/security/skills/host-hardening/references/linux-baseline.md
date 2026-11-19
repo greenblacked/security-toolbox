@@ -13,7 +13,7 @@
 
 A finding is only a finding against something. Pick one of these and name its version in the output:
 
-- **CIS Distribution Independent Linux** or the distro-specific benchmark — the common default, with Level 1 (broadly safe) and Level 2 (defence in depth, higher breakage risk).
+- **The distro-specific CIS benchmark** (the Distribution Independent Linux benchmark is archived) — the common default, with Level 1 (broadly safe) and Level 2 (defence in depth, higher breakage risk).
 - **NIST SP 800-123** (server security) and **SP 800-53** control families when the ask is compliance-shaped.
 - **A vendor baseline** — the cloud provider's hardened image guide, the database vendor's hardening note — which is usually closer to the role than a general benchmark.
 - **A short explicit list** the requester signed off, when a full benchmark is disproportionate for a single-purpose host.
@@ -31,7 +31,7 @@ Map each finding to a control identifier so the auditor and the engineer are arg
 | Unused services disabled | `systemctl list-unit-files --state=enabled` | Disable, then confirm the consumer |
 | Listening ports minimised | `ss -tulpn` | Bind to management/localhost or disable |
 | Patches current | distro tool, `needrestart`/`dnf needs-restarting` | Patch and reboot for kernel/libc |
-| Audit enabled | `systemctl status auditd`, `auditctl -l` | Load rules at boot, verify after restart |
+| Audit enabled | `systemctl status auditd`, `auditctl -l` | Load rules at boot, verify after a reboot (a service restart does not test boot persistence) |
 | Logs shipped off-host | log agent status | Ship, and confirm the destination receives |
 | Host firewall default deny | `nft list ruleset` / `iptables -S` | Deny inbound, allow the management path |
 | No world-writable files | `find / -xdev -type f -perm -0002` | Fix mode or record why |

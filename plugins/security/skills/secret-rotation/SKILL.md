@@ -20,4 +20,15 @@ Adapted from greenblacked/AI plugins/security/skills/secret-rotation.
 6. Rewriting git history revokes nothing.
 7. The new secret never travels through a channel that retains it.
 
+## Revocation is not instant
+
+Disabling or deleting a long-lived credential stops new authentications with it. It does not end the short-lived credentials already minted from it, so in an incident revoke those too:
+
+| Platform | What survives disabling the key | How to end it |
+| --- | --- | --- |
+| GCP service-account key | Access tokens issued from the key stay valid until they expire (1 hour by default) | Disable the key first (reversible), then disable the service account itself, which revokes its short-lived credentials; that also stops every workload using the account, so plan for it. Delete the key after the bake period |
+| AWS IAM user access key or role | Temporary credentials already issued (`GetSessionToken` sessions, assumed-role sessions) keep working until they expire unless a policy denies them | Deactivate the key and attach an explicit deny: on the user's unique ID (`aws:userid`), which also covers its `GetSessionToken` sessions; for a role, revoke active sessions, which attaches `AWSRevokeOlderSessions`, a deny on `aws:TokenIssueTime` older than now. Add a deny on any resource-based policy that grants the principal directly |
+| GitHub token | A leaked PAT works until revoked or expired; `GITHUB_TOKEN` and app installation tokens expire on their own (the job's end or at most 24 hours) | Revoke the PAT or the OAuth/App authorisation; rotate any secret the token could read |
+| Kubernetes service-account token | Legacy Secret-based tokens never expire; bound (projected or TokenRequest) tokens live until their expiry and there is no per-token revocation | Delete the token Secret for a legacy token; for bound tokens, delete and recreate the service account, which changes its UID and invalidates every token issued for it, or delete the pod a token is bound to once that pod's evidence is captured |
+
 Full inventory queries, telemetry tables, incident path and anti-patterns are in the original skill.

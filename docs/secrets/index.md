@@ -25,4 +25,4 @@
 
 ## When a secret leaks
 
-Revoke or rotate first, then clean up: removing it from git history does not un-leak it. Find every copy (CI secrets, `.env` files, Kubernetes Secrets, laptops), check access logs for use during the exposure window, and record the timeline. The `compromise-evidence-preservation` skill covers preserving evidence before cleanup.
+Revoke or rotate first, then clean up: removing it from git history does not un-leak it. Disabling a key does not end the short-lived tokens already issued from it (a GCP access token minted from a service-account key stays valid until it expires, an hour by default), so also revoke sessions where the platform allows it; the [`secret-rotation`](https://github.com/greenblacked/security-toolbox/blob/main/plugins/security/skills/secret-rotation/SKILL.md) skill lists how per platform. Find every copy (CI secrets, `.env` files, Kubernetes Secrets, laptops), check access logs for use during the exposure window, and record the timeline. The `compromise-evidence-preservation` skill covers preserving evidence before cleanup.

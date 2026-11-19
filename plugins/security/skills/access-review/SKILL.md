@@ -68,8 +68,9 @@ gcloud projects get-iam-policy example-project --format=json | jq '.bindings[]'
 kubectl get clusterrolebindings -o json \
   | jq -r '.items[] | select(.roleRef.name=="cluster-admin") | .metadata.name'
 
-# GitHub: organisation members and their role, plus installed apps
+# GitHub: organisation members, the admins among them, plus installed apps
 gh api /orgs/example-org/members --paginate
+gh api '/orgs/example-org/members?role=admin' --paginate
 gh api /orgs/example-org/installations --paginate
 ```
 
@@ -137,7 +138,7 @@ aws accessanalyzer start-policy-generation \
   --cloud-trail-details 'trails=[{cloudTrailArn=TRAIL_ARN_EXAMPLE,allRegions=true}],accessRole=ARN_EXAMPLE,startTime=2026-06-01T00:00:00Z'
 ```
 
-Then read the result rather than applying it. Group related actions the workload plainly needs even if only one was seen; scope resources to a prefix or a tag condition rather than to the exact object names observed; keep the deny statements someone added deliberately. Note every widening and why, because that note is what the next reviewer needs.
+Policy generation analyses at most 90 days of CloudTrail, so it cannot see a quarterly or annual job; add those actions from the longer evidence in step 2. Then read the result rather than applying it. Group related actions the workload plainly needs even if only one was seen; scope resources to a prefix or a tag condition rather than to the exact object names observed; keep the deny statements someone added deliberately. Note every widening and why, because that note is what the next reviewer needs.
 
 ### 5. Run it in audit mode, and alert on would-have-denied
 
@@ -148,7 +149,7 @@ Where the platform has a genuine dry-run or audit-only mode, use it. Where it do
 | Platform | Audit-only mechanism |
 | --- | --- |
 | AWS | Access Analyzer policy validation and the unused-access analyzer; a canary role holding the reduced policy; CloudTrail as the record of what the narrow policy would have refused |
-| GCP | Policy Troubleshooter and the recommender's simulation of a proposed change before applying it |
+| GCP | Policy Simulator, which replays the last 90 days of access attempts against the proposed allow policy, and Policy Troubleshooter for a single access |
 | Kubernetes | `kubectl auth can-i --list --as=system:serviceaccount:example-ns:example-sa`, plus admission policies in a warn or audit action before enforce |
 | Entra ID | Conditional access policies in report-only mode |
 | Service mesh, gateways, application authorisation | Almost all have a permissive or shadow mode that logs the decision without enforcing it |
