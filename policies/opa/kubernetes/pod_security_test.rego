@@ -51,3 +51,26 @@ test_cronjob_is_checked if {
 test_other_kinds_ignored if {
 	count(pod_security.deny) == 0 with input as {"kind": "ConfigMap", "metadata": {"name": "x"}}
 }
+
+privileged_pod(metadata) := {
+	"kind": "Pod",
+	"metadata": metadata,
+	"spec": {
+		"securityContext": {"runAsNonRoot": true},
+		"containers": [{
+			"name": "c",
+			"securityContext": {"privileged": true, "allowPrivilegeEscalation": false},
+			"resources": {"limits": {"memory": "64Mi"}},
+		}],
+	},
+}
+
+test_generate_name_used_when_name_missing if {
+	some msg in pod_security.deny with input as privileged_pod({"generateName": "job-run-"})
+	startswith(msg, "Pod/job-run-: ")
+}
+
+test_unnamed_still_reported if {
+	some msg in pod_security.deny with input as privileged_pod({})
+	startswith(msg, "Pod/<unnamed>: ")
+}

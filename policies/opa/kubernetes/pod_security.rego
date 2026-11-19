@@ -19,7 +19,16 @@ pod_spec := input.spec.template.spec if input.kind in workload_kinds
 
 pod_spec := input.spec.jobTemplate.spec.template.spec if input.kind == "CronJob"
 
-name := sprintf("%s/%s", [input.kind, input.metadata.name])
+# Fall back to generateName so a missing name never drops findings.
+display_name := n if {
+	n := object.get(input, ["metadata", "name"], "")
+	n != ""
+} else := n if {
+	n := object.get(input, ["metadata", "generateName"], "")
+	n != ""
+} else := "<unnamed>"
+
+name := sprintf("%s/%s", [input.kind, display_name])
 
 containers contains c if {
 	some field in ["initContainers", "containers", "ephemeralContainers"]
