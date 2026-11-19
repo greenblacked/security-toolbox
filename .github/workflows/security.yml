@@ -136,8 +136,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
-      actions: read  # CodeQL reads this run's metadata in a private repository
+      actions: read  # CodeQL reads this workflow run's metadata
       contents: read
+      security-events: write  # upload the CodeQL results to code scanning
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
@@ -146,15 +147,10 @@ jobs:
         with:
           languages: ${{ needs.codeql-languages.outputs.languages }}
           queries: security-extended
-      # Code scanning is not available on this private repository, so the SARIF
-      # stays on the runner instead of being uploaded. Drop upload: never (and
-      # restore security-events: write) once the repository is public.
       - id: analyze
         uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066  # v4.39.3
-        with:
-          upload: never
-      # analyze never fails on findings, and with no upload nothing else would show
-      # them, so any result in the SARIF fails this job.
+      # analyze uploads the results to code scanning but never fails on them, so
+      # any result in the SARIF also fails this job.
       - name: Fail on any CodeQL result
         env:
           SARIF_DIR: ${{ steps.analyze.outputs.sarif-output }}
