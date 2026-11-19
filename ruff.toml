@@ -1,0 +1,7 @@
+# Mirrors the lint selection of greenblacked/AI. "S" is flake8-bandit, the security
+# rules the `python security lint` job relies on; "N" is pep8-naming.
+line-length = 100
+target-version = "py310"
+
+[lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "S", "N"]
