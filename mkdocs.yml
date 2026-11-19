@@ -1,0 +1,48 @@
+site_name: Security Toolbox
+site_url: https://security.szolotov.com
+site_description: Security checks, best practices and automated guardrails
+repo_url: https://github.com/greenblacked/security-toolbox
+repo_name: greenblacked/security-toolbox
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+    - toc.follow
+
+nav:
+  - Home: index.md
+  - Kubernetes: kubernetes/index.md
+  - GCP: gcp/index.md
+  - Terraform: terraform/index.md
+  - GitHub & CI: github/index.md
+  - Secrets: secrets/index.md
+  - Contributing: contributing.md
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - toc:
+      permalink: true
