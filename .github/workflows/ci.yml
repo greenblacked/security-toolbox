@@ -46,8 +46,12 @@ jobs:
       contents: read
     steps:
       - name: CI gate
+        env:
+          SITE_RESULT: ${{ needs.site.result }}
         run: |
-          if [[ "${{ needs.site.result }}" != "success" ]]; then
+          set -Eeuo pipefail
+          if [[ "$SITE_RESULT" != "success" ]]; then
+            echo "::error::site check job result: ${SITE_RESULT}"
             exit 1
           fi
           echo "CI passed"

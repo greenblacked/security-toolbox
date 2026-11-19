@@ -1,0 +1,4 @@
+# Local tool installs and build state
+.venv/
+node_modules/
+.wrangler/

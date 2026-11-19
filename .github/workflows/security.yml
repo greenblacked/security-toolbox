@@ -93,7 +93,8 @@ jobs:
         with:
           path: ~/.cache/pip
           key: pip-ruff-${{ runner.os }}-${{ hashFiles('.github/workflows/security.yml') }}
-      - run: |
+      - name: Install ruff
+        run: |
           set -Eeuo pipefail
           python -m pip install "ruff==${RUFF_VERSION}"
       - name: Lint, including the bandit security rules
@@ -294,13 +295,25 @@ jobs:
       contents: read
     steps:
       - name: All security checks must pass
+        # Job results go through env, not ${{ }} inside the script.
+        env:
+          SECRETS_RESULT: ${{ needs.secrets.result }}
+          WORKFLOWS_RESULT: ${{ needs.workflows.result }}
+          PYTHON_RESULT: ${{ needs.python.result }}
+          CODEQL_RESULT: ${{ needs.codeql.result }}
+          PERMISSIONS_RESULT: ${{ needs.permissions-audit.result }}
         run: |
           set -Eeuo pipefail
-          if [[ "${{ needs.secrets.result }}" != "success" ||
-                "${{ needs.workflows.result }}" != "success" ||
-                "${{ needs.python.result }}" != "success" ||
-                "${{ needs.codeql.result }}" != "success" ||
-                "${{ needs.permissions-audit.result }}" != "success" ]]; then
+          failed=0
+          for pair in "secrets=$SECRETS_RESULT" "workflows=$WORKFLOWS_RESULT" \
+            "python=$PYTHON_RESULT" "codeql=$CODEQL_RESULT" \
+            "permissions-audit=$PERMISSIONS_RESULT"; do
+            if [[ "${pair#*=}" != "success" ]]; then
+              echo "::error::${pair%%=*} job result: ${pair#*=}"
+              failed=1
+            fi
+          done
+          if [[ "$failed" -ne 0 ]]; then
             echo "::error::one or more security jobs failed"
             exit 1
           fi
