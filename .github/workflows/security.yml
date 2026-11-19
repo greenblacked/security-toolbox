@@ -108,17 +108,50 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
+      actions: read  # CodeQL reads this run's metadata in a private repository
       contents: read
-      security-events: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
+      # The tree has workflows but no Python, and CodeQL exits 32 for a language
+      # with no source. Add python here with the first .py file.
       - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066  # v4.39.3
         with:
-          languages: python
+          languages: actions
           queries: security-extended
-      - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066  # v4.39.3
+      # Code scanning is not available on this private repository, so the SARIF
+      # stays on the runner instead of being uploaded.
+      - id: analyze
+        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066  # v4.39.3
+        with:
+          upload: never
+      # analyze never fails on findings, and with no upload nothing else would show
+      # them, so any result in the SARIF fails this job.
+      - name: Fail on any CodeQL result
+        env:
+          SARIF_DIR: ${{ steps.analyze.outputs.sarif-output }}
+        run: |
+          set -Eeuo pipefail
+          shopt -s nullglob
+          files=("$SARIF_DIR"/*.sarif)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "::error::no SARIF file in ${SARIF_DIR}"
+            exit 1
+          fi
+          total=0
+          for file in "${files[@]}"; do
+            count=$(jq '[.runs[].results[]?] | length' "$file")
+            total=$((total + count))
+            jq -r '.runs[].results[]? |
+              "::error file=\(.locations[0].physicalLocation.artifactLocation.uri // ""),line=\(.locations[0].physicalLocation.region.startLine // 1),title=\(.ruleId)::\(.message.text)"' "$file"
+            echo "$(basename "$file"): ${count} result(s)"
+          done
+          if [ "$total" -ne 0 ]; then
+            echo "::error::CodeQL reported ${total} result(s)"
+            exit 1
+          fi
+          echo "CodeQL: no results"
 
   permissions-audit:
     name: permissions audit

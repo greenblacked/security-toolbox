@@ -9,9 +9,13 @@ on:
 
 permissions: {}
 
+# A pull request cancels its own superseded runs. Pushes to main never cancel each
+# other, so every commit on main keeps a CI result.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: >-
+    ${{ github.workflow }}-${{ github.event_name == 'pull_request'
+    && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   site:
