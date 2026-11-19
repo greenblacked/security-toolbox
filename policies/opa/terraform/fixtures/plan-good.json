@@ -166,6 +166,19 @@
           ]
         }
       }
+    },
+    {
+      "address": "google_storage_bucket_iam_policy.existing_private",
+      "type": "google_storage_bucket_iam_policy",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "after": {
+          "bucket": "existing-private-data",
+          "policy_data": "{\"bindings\": [{\"role\": \"roles/storage.objectViewer\", \"members\": [\"group:readers@example.com\", \"serviceAccount:reader@example.iam.gserviceaccount.com\"]}]}"
+        }
+      }
     }
   ]
 }

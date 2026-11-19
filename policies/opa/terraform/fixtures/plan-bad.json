@@ -270,6 +270,19 @@
           ]
         }
       }
+    },
+    {
+      "address": "google_storage_bucket_iam_policy.existing_public",
+      "type": "google_storage_bucket_iam_policy",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "policy_data": "{\"bindings\": [{\"role\": \"roles/storage.legacyBucketOwner\", \"members\": [\"projectOwner:example-project\"]}, {\"role\": \"roles/storage.objectViewer\", \"members\": [\"allUsers\"]}]}"
+        }
+      }
     }
   ]
 }

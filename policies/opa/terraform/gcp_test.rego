@@ -129,3 +129,43 @@ test_disabled_and_egress_ignored if {
 	egress := object.union(world([{"protocol": "tcp", "ports": ["22"]}]), {"direction": "EGRESS"})
 	count(gcp.deny) == 0 with input as fw_plan(egress)
 }
+
+bucket_policy_plan(after) := {"resource_changes": [{
+	"address": "google_storage_bucket_iam_policy.p",
+	"type": "google_storage_bucket_iam_policy",
+	"change": {"actions": ["create"], "after": after},
+}]}
+
+test_bucket_iam_policy_all_users_denied if {
+	pd := json.marshal({"bindings": [
+		{"role": "roles/storage.admin", "members": ["group:ops@example.com"]},
+		{"role": "roles/storage.objectViewer", "members": ["allUsers"]},
+	]})
+	plan := bucket_policy_plan({"bucket": "existing-bucket", "policy_data": pd})
+	count(gcp.deny) == 1 with input as plan
+	some msg in gcp.deny with input as plan
+	contains(msg, "allUsers")
+}
+
+test_bucket_iam_policy_all_authenticated_users_denied if {
+	pd := json.marshal({"bindings": [{"role": "roles/storage.objectViewer", "members": ["allAuthenticatedUsers"]}]})
+	count(gcp.deny) == 1 with input as bucket_policy_plan({"bucket": "b", "policy_data": pd})
+}
+
+test_bucket_iam_policy_private_allowed if {
+	pd := json.marshal({"bindings": [{"role": "roles/storage.objectViewer", "members": ["serviceAccount:r@example.iam.gserviceaccount.com"]}]})
+	plan := bucket_policy_plan({"bucket": "b", "policy_data": pd})
+	count(gcp.deny) == 0 with input as plan
+	count(gcp.warn) == 0 with input as plan
+}
+
+test_bucket_iam_policy_unknown_warns if {
+	plan := bucket_policy_plan({"bucket": "b"})
+	count(gcp.deny) == 0 with input as plan
+	count(gcp.warn) == 1 with input as plan
+}
+
+test_bucket_iam_policy_null_or_invalid_warns if {
+	count(gcp.warn) == 1 with input as bucket_policy_plan({"bucket": "b", "policy_data": null})
+	count(gcp.warn) == 1 with input as bucket_policy_plan({"bucket": "b", "policy_data": "not json"})
+}

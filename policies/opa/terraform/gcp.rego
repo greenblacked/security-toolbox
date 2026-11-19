@@ -103,6 +103,34 @@ deny contains msg if {
 	msg := sprintf("%s: binding includes %s", [rc.address, member])
 }
 
+# google_storage_bucket_iam_policy replaces the whole bucket policy; its
+# policy_data is a JSON string (usually data.google_iam_policy.x.policy_data).
+bucket_policy_bindings(rc) := bindings if {
+	pd := attr(rc.change.after, "policy_data", "")
+	is_string(pd)
+	json.is_valid(pd)
+	policy := json.unmarshal(pd)
+	is_object(policy)
+	bindings := attr(policy, "bindings", [])
+}
+
+deny contains msg if {
+	some rc in changed
+	rc.type == "google_storage_bucket_iam_policy"
+	some binding in bucket_policy_bindings(rc)
+	some member in attr(binding, "members", [])
+	member in public_members
+	msg := sprintf("%s: policy_data grants %s %s on bucket %v", [rc.address, member, object.get(binding, "role", "?"), object.get(rc.change.after, "bucket", "?")])
+}
+
+# policy_data unknown until apply (or not valid JSON) cannot be verified here.
+warn contains msg if {
+	some rc in changed
+	rc.type == "google_storage_bucket_iam_policy"
+	not bucket_policy_bindings(rc)
+	msg := sprintf("%s: policy_data is not known at plan time; review it for allUsers / allAuthenticatedUsers", [rc.address])
+}
+
 deny contains msg if {
 	some rc in changed
 	rc.type == "google_storage_bucket"
