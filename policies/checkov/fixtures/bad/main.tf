@@ -117,3 +117,30 @@ resource "google_compute_firewall" "udp_rdp_ipv6" {
     ports    = ["3389"]
   }
 }
+
+# Authoritative policy on an existing bucket (no google_storage_bucket here).
+data "google_iam_policy" "public_site" {
+  binding {
+    role    = "roles/storage.legacyBucketOwner"
+    members = ["projectOwner:example-project"]
+  }
+  binding {
+    role    = "roles/storage.objectViewer"
+    members = ["allUsers"]
+  }
+}
+
+resource "google_storage_bucket_iam_policy" "existing_public" {
+  bucket      = "existing-public-site"
+  policy_data = data.google_iam_policy.public_site.policy_data
+}
+
+resource "google_storage_bucket_iam_policy" "existing_public_literal" {
+  bucket = "existing-public-assets"
+  policy_data = jsonencode({
+    bindings = [{
+      role    = "roles/storage.objectViewer"
+      members = ["allAuthenticatedUsers"]
+    }]
+  })
+}

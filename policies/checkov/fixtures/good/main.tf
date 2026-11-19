@@ -64,3 +64,26 @@ resource "google_compute_firewall" "ssh_world_disabled" {
     ports    = ["22"]
   }
 }
+
+# Authoritative policy on an existing bucket, private members only.
+data "google_iam_policy" "private_data" {
+  binding {
+    role    = "roles/storage.objectViewer"
+    members = ["group:readers@example.com", "serviceAccount:reader@example.iam.gserviceaccount.com"]
+  }
+}
+
+resource "google_storage_bucket_iam_policy" "existing_private" {
+  bucket      = "existing-private-data"
+  policy_data = data.google_iam_policy.private_data.policy_data
+}
+
+resource "google_storage_bucket_iam_policy" "existing_private_literal" {
+  bucket = "existing-private-exports"
+  policy_data = jsonencode({
+    bindings = [{
+      role    = "roles/storage.objectViewer"
+      members = ["group:exports@example.com"]
+    }]
+  })
+}
