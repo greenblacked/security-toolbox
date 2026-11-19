@@ -313,6 +313,169 @@
           "role": "READER"
         }
       }
+    },
+    {
+      "address": "google_storage_bucket_acl.predefined_public_read_write",
+      "type": "google_storage_bucket_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "predefined_acl": "publicReadWrite"
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket_acl.predefined_authenticated_read",
+      "type": "google_storage_bucket_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "predefined_acl": "authenticatedRead"
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket_acl.default_acl_public_read",
+      "type": "google_storage_bucket_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "role_entity": [
+            "OWNER:project-owners-123456"
+          ],
+          "default_acl": "publicRead"
+        }
+      }
+    },
+    {
+      "address": "google_storage_object_acl.predefined_public_read",
+      "type": "google_storage_object_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "object": "index.html",
+          "predefined_acl": "publicRead"
+        }
+      }
+    },
+    {
+      "address": "google_storage_object_acl.role_entity_public",
+      "type": "google_storage_object_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "object": "report.pdf",
+          "role_entity": [
+            "READER:allUsers"
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_storage_default_object_acl.role_entity_public",
+      "type": "google_storage_default_object_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "role_entity": [
+            "OWNER:project-owners-123456",
+            "READER:allAuthenticatedUsers"
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_storage_object_access_control.public_entity",
+      "type": "google_storage_object_access_control",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "object": "logo.png",
+          "entity": "allUsers",
+          "role": "READER"
+        }
+      }
+    },
+    {
+      "address": "google_storage_default_object_access_control.public_entity",
+      "type": "google_storage_default_object_access_control",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "entity": "allUsers",
+          "role": "READER"
+        }
+      }
+    },
+    {
+      "address": "google_storage_managed_folder_iam_member.public",
+      "type": "google_storage_managed_folder_iam_member",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "managed_folder": "downloads/",
+          "role": "roles/storage.objectViewer",
+          "member": "allUsers"
+        }
+      }
+    },
+    {
+      "address": "google_storage_managed_folder_iam_binding.public",
+      "type": "google_storage_managed_folder_iam_binding",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "managed_folder": "downloads/",
+          "role": "roles/storage.objectViewer",
+          "members": [
+            "allAuthenticatedUsers"
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_storage_managed_folder_iam_policy.public",
+      "type": "google_storage_managed_folder_iam_policy",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "managed_folder": "downloads/",
+          "policy_data": "{\"bindings\": [{\"role\": \"roles/storage.objectViewer\", \"members\": [\"allUsers\"]}]}"
+        }
+      }
     }
   ]
 }

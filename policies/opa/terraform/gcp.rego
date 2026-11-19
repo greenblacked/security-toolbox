@@ -85,20 +85,47 @@ deny contains msg if {
 }
 
 # --- GCS: no public access --------------------------------------------------
+#
+# Coverage is listed in policies/README.md. Public principals and predefined
+# ACLs are matched exactly: group:allUsers@example.com is private.
 
-# Public principals are matched exactly: group:allUsers@example.com is private.
+# Predefined ACLs that grant allUsers or allAuthenticatedUsers (GCS docs,
+# access-control/lists#predefined-acl). private, projectPrivate,
+# bucketOwnerRead and bucketOwnerFullControl are private.
+public_predefined_acls := {"publicRead", "publicReadWrite", "authenticatedRead"}
 
-deny contains msg if {
-	some rc in changed
-	rc.type == "google_storage_bucket_iam_member"
-	member := attr(rc.change.after, "member", "")
-	member in public_members
-	msg := sprintf("%s: grants %s on a bucket", [rc.address, member])
+# Resource type -> attributes holding a predefined ACL name.
+# default_acl on google_storage_bucket_acl sets the predefined default object ACL.
+predefined_acl_attributes := {
+	"google_storage_bucket_acl": ["predefined_acl", "default_acl"],
+	"google_storage_object_acl": ["predefined_acl"],
 }
 
 deny contains msg if {
 	some rc in changed
-	rc.type == "google_storage_bucket_iam_binding"
+	some attribute in predefined_acl_attributes[rc.type]
+	value := attr(rc.change.after, attribute, "")
+	value in public_predefined_acls
+	msg := sprintf("%s: %s = %q is public", [rc.address, attribute, value])
+}
+
+iam_member_types := {"google_storage_bucket_iam_member", "google_storage_managed_folder_iam_member"}
+
+iam_binding_types := {"google_storage_bucket_iam_binding", "google_storage_managed_folder_iam_binding"}
+
+iam_policy_types := {"google_storage_bucket_iam_policy", "google_storage_managed_folder_iam_policy"}
+
+deny contains msg if {
+	some rc in changed
+	rc.type in iam_member_types
+	member := attr(rc.change.after, "member", "")
+	member in public_members
+	msg := sprintf("%s: grants %s", [rc.address, member])
+}
+
+deny contains msg if {
+	some rc in changed
+	rc.type in iam_binding_types
 	some member in attr(rc.change.after, "members", [])
 	member in public_members
 	msg := sprintf("%s: binding includes %s", [rc.address, member])
@@ -139,11 +166,11 @@ deny contains msg if {
 	msg := sprintf("%s: ACL entry %s is public", [rc.address, role_entity])
 }
 
-# google_storage_bucket_iam_policy replaces the whole bucket policy; its
-# policy_data is a JSON string (usually data.google_iam_policy.x.policy_data).
+# *_iam_policy replaces the whole policy; its policy_data is a JSON string
+# (usually data.google_iam_policy.x.policy_data).
 policy_data(rc) := attr(rc.change.after, "policy_data", null)
 
-bucket_policy_bindings(rc) := bindings if {
+iam_policy_bindings(rc) := bindings if {
 	pd := policy_data(rc)
 	is_string(pd)
 	json.is_valid(pd)
@@ -154,8 +181,8 @@ bucket_policy_bindings(rc) := bindings if {
 
 deny contains msg if {
 	some rc in changed
-	rc.type == "google_storage_bucket_iam_policy"
-	some binding in bucket_policy_bindings(rc)
+	rc.type in iam_policy_types
+	some binding in iam_policy_bindings(rc)
 	some member in attr(binding, "members", [])
 	member in public_members
 	msg := sprintf("%s: policy_data grants %s %s on bucket %v", [rc.address, member, object.get(binding, "role", "?"), object.get(rc.change.after, "bucket", "?")])
@@ -163,16 +190,16 @@ deny contains msg if {
 
 warn contains msg if {
 	some rc in changed
-	rc.type == "google_storage_bucket_iam_policy"
+	rc.type in iam_policy_types
 	policy_data(rc) == null
 	msg := sprintf("%s: policy_data is not known at plan time; review it for allUsers / allAuthenticatedUsers", [rc.address])
 }
 
 warn contains msg if {
 	some rc in changed
-	rc.type == "google_storage_bucket_iam_policy"
+	rc.type in iam_policy_types
 	policy_data(rc) != null
-	not bucket_policy_bindings(rc)
+	not iam_policy_bindings(rc)
 	msg := sprintf("%s: policy_data is not a valid IAM policy JSON object; it could not be checked for public members", [rc.address])
 }
 

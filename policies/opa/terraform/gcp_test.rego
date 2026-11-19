@@ -232,3 +232,76 @@ test_null_members_do_not_error if {
 	count(gcp.deny) == 0 with input as one("google_storage_bucket_iam_binding", {"members": null})
 	count(gcp.deny) == 0 with input as one("google_storage_bucket_acl", {"role_entity": null})
 }
+
+# --- Full public-GCS sweep: one positive and one negative per pair -----------
+
+denies(type, after) if count(gcp.deny) > 0 with input as one(type, after)
+
+allows(type, after) if count(gcp.deny) == 0 with input as one(type, after)
+
+test_bucket_acl_predefined_acl if {
+	every v in ["publicRead", "publicReadWrite", "authenticatedRead"] {
+		denies("google_storage_bucket_acl", {"bucket": "existing", "predefined_acl": v})
+	}
+	every v in ["private", "projectPrivate"] {
+		allows("google_storage_bucket_acl", {"bucket": "existing", "predefined_acl": v})
+	}
+}
+
+test_bucket_acl_default_acl if {
+	every v in ["publicRead", "authenticatedRead"] {
+		denies("google_storage_bucket_acl", {"bucket": "existing", "default_acl": v})
+	}
+	every v in ["private", "projectPrivate", "bucketOwnerRead", "bucketOwnerFullControl"] {
+		allows("google_storage_bucket_acl", {"bucket": "existing", "default_acl": v})
+	}
+}
+
+test_object_acl_predefined_acl if {
+	every v in ["publicRead", "publicReadWrite", "authenticatedRead"] {
+		denies("google_storage_object_acl", {"bucket": "existing", "object": "o", "predefined_acl": v})
+	}
+	every v in ["private", "projectPrivate", "bucketOwnerRead", "bucketOwnerFullControl"] {
+		allows("google_storage_object_acl", {"bucket": "existing", "object": "o", "predefined_acl": v})
+	}
+}
+
+test_predefined_acl_exact_match if {
+	every v in ["publicread", "public-read", "notpublicRead", "publicReadX"] {
+		allows("google_storage_bucket_acl", {"bucket": "existing", "predefined_acl": v})
+	}
+}
+
+test_object_acl_role_entity if {
+	denies("google_storage_object_acl", {"bucket": "existing", "object": "o", "role_entity": ["READER:allUsers"]})
+	allows("google_storage_object_acl", {"bucket": "existing", "object": "o", "role_entity": ["READER:group-allUsers@example.com"]})
+}
+
+test_default_object_acl_role_entity if {
+	denies("google_storage_default_object_acl", {"bucket": "existing", "role_entity": ["READER:allAuthenticatedUsers"]})
+	allows("google_storage_default_object_acl", {"bucket": "existing", "role_entity": ["OWNER:project-owners-1", "READER:user-allAuthenticatedUsers@x.com"]})
+}
+
+test_access_control_entities if {
+	every type in ["google_storage_bucket_access_control", "google_storage_object_access_control", "google_storage_default_object_access_control"] {
+		denies(type, {"bucket": "existing", "entity": "allUsers", "role": "READER"})
+		denies(type, {"bucket": "existing", "entity": "allAuthenticatedUsers", "role": "READER"})
+		allows(type, {"bucket": "existing", "entity": "group-allUsers@example.com", "role": "READER"})
+		allows(type, {"bucket": "existing", "entity": "project-viewers-123", "role": "READER"})
+	}
+}
+
+test_managed_folder_iam if {
+	denies("google_storage_managed_folder_iam_member", {"bucket": "existing", "managed_folder": "f/", "member": "allUsers"})
+	allows("google_storage_managed_folder_iam_member", {"bucket": "existing", "managed_folder": "f/", "member": "group:allUsers@example.com"})
+	denies("google_storage_managed_folder_iam_binding", {"bucket": "existing", "managed_folder": "f/", "members": ["allAuthenticatedUsers"]})
+	allows("google_storage_managed_folder_iam_binding", {"bucket": "existing", "managed_folder": "f/", "members": ["user:allAuthenticatedUsers@x.com"]})
+	public := json.marshal({"bindings": [{"role": "roles/storage.objectViewer", "members": ["allUsers"]}]})
+	private := json.marshal({"bindings": [{"role": "roles/storage.objectViewer", "members": ["group:allUsers@example.com"]}]})
+	denies("google_storage_managed_folder_iam_policy", {"bucket": "existing", "managed_folder": "f/", "policy_data": public})
+	allows("google_storage_managed_folder_iam_policy", {"bucket": "existing", "managed_folder": "f/", "policy_data": private})
+}
+
+test_managed_folder_policy_unknown_warns if {
+	count(gcp.warn) == 1 with input as one("google_storage_managed_folder_iam_policy", {"bucket": "existing", "managed_folder": "f/"})
+}

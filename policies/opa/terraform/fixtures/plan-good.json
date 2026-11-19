@@ -225,6 +225,183 @@
           ]
         }
       }
+    },
+    {
+      "address": "google_storage_bucket_acl.predefined_project_private",
+      "type": "google_storage_bucket_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-private-data",
+          "predefined_acl": "projectPrivate"
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket_acl.predefined_private",
+      "type": "google_storage_bucket_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-private-exports",
+          "predefined_acl": "private"
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket_acl.default_acl_bucket_owner",
+      "type": "google_storage_bucket_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-private-data",
+          "role_entity": [
+            "OWNER:project-owners-123456"
+          ],
+          "default_acl": "bucketOwnerFullControl"
+        }
+      }
+    },
+    {
+      "address": "google_storage_object_acl.predefined_bucket_owner_read",
+      "type": "google_storage_object_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-private-data",
+          "object": "export.csv",
+          "predefined_acl": "bucketOwnerRead"
+        }
+      }
+    },
+    {
+      "address": "google_storage_object_acl.role_entity_lookalike",
+      "type": "google_storage_object_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-private-data",
+          "object": "report.pdf",
+          "role_entity": [
+            "READER:group-allUsers@example.com"
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_storage_default_object_acl.role_entity_lookalike",
+      "type": "google_storage_default_object_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-private-data",
+          "role_entity": [
+            "OWNER:project-owners-123456",
+            "READER:user-allAuthenticatedUsers@x.com"
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket_access_control.group_entity",
+      "type": "google_storage_bucket_access_control",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-private-data",
+          "entity": "group-allUsers@example.com",
+          "role": "READER"
+        }
+      }
+    },
+    {
+      "address": "google_storage_object_access_control.project_entity",
+      "type": "google_storage_object_access_control",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-private-data",
+          "object": "export.csv",
+          "entity": "project-viewers-123456",
+          "role": "READER"
+        }
+      }
+    },
+    {
+      "address": "google_storage_default_object_access_control.group_entity",
+      "type": "google_storage_default_object_access_control",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-private-data",
+          "entity": "group-readers@example.com",
+          "role": "READER"
+        }
+      }
+    },
+    {
+      "address": "google_storage_managed_folder_iam_member.lookalike",
+      "type": "google_storage_managed_folder_iam_member",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-private-data",
+          "managed_folder": "shared/",
+          "role": "roles/storage.objectViewer",
+          "member": "group:allUsers@example.com"
+        }
+      }
+    },
+    {
+      "address": "google_storage_managed_folder_iam_binding.lookalike",
+      "type": "google_storage_managed_folder_iam_binding",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-private-data",
+          "managed_folder": "shared/",
+          "role": "roles/storage.objectViewer",
+          "members": [
+            "user:allAuthenticatedUsers@x.com"
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_storage_managed_folder_iam_policy.private",
+      "type": "google_storage_managed_folder_iam_policy",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-private-data",
+          "managed_folder": "shared/",
+          "policy_data": "{\"bindings\": [{\"role\": \"roles/storage.objectViewer\", \"members\": [\"group:allUsers@example.com\"]}]}"
+        }
+      }
     }
   ]
 }
