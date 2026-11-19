@@ -8,7 +8,12 @@ package terraform.gcp
 
 import rego.v1
 
-admin_ports := {"22", "3389"}
+# Admin services and the transport they listen on. RDP also uses UDP 3389.
+admin_ports := {
+	{"port": 22, "protocol": "tcp"},
+	{"port": 3389, "protocol": "tcp"},
+	{"port": 3389, "protocol": "udp"},
+}
 
 public_members := {"allUsers", "allAuthenticatedUsers"}
 
@@ -20,41 +25,63 @@ changed contains rc if {
 
 # --- Firewall: no 0.0.0.0/0 ingress to admin ports -------------------------
 
-open_to_world(fw) if "0.0.0.0/0" in fw.source_ranges
-
-open_to_world(fw) if "::/0" in fw.source_ranges
-
-allows_port(rule, _) if {
-	rule.protocol in {"all", "tcp"}
-	count(object.get(rule, "ports", [])) == 0
+# Plan JSON can carry explicit nulls; treat null like an absent attribute.
+attr(obj, key, fallback) := fallback if {
+	object.get(obj, key, null) == null
 }
 
-allows_port(rule, port) if {
-	rule.protocol == "tcp"
-	some p in rule.ports
-	p == port
+attr(obj, key, _) := obj[key] if {
+	obj[key] != null
 }
 
-allows_port(rule, port) if {
-	rule.protocol == "tcp"
-	some p in rule.ports
-	contains(p, "-")
+open_to_world(fw) if "0.0.0.0/0" in attr(fw, "source_ranges", [])
+
+open_to_world(fw) if "::/0" in attr(fw, "source_ranges", [])
+
+# The provider accepts names or IP protocol numbers, in any case.
+protocol_names := {"6": "tcp", "17": "udp", "132": "sctp"}
+
+normalised_protocol(rule) := object.get(protocol_names, p, p) if {
+	p := lower(sprintf("%v", [attr(rule, "protocol", "")]))
+}
+
+protocol_matches(rule, _) if normalised_protocol(rule) == "all"
+
+protocol_matches(rule, protocol) if normalised_protocol(rule) == protocol
+
+# No ports (or protocol "all") means every port.
+port_matches(rule, _) if count(attr(rule, "ports", [])) == 0
+
+port_matches(rule, port) if {
+	some p in attr(rule, "ports", [])
+	not contains(p, "-")
+	to_number(trim_space(p)) == port
+}
+
+port_matches(rule, port) if {
+	some p in attr(rule, "ports", [])
 	bounds := split(p, "-")
-	to_number(bounds[0]) <= to_number(port)
-	to_number(port) <= to_number(bounds[1])
+	count(bounds) == 2
+	to_number(trim_space(bounds[0])) <= port
+	port <= to_number(trim_space(bounds[1]))
+}
+
+exposes(rule, admin) if {
+	protocol_matches(rule, admin.protocol)
+	port_matches(rule, admin.port)
 }
 
 deny contains msg if {
 	some rc in changed
 	rc.type == "google_compute_firewall"
 	fw := rc.change.after
-	object.get(fw, "direction", "INGRESS") == "INGRESS"
-	not object.get(fw, "disabled", false)
+	attr(fw, "direction", "INGRESS") == "INGRESS"
+	attr(fw, "disabled", false) != true
 	open_to_world(fw)
-	some rule in fw.allow
-	some port in admin_ports
-	allows_port(rule, port)
-	msg := sprintf("%s: ingress from the internet to admin port %s; use IAP TCP forwarding or a bastion range", [rc.address, port])
+	some rule in attr(fw, "allow", [])
+	some admin in admin_ports
+	exposes(rule, admin)
+	msg := sprintf("%s: ingress from the internet to admin port %d; use IAP TCP forwarding or a bastion range", [rc.address, admin.port])
 }
 
 # --- GCS: no public access --------------------------------------------------

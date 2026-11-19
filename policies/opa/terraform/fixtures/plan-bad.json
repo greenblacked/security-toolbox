@@ -102,6 +102,174 @@
           "public_key_type": "TYPE_X509_PEM_FILE"
         }
       }
+    },
+    {
+      "address": "google_compute_firewall.ssh_in_second_block",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "name": "ssh-in-second-block",
+          "direction": "INGRESS",
+          "source_ranges": [
+            "0.0.0.0/0"
+          ],
+          "allow": [
+            {
+              "protocol": "tcp",
+              "ports": [
+                "443"
+              ]
+            },
+            {
+              "protocol": "tcp",
+              "ports": [
+                "22"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_compute_firewall.all_tcp_ports_range",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "name": "all-tcp-ports-range",
+          "direction": "INGRESS",
+          "source_ranges": [
+            "0.0.0.0/0"
+          ],
+          "allow": [
+            {
+              "protocol": "tcp",
+              "ports": [
+                "1-65535"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_compute_firewall.range_covering_ssh",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "name": "range-covering-ssh",
+          "direction": "INGRESS",
+          "source_ranges": [
+            "0.0.0.0/0"
+          ],
+          "allow": [
+            {
+              "protocol": "tcp",
+              "ports": [
+                "20-25"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_compute_firewall.tcp_without_ports",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "name": "tcp-without-ports",
+          "direction": "INGRESS",
+          "source_ranges": [
+            "0.0.0.0/0"
+          ],
+          "allow": [
+            {
+              "protocol": "tcp"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_compute_firewall.protocol_all",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "name": "protocol-all",
+          "direction": "INGRESS",
+          "source_ranges": [
+            "0.0.0.0/0"
+          ],
+          "allow": [
+            {
+              "protocol": "all"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_compute_firewall.numeric_tcp_ssh",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "name": "numeric-tcp-ssh",
+          "direction": "INGRESS",
+          "source_ranges": [
+            "0.0.0.0/0"
+          ],
+          "allow": [
+            {
+              "protocol": "6",
+              "ports": [
+                "22"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_compute_firewall.udp_rdp_ipv6",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "name": "udp-rdp-ipv6",
+          "direction": "INGRESS",
+          "source_ranges": [
+            "::/0"
+          ],
+          "allow": [
+            {
+              "protocol": "17",
+              "ports": [
+                "3389"
+              ]
+            }
+          ]
+        }
+      }
     }
   ]
 }

@@ -76,3 +76,56 @@ test_public_access_prevention_not_enforced_denied if {
 	some msg in gcp.deny with input as plan
 	contains(msg, "public_access_prevention")
 }
+
+fw_plan(after) := {"resource_changes": [{
+	"address": "google_compute_firewall.f",
+	"type": "google_compute_firewall",
+	"change": {"actions": ["create"], "after": after},
+}]}
+
+world(allow) := {"source_ranges": ["0.0.0.0/0"], "allow": allow}
+
+test_numeric_tcp_protocol_denied if {
+	count(gcp.deny) == 1 with input as fw_plan(world([{"protocol": "6", "ports": ["22"]}]))
+}
+
+test_uppercase_protocol_denied if {
+	count(gcp.deny) == 1 with input as fw_plan(world([{"protocol": "TCP", "ports": ["3389"]}]))
+}
+
+test_udp_rdp_denied if {
+	count(gcp.deny) == 1 with input as fw_plan(world([{"protocol": "17", "ports": ["3389"]}]))
+}
+
+test_udp_22_allowed if {
+	count(gcp.deny) == 0 with input as fw_plan(world([{"protocol": "udp", "ports": ["22"]}]))
+}
+
+test_sctp_all_ports_allowed if {
+	count(gcp.deny) == 0 with input as fw_plan(world([{"protocol": "132"}]))
+}
+
+test_ssh_in_second_allow_block_denied if {
+	allow := [{"protocol": "tcp", "ports": ["443"]}, {"protocol": "tcp", "ports": ["22"]}]
+	count(gcp.deny) == 1 with input as fw_plan(world(allow))
+}
+
+test_tcp_without_ports_denied_for_both if {
+	count(gcp.deny) == 2 with input as fw_plan(world([{"protocol": "tcp"}]))
+}
+
+test_protocol_all_denied_for_both if {
+	count(gcp.deny) == 2 with input as fw_plan(world([{"protocol": "all"}]))
+}
+
+test_explicit_nulls_do_not_fail_open if {
+	after := {"source_ranges": ["0.0.0.0/0"], "direction": null, "disabled": null, "allow": [{"protocol": "tcp", "ports": null}]}
+	count(gcp.deny) == 2 with input as fw_plan(after)
+}
+
+test_disabled_and_egress_ignored if {
+	disabled := object.union(world([{"protocol": "tcp", "ports": ["22"]}]), {"disabled": true})
+	count(gcp.deny) == 0 with input as fw_plan(disabled)
+	egress := object.union(world([{"protocol": "tcp", "ports": ["22"]}]), {"direction": "EGRESS"})
+	count(gcp.deny) == 0 with input as fw_plan(egress)
+}
