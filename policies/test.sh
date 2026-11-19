@@ -16,10 +16,10 @@ expect() { # expect <pass|fail> <description> <command...>
   fi
 }
 
-mapfile -t rego < <(find opa -name '*.rego' | sort)
-expect pass "opa fmt" bash -c "test -z \"\$(opa fmt -l ${rego[*]})\""
-expect pass "opa check --strict" opa check --strict "${rego[@]}"
-expect pass "opa test" opa test "${rego[@]}"
+# Fixtures are JSON/YAML and would otherwise be loaded as OPA data documents.
+expect pass "opa fmt --list --fail" opa fmt --list --fail opa
+expect pass "opa check --strict" opa check --strict --ignore fixtures opa
+expect pass "opa test" opa test -v --ignore fixtures opa
 
 expect pass "terraform plan good" conftest test -p opa/terraform -n terraform.gcp opa/terraform/fixtures/plan-good.json
 expect fail "terraform plan bad" conftest test -p opa/terraform -n terraform.gcp opa/terraform/fixtures/plan-bad.json

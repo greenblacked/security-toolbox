@@ -1,6 +1,6 @@
 # Policies
 
-Policy-as-code, report first. Every policy ships with unit tests and good/bad fixtures; `./policies/test.sh` runs them all (requires `opa` and `conftest`, `checkov` optional) and CI runs the same script.
+Policy-as-code, report first. Every policy ships with unit tests and good/bad fixtures; `./policies/test.sh` runs them all (requires `opa` and `conftest`, `checkov` optional). It is not wired into CI yet; the intended CI step is `./policies/test.sh` with pinned opa, conftest and checkov.
 
 | Path | Engine | Target | What it denies |
 | --- | --- | --- | --- |

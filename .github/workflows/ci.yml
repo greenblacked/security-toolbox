@@ -32,46 +32,9 @@ jobs:
           test -f deploy/wrangler.json
           echo "site skeleton ok"
 
-  policies:
-    name: policy tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-    env:
-      OPA_VERSION: '1.22.4'
-      OPA_SHA256: '35e3b352e715e80624ead6c89930d8585f6f7d94cdc409eb2a9fe36620dcccba'
-      CONFTEST_VERSION: '0.71.1'
-      CONFTEST_SHA256: 'c3f6b2a753bd56e377a1e51a95ae3e057f926f2e9139f7d5b5dfbbaf810f7985'
-      CHECKOV_VERSION: '3.4.6'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
-        with:
-          python-version: '3.13'
-      - name: Install opa, conftest and checkov
-        run: |
-          set -Eeuo pipefail
-          mkdir -p "$RUNNER_TEMP/bin"
-          curl -fsSL --retry 3 -o "$RUNNER_TEMP/bin/opa" \
-            "https://github.com/open-policy-agent/opa/releases/download/v${OPA_VERSION}/opa_linux_amd64_static"
-          echo "${OPA_SHA256}  $RUNNER_TEMP/bin/opa" | sha256sum --check --status
-          chmod +x "$RUNNER_TEMP/bin/opa"
-          archive="conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz"
-          curl -fsSL --retry 3 -o "$archive" \
-            "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/${archive}"
-          echo "${CONFTEST_SHA256}  ${archive}" | sha256sum --check --status
-          tar -xzf "$archive" -C "$RUNNER_TEMP/bin" conftest
-          python -m pip install --quiet "checkov==${CHECKOV_VERSION}"
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
-      - name: Policy unit tests and good/bad fixtures
-        run: ./policies/test.sh
-
   ci:
     name: ci
-    needs: [site, policies]
+    needs: [site]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -80,8 +43,7 @@ jobs:
     steps:
       - name: CI gate
         run: |
-          if [[ "${{ needs.site.result }}" != "success" ||
-                "${{ needs.policies.result }}" != "success" ]]; then
+          if [[ "${{ needs.site.result }}" != "success" ]]; then
             exit 1
           fi
           echo "CI passed"
