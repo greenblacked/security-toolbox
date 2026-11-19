@@ -28,8 +28,8 @@ metadata:
 
 A compliant container sets `runAsNonRoot: true`, `allowPrivilegeEscalation: false`, `capabilities.drop: [ALL]`, `seccompProfile.type: RuntimeDefault`, and ideally `readOnlyRootFilesystem: true`, plus resource requests and limits.
 
-- **Before deploy:** [`policies/opa/kubernetes`](https://github.com/greenblacked/security-toolbox/blob/main/policies/opa/kubernetes/pod_security.rego) with Conftest on rendered manifests in CI.
-- **Running cluster:** [`checks/kubernetes/cis-workload-report.sh`](https://github.com/greenblacked/security-toolbox/blob/main/checks/kubernetes/cis-workload-report.sh) for CIS 5.1 / 5.2 workload controls (privileged, host namespaces, hostPath, root, privilege escalation, `cluster-admin` bindings).
+- **Before deploy:** [`policies/opa/kubernetes`](https://github.com/greenblacked/security-toolbox/blob/main/policies/opa/kubernetes/pod_security.rego) with Conftest on rendered manifests in CI (Pods and Deployment, StatefulSet, DaemonSet, ReplicaSet, Job and CronJob templates; init, regular and ephemeral containers).
+- **Running cluster:** [`checks/kubernetes/cis-workload-report.sh`](https://github.com/greenblacked/security-toolbox/blob/main/checks/kubernetes/cis-workload-report.sh) for CIS 5.1 / 5.2 workload controls (privileged, host namespaces, hostPath, root, privilege escalation in init, regular and ephemeral containers, `cluster-admin` bindings), on live Pods or exported workload manifests.
 - **Node and control-plane items** (CIS sections 1 to 4): kube-bench on self-managed clusters; on GKE the control plane is provider-managed.
 
 ## RBAC

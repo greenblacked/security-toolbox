@@ -16,8 +16,8 @@ The [`iac-review`](https://github.com/greenblacked/security-toolbox/blob/main/pl
 
 | Policy | Engine | Denies |
 | --- | --- | --- |
-| [`opa/terraform/gcp.rego`](https://github.com/greenblacked/security-toolbox/blob/main/policies/opa/terraform/gcp.rego) | OPA / Conftest on plan JSON | `google_service_account_key`, public bucket IAM (`allUsers`, `allAuthenticatedUsers`), buckets without enforced public access prevention or uniform access, SSH/RDP open to the internet |
-| [`checkov/checks/`](https://github.com/greenblacked/security-toolbox/blob/main/policies/checkov/checks) | Checkov on HCL | the same bucket, key and firewall rules as `CKV_STB_GCP_1` to `4` |
+| [`opa/terraform/gcp.rego`](https://github.com/greenblacked/security-toolbox/blob/main/policies/opa/terraform/gcp.rego) | OPA / Conftest on plan JSON | `google_service_account_key`; public GCS access through IAM, ACLs and predefined ACLs (see the [coverage table](https://github.com/greenblacked/security-toolbox/blob/main/policies/README.md#public-gcs-coverage)); buckets without enforced public access prevention or uniform access; SSH/RDP open to the internet. Warns on buckets without CMEK |
+| [`checkov/checks/`](https://github.com/greenblacked/security-toolbox/blob/main/policies/checkov/checks) | Checkov on HCL | `CKV_STB_GCP_1` bucket public access prevention, `CKV_STB_GCP_2` SSH/RDP open to the internet, `CKV_STB_GCP_3` service-account keys, `CKV_STB_GCP_4` public GCS IAM, ACLs and predefined ACLs, `CKV_STB_GCP_5` public members in `data.google_iam_policy`. Uniform access is left to the built-in `CKV_GCP_29`; see the [coverage table](https://github.com/greenblacked/security-toolbox/blob/main/policies/README.md#public-gcs-coverage) |
 
 Run them with `./policies/test.sh` (unit tests plus good/bad fixtures) and against your own code:
 

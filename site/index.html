@@ -94,15 +94,15 @@
       <div class="cards">
         <a class="card" href="https://github.com/greenblacked/security-toolbox/tree/main/policies/opa/terraform">
           <h2>policies/opa/terraform</h2>
-          <p>Conftest rules for GCP Terraform plans: no service-account keys, no public buckets, no SSH/RDP from the internet.</p>
+          <p>Conftest rules for GCP Terraform plans: no service-account keys, no public GCS IAM, ACLs or predefined ACLs, enforced public access prevention and uniform access, no SSH/RDP from the internet.</p>
         </a>
         <a class="card" href="https://github.com/greenblacked/security-toolbox/tree/main/policies/opa/kubernetes">
           <h2>policies/opa/kubernetes</h2>
-          <p>Pod security rules: privileged, host namespaces, hostPath, root and privilege escalation.</p>
+          <p>Pod security rules for Pods and workload templates: privileged, host namespaces, hostPath, root, privilege escalation and added capabilities.</p>
         </a>
         <a class="card" href="https://github.com/greenblacked/security-toolbox/tree/main/policies/checkov">
           <h2>policies/checkov</h2>
-          <p>Checkov custom checks for buckets, service-account keys and admin ports, with fixtures.</p>
+          <p>Checkov custom checks CKV_STB_GCP_1 to 5: public access prevention, admin ports, service-account keys, public GCS IAM and ACLs, public data.google_iam_policy members.</p>
         </a>
         <a class="card" href="https://github.com/greenblacked/security-toolbox/tree/main/checks/gke">
           <h2>checks/gke</h2>
@@ -110,7 +110,7 @@
         </a>
         <a class="card" href="https://github.com/greenblacked/security-toolbox/tree/main/checks/kubernetes">
           <h2>checks/kubernetes</h2>
-          <p>CIS 5.1 / 5.2 workload report for privileged pods and cluster-admin bindings.</p>
+          <p>CIS 5.1 / 5.2 workload report: privileged, host namespaces, hostPath, root and privilege escalation across all container types, plus cluster-admin bindings.</p>
         </a>
         <a class="card" href="https://github.com/greenblacked/security-toolbox/tree/main/checks/github">
           <h2>checks/github</h2>
