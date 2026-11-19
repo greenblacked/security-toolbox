@@ -1,0 +1,107 @@
+{
+  "format_version": "1.2",
+  "resource_changes": [
+    {
+      "address": "google_compute_firewall.ssh_world",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "name": "allow-ssh-world",
+          "direction": "INGRESS",
+          "source_ranges": [
+            "0.0.0.0/0"
+          ],
+          "allow": [
+            {
+              "protocol": "tcp",
+              "ports": [
+                "20-25"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_compute_firewall.rdp_world",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "after": {
+          "name": "allow-rdp-world",
+          "source_ranges": [
+            "::/0"
+          ],
+          "allow": [
+            {
+              "protocol": "all"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket.site",
+      "type": "google_storage_bucket",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "name": "example-site",
+          "location": "EU",
+          "public_access_prevention": "inherited",
+          "uniform_bucket_level_access": false
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket_iam_member.public",
+      "type": "google_storage_bucket_iam_member",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "example-site",
+          "role": "roles/storage.objectViewer",
+          "member": "allUsers"
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket_iam_binding.public",
+      "type": "google_storage_bucket_iam_binding",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "example-site",
+          "role": "roles/storage.objectViewer",
+          "members": [
+            "allAuthenticatedUsers"
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_service_account_key.ci",
+      "type": "google_service_account_key",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "service_account_id": "projects/example/serviceAccounts/ci@example.iam.gserviceaccount.com",
+          "public_key_type": "TYPE_X509_PEM_FILE"
+        }
+      }
+    }
+  ]
+}

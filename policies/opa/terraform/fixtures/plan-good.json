@@ -1,0 +1,62 @@
+{
+  "format_version": "1.2",
+  "resource_changes": [
+    {
+      "address": "google_compute_firewall.iap_ssh",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": ["create"],
+        "after": {
+          "name": "allow-iap-ssh",
+          "direction": "INGRESS",
+          "source_ranges": ["35.235.240.0/20"],
+          "allow": [{"protocol": "tcp", "ports": ["22"]}]
+        }
+      }
+    },
+    {
+      "address": "google_compute_firewall.https",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": ["create"],
+        "after": {
+          "name": "allow-https",
+          "direction": "INGRESS",
+          "source_ranges": ["0.0.0.0/0"],
+          "allow": [{"protocol": "tcp", "ports": ["443"]}]
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket.logs",
+      "type": "google_storage_bucket",
+      "change": {
+        "actions": ["create"],
+        "after": {
+          "name": "example-logs",
+          "location": "EU",
+          "public_access_prevention": "enforced",
+          "uniform_bucket_level_access": true,
+          "encryption": [{"default_kms_key_name": "projects/example/locations/eu/keyRings/kr/cryptoKeys/logs"}]
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket_iam_member.reader",
+      "type": "google_storage_bucket_iam_member",
+      "change": {
+        "actions": ["create"],
+        "after": {
+          "bucket": "example-logs",
+          "role": "roles/storage.objectViewer",
+          "member": "serviceAccount:reader@example.iam.gserviceaccount.com"
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket.old",
+      "type": "google_storage_bucket",
+      "change": {"actions": ["delete"], "after": null}
+    }
+  ]
+}
