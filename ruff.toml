@@ -1,5 +1,8 @@
+# Lint selection: main's rules (E, F, W, I, B, UP, S) plus SIM and N from the AI
+# repo. "S" is flake8-bandit, the security rules the `python security lint` job
+# relies on; "N" is pep8-naming.
 target-version = "py311"
 line-length = 100
 
 [lint]
-select = ["E", "F", "W", "I", "B", "UP", "S"]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "N"]

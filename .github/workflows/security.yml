@@ -98,11 +98,12 @@ jobs:
           set -Eeuo pipefail
           python -m pip install "ruff==${RUFF_VERSION}"
       - name: Lint, including the bandit security rules
+        # Rules come from ruff.toml. Any finding or unformatted file fails the job;
+        # nothing here is allowed to fail open.
         run: |
           set -Eeuo pipefail
-          ruff check --output-format=github . || true
-          ruff format --check . || true
-          # No Python yet; job stays green. Remove || true when code is added.
+          ruff check --output-format=github .
+          ruff format --check .
 
   codeql-languages:
     name: codeql languages
