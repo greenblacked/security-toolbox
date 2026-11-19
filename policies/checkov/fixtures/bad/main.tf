@@ -144,3 +144,14 @@ resource "google_storage_bucket_iam_policy" "existing_public_literal" {
     }]
   })
 }
+
+resource "google_storage_bucket_acl" "public_reader" {
+  bucket      = "existing-public-site"
+  role_entity = ["OWNER:project-owners-123456", "READER:allUsers"]
+}
+
+resource "google_storage_bucket_access_control" "public_authenticated" {
+  bucket = "existing-public-site"
+  entity = "allAuthenticatedUsers"
+  role   = "READER"
+}

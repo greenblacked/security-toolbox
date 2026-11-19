@@ -1,6 +1,10 @@
-"""Checkov custom check: bucket IAM must not grant allUsers or allAuthenticatedUsers.
+"""Checkov custom check: bucket IAM and ACLs must not grant allUsers or allAuthenticatedUsers.
 
-Covers google_storage_bucket_iam_member, _iam_binding and _iam_policy. For
+Members are matched exactly, so a private identity such as
+group:allUsers@example.com is not treated as public.
+
+Covers google_storage_bucket_iam_member, _iam_binding and _iam_policy, and
+the ACL resources (entity, or role_entity entries such as "READER:allUsers"). For
 _iam_policy, policy_data is inspected when Checkov can resolve it statically:
 a jsonencode(...) literal, a JSON string, or a reference to a
 data.google_iam_policy in the same module (Checkov renders its binding blocks).
@@ -15,6 +19,17 @@ from checkov.common.models.enums import CheckCategories, CheckResult
 from checkov.terraform.checks.resource.base_resource_check import BaseResourceCheck
 
 PUBLIC_MEMBERS = {"allUsers", "allAuthenticatedUsers"}
+
+ACL_ENTITY_RESOURCES = (
+    "google_storage_bucket_access_control",
+    "google_storage_default_object_access_control",
+    "google_storage_object_access_control",
+)
+ACL_ROLE_ENTITY_RESOURCES = (
+    "google_storage_bucket_acl",
+    "google_storage_default_object_acl",
+    "google_storage_object_acl",
+)
 
 
 def _flatten(value: object) -> list[str]:
@@ -67,6 +82,8 @@ class GCSNoPublicMembers(BaseResourceCheck):
                 "google_storage_bucket_iam_member",
                 "google_storage_bucket_iam_binding",
                 "google_storage_bucket_iam_policy",
+                *ACL_ENTITY_RESOURCES,
+                *ACL_ROLE_ENTITY_RESOURCES,
             ),
         )
 
@@ -76,7 +93,12 @@ class GCSNoPublicMembers(BaseResourceCheck):
             if bindings is None:
                 return CheckResult.UNKNOWN
             return CheckResult.FAILED if has_public_member(bindings) else CheckResult.PASSED
-        members = _flatten(conf.get("member")) + _flatten(conf.get("members"))
+        members = (
+            _flatten(conf.get("member"))
+            + _flatten(conf.get("members"))
+            + _flatten(conf.get("entity"))
+            + [entry.partition(":")[2] for entry in _flatten(conf.get("role_entity"))]
+        )
         if any(m in PUBLIC_MEMBERS for m in members):
             return CheckResult.FAILED
         return CheckResult.PASSED

@@ -87,3 +87,21 @@ resource "google_storage_bucket_iam_policy" "existing_private_literal" {
     }]
   })
 }
+
+# Private identities whose names merely contain allUsers / allAuthenticatedUsers.
+resource "google_storage_bucket_iam_member" "lookalike_group" {
+  bucket = google_storage_bucket.logs.name
+  role   = "roles/storage.objectViewer"
+  member = "group:allUsers@example.com"
+}
+
+resource "google_storage_bucket_iam_binding" "lookalike_user" {
+  bucket  = google_storage_bucket.logs.name
+  role    = "roles/storage.objectViewer"
+  members = ["user:allAuthenticatedUsers@x.com"]
+}
+
+resource "google_storage_bucket_acl" "lookalike_acl" {
+  bucket      = google_storage_bucket.logs.name
+  role_entity = ["OWNER:project-owners-123456", "READER:group-allUsers@example.com"]
+}
