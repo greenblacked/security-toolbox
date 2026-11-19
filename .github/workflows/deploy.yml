@@ -1,0 +1,111 @@
+---
+# Deploys the static site in site/ as the Cloudflare Worker `security`, served at
+# https://security.szolotov.com (deploy/wrangler.json).
+#
+# A pull request only runs `wrangler deploy --dry-run`. That job names no secret
+# and no environment, so a pull request, a fork's included, has no credential
+# to reach. A push to main deploys from the `production` environment, which
+# holds CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID. Nothing else here
+# reads them.
+name: Deploy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+# Deploys queue rather than cancel, so a deploy is never stopped halfway and
+# main always ends on its newest commit.
+concurrency:
+  group: >-
+    deploy-${{ github.event_name == 'pull_request'
+    && format('pr-{0}', github.event.pull_request.number) || github.ref }}
+  cancel-in-progress: false
+
+env:
+  # wrangler 4 refuses to run below Node 22.
+  NODE_VERSION: '22.23.3'
+  WRANGLER_SEND_METRICS: 'false'
+
+jobs:
+  dry-run:
+    name: deploy dry-run
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          # node_modules has to come from the lockfile, not a cache entry.
+          package-manager-cache: false
+      - name: Install the pinned wrangler from the lockfile
+        working-directory: deploy
+        run: |
+          set -Eeuo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+          pinned=$(node -p 'require("./package.json").dependencies.wrangler')
+          installed=$(./node_modules/.bin/wrangler --version)
+          if [ "$installed" != "$pinned" ]; then
+            echo "::error::installed wrangler is ${installed}, package.json pins ${pinned}"
+            exit 1
+          fi
+      - name: Check the Worker without deploying it
+        working-directory: deploy
+        # --no-autoconfig stops framework detection rewriting the project;
+        # --no-install-skills keeps the checkout unchanged.
+        run: |
+          set -Eeuo pipefail
+          ./node_modules/.bin/wrangler deploy --dry-run --config wrangler.json \
+            --no-autoconfig --no-install-skills
+
+  deploy:
+    name: deploy
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://security.szolotov.com
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Install the pinned wrangler from the lockfile
+        working-directory: deploy
+        run: |
+          set -Eeuo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+          pinned=$(node -p 'require("./package.json").dependencies.wrangler')
+          installed=$(./node_modules/.bin/wrangler --version)
+          if [ "$installed" != "$pinned" ]; then
+            echo "::error::installed wrangler is ${installed}, package.json pins ${pinned}"
+            exit 1
+          fi
+      - name: Deploy the Worker
+        working-directory: deploy
+        # The only step that sees the credentials, and only from the environment.
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -Eeuo pipefail
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID on the production environment"
+            exit 1
+          fi
+          ./node_modules/.bin/wrangler deploy --config wrangler.json \
+            --no-autoconfig --no-install-skills
