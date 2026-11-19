@@ -38,7 +38,7 @@ done
 ## Logging and detection
 
 - Cloud Audit Logs: Admin Activity is always on; Data Access logs are off by default for every service except BigQuery, so enable them for IAM, KMS, Secret Manager and Storage in production.
-- Retention: the `_Required` bucket keeps Admin Activity and System Event logs for 400 days; the `_Default` bucket keeps everything else, including Data Access logs, for 30 days unless you raise it. Raising it is not retroactive.
+- Retention: the `_Required` bucket keeps Admin Activity and System Event logs for 400 days; the `_Default` bucket keeps everything else, including Data Access logs, for 30 days unless you raise it. Retention is set on each project's `_Default` bucket; organisation and folder default resource settings control the location, CMEK and `_Default` sink of new buckets, not their retention. Raising it is not retroactive.
 - Organisation-level aggregated sink to a locked log bucket or a separate logging project, with retention matching your incident-response needs. Set the retention and lock before an incident; locking a log bucket is irreversible.
 - Security Command Center for misconfiguration findings; alert on IAM policy changes, key creation and firewall changes. See the `detection-engineering` skill for rule hygiene.
 

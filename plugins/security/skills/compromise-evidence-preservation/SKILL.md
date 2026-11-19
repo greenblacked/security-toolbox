@@ -1,6 +1,6 @@
 ---
 name: compromise-evidence-preservation
-description: "Preserve evidence from a suspected compromised host, instance, container or account before containment destroys it: record contain-now versus observe-first, follow order of volatility (memory and live connections, processes, disk, then logs), isolate rather than destroy (quarantine group, standby, cordon, never reboot), capture memory with a purpose-built tool, snapshot to a forensics account, hash every artefact at capture and transfer, lock audit logs in a compliance-mode bucket, and keep a chain-of-custody sheet. Use for \"we think this server is compromised, should I shut it down\", \"snapshot before we terminate\", \"legal wants the logs preserved\", \"how do we keep evidence admissible\". Not for command and mitigation (incident-response), revoking a leaked credential (secret-rotation), analysing the preserved data (intrusion-timeline), the write-up (postmortem)."
+description: "Preserve evidence from a suspected compromised host, instance, container or account before containment destroys it: record contain-now versus observe-first, follow order of volatility (memory and live connections, processes, disk, then logs), isolate rather than destroy (quarantine group, standby, cordon, never reboot), capture memory with a purpose-built tool, snapshot to a forensics account, hash every artefact at capture and transfer, lock audit logs in a compliance-mode bucket, and keep a chain-of-custody sheet. Use for \"we think this server is compromised, should I shut it down\", \"snapshot before we terminate\", \"legal wants the logs preserved\", \"how do we keep evidence admissible\". Not for command and mitigation (incident-response, not in this toolbox), revoking a leaked credential (secret-rotation), analysing the preserved data (intrusion-timeline, not in this toolbox), the write-up (postmortem, not in this toolbox)."
 allowed-tools: "Read, Grep, Glob"
 ---
 
@@ -18,7 +18,7 @@ Only Read, Grep and Glob are pre-approved. `sha256sum` asks first because no com
 
 Use for: the first hours after a host, container, instance, workload or cloud account is suspected compromised and nobody has yet destroyed it; requests from legal or HR to preserve logs; deciding whether a machine may be shut down.
 
-Do not use for: running the incident or choosing mitigations (`incident-response`), revoking a leaked credential (`secret-rotation`), analysing what was captured (`intrusion-timeline`), or writing the review (`postmortem`).
+Do not use for: running the incident or choosing mitigations (`incident-response`, not in this toolbox), revoking a leaked credential (`secret-rotation`), analysing what was captured (`intrusion-timeline`, not in this toolbox), or writing the review (`postmortem`, not in this toolbox).
 
 ## Hard gates
 
@@ -54,19 +54,35 @@ Then isolate with the platform's own controls, and finish each one by proving th
 
 #### AWS
 
+Protect the instance from Auto Scaling and from manual termination before changing its network. Once the quarantine group is attached, a load balancer health check fails, and a group that uses ELB health checks marks the instance unhealthy and terminates it.
+
 ```bash
-# Swap to a quarantine security group with no ingress and no egress rules
-aws ec2 modify-instance-attribute --instance-id i-0abc --groups sg-quarantine
-# Remove from the autoscaling group without terminating; a replacement launches and the desired count is kept
+# Keep it in the group but out of service: no health-check or scale-in termination, and it is
+# deregistered from load balancers attached to the group. With no-decrement, a replacement launches.
 aws autoscaling enter-standby --instance-ids i-0abc \
   --auto-scaling-group-name web-asg --no-should-decrement-desired-capacity
+# Block manual EC2 termination as well; this does not stop Auto Scaling, which is why standby comes first
+aws ec2 modify-instance-attribute --instance-id i-0abc --disable-api-termination
+# Then swap to a quarantine security group with no ingress and no egress rules
+aws ec2 modify-instance-attribute --instance-id i-0abc --groups sg-quarantine
 ```
 
-Security groups track connections. When the rules change, tracked connections are not interrupted and keep flowing until they time out; only untracked flows (allowed by `0.0.0.0/0` rules in both directions) drop at once. So the actor's established session can survive the swap. To break existing connections, add a deny to the subnet's network ACL, which is stateless; that affects every instance in the subnet, so decide on the impact to its neighbours deliberately and record it. Security groups also do not filter DNS to the Route 53 Resolver, so DNS exfiltration needs Route 53 Resolver DNS Firewall. Remove the instance from load balancer target groups too.
+If standby is not possible, `aws autoscaling suspend-processes --auto-scaling-group-name web-asg --scaling-processes HealthCheck ReplaceUnhealthy` together with instance scale-in protection (`aws autoscaling set-instance-protection --instance-ids i-0abc --auto-scaling-group-name web-asg --protected-from-scale-in`) keeps the group from replacing or scaling in the instance, but the suspension applies to every instance in the group, and the instance stays behind the load balancer until you deregister it. Record which was used and resume the processes when the case allows. Deregister the instance from any target group registered outside the Auto Scaling group.
 
-Verify: VPC flow logs for the instance's network interface show no accepted traffic after the change time, and a test connection to and from a known host fails. Record both in the custody sheet.
+Security groups track connections. When the rules change, tracked connections are not interrupted and keep flowing until they time out; only untracked flows (allowed by `0.0.0.0/0` rules in both directions) drop at once. So the actor's established session can survive the swap, and that is acceptable until memory and live network state are captured (step 3, gate 2). Security groups also do not filter DNS to the Route 53 Resolver, so DNS exfiltration needs Route 53 Resolver DNS Firewall.
+
+Verify: VPC flow logs for the instance's network interface show no accepted traffic after the change time, and a test connection to and from a known host fails. Record both in the custody sheet. If established sessions are still visible, record them and break them after step 3 (see "After capture" below).
 
 #### GCP
+
+If the VM belongs to a managed instance group, take it out of the group first. The deny rules below also block the health-check probes (from `35.191.0.0/16` and `130.211.0.0/22`), so autohealing would recreate the VM and discard its memory and disk, and until it leaves the group a resize or an autoscaler scale-in can delete it. Abandoning does not reboot or delete the VM; it reduces the group's target size, and an autoscaler may then add a new VM to meet load, which does not touch the evidence. Deletion protection cannot be set on a VM that is part of a managed instance group, so set it after the abandon.
+
+```bash
+gcloud compute instance-groups managed abandon-instances MIG --instances=vm-1 --zone=ZONE   # --region for a regional MIG
+gcloud compute instances update vm-1 --zone ZONE --deletion-protection
+```
+
+Then quarantine it:
 
 ```bash
 # Deny all traffic for VMs tagged "quarantine". Priority 0 beats every allow with a higher number,
@@ -117,15 +133,17 @@ Whatever the option, traffic between the pod and its own node is always allowed 
 # Toward the pod, from a throwaway pod in another namespace
 kubectl run case-1234-netcheck -n netcheck --rm -it --restart=Never --image=busybox:1.36 -- \
   sh -c 'nc -w 3 POD_IP PORT </dev/null && echo OPEN || echo BLOCKED'
-# From the pod outward, with an ephemeral debug container rather than the pod's own binaries
-# (this adds an ephemeralContainers entry to the pod spec: record it)
-kubectl debug -n NS POD -it --image=busybox:1.36 -- \
-  sh -c 'nc -w 3 203.0.113.10 443 </dev/null && echo OPEN || echo BLOCKED'
-# Flow verdicts where Cilium or GKE Dataplane V2 observability is enabled
+# Egress from the pod, observed from outside it: flow verdicts where Cilium or GKE Dataplane V2
+# observability is enabled
 hubble observe --pod NS/POD --since 15m
 ```
 
-Check the expected drops in Hubble, GKE network policy logging or the CNI's flow logs as well as the test result, because a test from one peer does not prove every path is closed.
+Check the expected drops in Hubble, GKE network policy logging or the CNI's flow logs as well as the test result, because a test from one peer does not prove every path is closed. Verify egress from outside the pod like this rather than from inside it: `kubectl debug` adds an ephemeral container to the evidence pod, which cannot be changed or removed once added, and it starts new processes in the pod before memory is captured. If an outward test from inside the pod is still needed, run it only after step 3, and record it in the custody sheet:
+
+```bash
+kubectl debug -n NS POD -it --image=busybox:1.36 -- \
+  sh -c 'nc -w 3 203.0.113.10 443 </dev/null && echo OPEN || echo BLOCKED'
+```
 
 ### 3. Capture volatile state
 
@@ -134,6 +152,8 @@ On the host, from trusted binaries on removable or remote media where possible, 
 - Memory first, with a purpose-built acquisition tool: AVML (`avml output.lime`) or the LiME kernel module on Linux. Write to attached evidence storage, not the root disk. Kernel module builds must match the running kernel; prepare that before an incident.
 - Then connections and processes, with the trusted copies of the tools: `ss -tanp`, `ps auxww`, the open-files list, loaded kernel modules, logged-in users, and the routing and ARP tables, each redirected to a file.
 - Hash each file immediately with `sha256sum`.
+
+After capture, break any session that survived isolation. On AWS, add a deny to the subnet's network ACL, which is stateless and so also drops established connections; it affects every instance in the subnet, so decide on the impact to the neighbours deliberately and record it. A network ACL is evaluated only when traffic enters or leaves the subnet, not as it is routed within the subnet, so a session with an instance in the same subnet survives it: record that peer and treat it as in scope. On GCP, make the network-path change noted in the GCP verify step.
 
 Containers: capture the node's memory or the container's filesystem diff before the runtime removes the container; `kubectl logs --previous` keeps a crashed container's output.
 
@@ -153,7 +173,7 @@ Share the snapshot to a separate forensics account (`aws ec2 modify-snapshot-att
 Cloud audit logs have retention windows, and the defaults are short:
 
 - AWS: CloudTrail event history keeps 90 days of management events per Region and no data events. Anything older, and every data event, exists only if a trail or event data store was already recording it.
-- GCP: the `_Required` log bucket keeps Admin Activity and System Event audit logs for 400 days and cannot be changed; the `_Default` bucket keeps everything else for 30 days unless its retention was raised. Data Access audit logs are off by default for every service except BigQuery, so object reads may simply not exist. Raise `_Default` retention now (`gcloud logging buckets update _Default --location=global --retention-days=365`); it applies going forward, and logs already past retention cannot be recovered. Copy what exists to a Cloud Storage bucket with a locked retention policy or to a locked log bucket (locking is irreversible).
+- GCP: the `_Required` log bucket keeps Admin Activity and System Event audit logs for 400 days and cannot be changed; the `_Default` bucket keeps everything else for 30 days unless its retention was raised. Data Access audit logs are off by default for every service except BigQuery, so object reads may simply not exist. Raise `_Default` retention now in each affected project (`gcloud logging buckets update _Default --project PROJECT --location=global --retention-days=365`); retention is set on each project's `_Default` bucket, and organisation or folder default resource settings control bucket location, CMEK and the `_Default` sink, not retention. The change applies going forward, and logs already past retention cannot be recovered. Copy what exists to a Cloud Storage bucket with a locked retention policy or to a locked log bucket (locking is irreversible).
 
 Set retention and locks before an incident wherever you can; during one, copy first. Copy trail logs and data-plane logs (object access, flow logs, load balancer and DNS logs, identity provider logs) to a bucket with Object Lock enabled in compliance mode, which no one, including the account root, can shorten or delete until retention expires. Enable Object Lock on the bucket, at creation with `aws s3api create-bucket ... --object-lock-enabled-for-bucket` or on an existing versioned bucket, then set a default compliance-mode retention with `aws s3api put-object-lock-configuration`.
 
@@ -172,7 +192,7 @@ Compute `sha256sum` on every artefact at capture, after every copy, and when it 
 
 ### 7. Hand over
 
-Hand over to `intrusion-timeline` with the manifest, the custody sheet, the clock offsets, and the list of what was not captured and why. Restoring service is a separate decision, made after step 4 completes and the records are sealed.
+Hand over to `intrusion-timeline` (not in this toolbox) with the manifest, the custody sheet, the clock offsets, and the list of what was not captured and why. Restoring service is a separate decision, made after step 4 completes and the records are sealed.
 
 ## Hand back
 
