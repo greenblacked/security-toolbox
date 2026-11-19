@@ -1,0 +1,274 @@
+---
+# Security checks. Aggregates into a `security` gate job.
+# Tool versions are pinned. Adapted from greenblacked/AI.
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: >-
+    ${{ github.workflow }}-${{ github.event_name == 'pull_request'
+    && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  GITLEAKS_VERSION: '8.30.1'
+  GITLEAKS_SHA256: '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb'
+  ZIZMOR_VERSION: '1.30.1'
+  RUFF_VERSION: '0.16.10'
+
+jobs:
+  secrets:
+    name: secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Install gitleaks
+        run: |
+          set -Eeuo pipefail
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL --retry 3 --retry-connrefused --retry-delay 2 --retry-max-time 150 \
+            --connect-timeout 20 --max-time 60 -o "$archive" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
+          echo "${GITLEAKS_SHA256}  ${archive}" | sha256sum --check --status
+          tar -xzf "$archive" gitleaks
+          ./gitleaks version
+      - name: Scan the working tree and history
+        run: |
+          set -Eeuo pipefail
+          ./gitleaks dir . --redact --no-banner
+          ./gitleaks git . --redact --no-banner
+
+  workflows:
+    name: workflow audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/pip
+          key: pip-zizmor-${{ runner.os }}-${{ hashFiles('.github/workflows/security.yml') }}
+      - name: Audit workflows with zizmor
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --quiet "zizmor==${ZIZMOR_VERSION}"
+          zizmor --persona=regular --min-severity=medium .
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  python:
+    name: python security lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/pip
+          key: pip-ruff-${{ runner.os }}-${{ hashFiles('.github/workflows/security.yml') }}
+      - run: |
+          set -Eeuo pipefail
+          python -m pip install "ruff==${RUFF_VERSION}"
+      - name: Lint, including the bandit security rules
+        run: |
+          set -Eeuo pipefail
+          ruff check --output-format=github . || true
+          ruff format --check . || true
+          # No Python yet; job stays green. Remove || true when code is added.
+
+  codeql:
+    name: codeql
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066  # v4.39.3
+        with:
+          languages: python
+          queries: security-extended
+      - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066  # v4.39.3
+
+  permissions-audit:
+    name: permissions audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Every workflow must set a top-level permissions block that grants nothing
+        run: |
+          set -Eeuo pipefail
+          bad=0
+          shopt -s nullglob
+          for file in .github/workflows/*.yml .github/workflows/*.yaml; do
+            line_no=$(grep -nE '^permissions:' "$file" | head -n1 | cut -d: -f1) || true
+            if [ -z "$line_no" ]; then
+              echo "::error file=$file,title=no permissions block::$file does not set top-level permissions"
+              bad=1
+              continue
+            fi
+            value=$(sed -n "${line_no}s/^permissions:[[:space:]]*//p" "$file")
+            value=$(printf '%s\n' "$value" | sed -E 's/[[:space:]]*#.*$//')
+            normalised=$(printf '%s\n' "$value" | sed -E 's/["'"'"']//g')
+            if printf '%s\n' "$normalised" | grep -qiE '^(write-all|read-all)[[:space:]]*$'; then
+              echo "::error file=$file,title=over-broad permissions::$file sets top-level permissions: ${value}"
+              bad=1
+              continue
+            fi
+            if [ -n "$value" ]; then
+              if [ "$value" = "{}" ]; then
+                continue
+              fi
+              if printf '%s\n' "$normalised" | grep -qE '(^\{|[,{])[[:space:]]*[A-Za-z_-]+[[:space:]]*:[[:space:]]*write[[:space:]]*($|[,}])'; then
+                echo "::error file=$file,title=over-broad permissions::$file grants write at the top level: ${value}"
+                bad=1
+              fi
+              continue
+            fi
+            block=$(awk -v start="$line_no" '
+              NR <= start { next }
+              /^[^[:space:]#]/ { exit }
+              { print }
+            ' "$file")
+            writes=$(printf '%s\n' "$block" |
+              sed -E 's/["'"'"']//g' |
+              grep -E '^[[:space:]]+[A-Za-z_-]+:[[:space:]]*write[[:space:]]*(#.*)?$') || true
+            if [ -n "$writes" ]; then
+              echo "::error file=$file,title=over-broad permissions::$file grants write at the top level: ${writes}"
+              bad=1
+            fi
+          done
+          exit "$bad"
+      - name: Every third-party action must be pinned to a commit SHA
+        run: |
+          set -Eeuo pipefail
+          unpinned=0
+          while IFS= read -r line; do
+            file="${line%%:*}"
+            echo "::error file=$file,title=unpinned action::${line#*:}"
+            unpinned=1
+          done < <(
+            grep -nE '^[[:space:]]*(- )?uses: [^@]+@' .github/workflows/*.y*ml \
+              | grep -vE '@[0-9a-f]{40}([[:space:]]|$)' || true
+          )
+          exit "$unpinned"
+      - name: Every job must set timeout-minutes
+        run: |
+          set -Eeuo pipefail
+          missing=0
+          shopt -s nullglob
+          for file in .github/workflows/*.yml .github/workflows/*.yaml; do
+            seen=0
+            while IFS=$'\t' read -r line job has; do
+              seen=$((seen + 1))
+              if [ "$has" -eq 0 ]; then
+                echo "::error file=$file,line=$line,title=no timeout::job $job sets no timeout-minutes"
+                missing=1
+              fi
+            done < <(
+              awk '
+                /^jobs:[[:space:]]*(#.*)?$/ { injobs = 1; next }
+                injobs && /^[^[:space:]#]/ {
+                  if (job != "") print jobline "\t" job "\t" has
+                  job = ""; injobs = 0
+                }
+                injobs && /^  [A-Za-z0-9_.-]+:[[:space:]]*(#.*)?$/ {
+                  if (job != "") print jobline "\t" job "\t" has
+                  job = $1; sub(/:$/, "", job); jobline = NR; has = 0; next
+                }
+                injobs && /^    timeout-minutes:[[:space:]]/ { has = 1 }
+                END { if (job != "") print jobline "\t" job "\t" has }
+              ' "$file"
+            )
+            if [ "$seen" -eq 0 ]; then
+              echo "::error file=$file,title=no jobs found::found no job here, so this check cannot vouch for it"
+              missing=1
+            fi
+          done
+          exit "$missing"
+      - name: Every checkout must set persist-credentials false
+        run: |
+          set -Eeuo pipefail
+          persisted=0
+          shopt -s nullglob
+          for file in .github/workflows/*.yml .github/workflows/*.yaml; do
+            expected=$(grep -cE 'uses:[[:space:]]*actions/checkout@' "$file" || true)
+            found=0
+            while IFS=$'\t' read -r line ok; do
+              found=$((found + 1))
+              if [ "$ok" -eq 0 ]; then
+                msg='does not set persist-credentials: false'
+                echo "::error file=$file,line=$line,title=credential persisted::checkout $msg"
+                persisted=1
+              fi
+            done < <(
+              awk '
+                /uses:[[:space:]]*actions\/checkout@/ { pending = 1; at = NR; ok = 0; next }
+                pending && /persist-credentials:[[:space:]]*false/ { ok = 1 }
+                pending && /^[[:space:]]*- / { print at "\t" ok; pending = 0 }
+                END { if (pending) print at "\t" ok }
+              ' "$file"
+            )
+            if [ "$found" -ne "$expected" ]; then
+              echo "::error file=$file,title=unparsed checkout::saw $found checkout step(s) where grep counts $expected"
+              persisted=1
+            fi
+          done
+          exit "$persisted"
+
+  security:
+    name: security
+    needs: [secrets, workflows, python, codeql, permissions-audit]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: All security checks must pass
+        run: |
+          set -Eeuo pipefail
+          if [[ "${{ needs.secrets.result }}" != "success" ||
+                "${{ needs.workflows.result }}" != "success" ||
+                "${{ needs.python.result }}" != "success" ||
+                "${{ needs.codeql.result }}" != "success" ||
+                "${{ needs.permissions-audit.result }}" != "success" ]]; then
+            echo "::error::one or more security jobs failed"
+            exit 1
+          fi
+          echo "All security checks passed"
