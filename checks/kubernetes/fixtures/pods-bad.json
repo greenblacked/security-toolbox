@@ -1,12 +1,92 @@
 {
   "items": [
     {
-      "metadata": {"namespace": "default", "name": "debug"},
+      "metadata": {
+        "namespace": "default",
+        "name": "debug"
+      },
       "spec": {
         "hostPID": true,
         "hostNetwork": true,
-        "volumes": [{"name": "root", "hostPath": {"path": "/"}}],
-        "containers": [{"name": "shell", "securityContext": {"privileged": true, "runAsUser": 0}}]
+        "volumes": [
+          {
+            "name": "root",
+            "hostPath": {
+              "path": "/"
+            }
+          }
+        ],
+        "containers": [
+          {
+            "name": "shell",
+            "securityContext": {
+              "privileged": true,
+              "runAsUser": 0
+            }
+          }
+        ],
+        "ephemeralContainers": [
+          {
+            "name": "debugger",
+            "securityContext": {
+              "privileged": true,
+              "runAsUser": 0,
+              "allowPrivilegeEscalation": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "namespace": "apps",
+        "name": "web"
+      },
+      "spec": {
+        "template": {
+          "spec": {
+            "containers": [
+              {
+                "name": "app",
+                "securityContext": {
+                  "privileged": true
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "CronJob",
+      "metadata": {
+        "namespace": "apps",
+        "name": "backup"
+      },
+      "spec": {
+        "jobTemplate": {
+          "spec": {
+            "template": {
+              "spec": {
+                "hostIPC": true,
+                "securityContext": {
+                  "runAsNonRoot": true
+                },
+                "containers": [
+                  {
+                    "name": "job",
+                    "securityContext": {
+                      "allowPrivilegeEscalation": false
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
       }
     }
   ]

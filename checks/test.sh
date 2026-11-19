@@ -24,7 +24,15 @@ expect 1 "kubernetes bad workloads" kubernetes/cis-workload-report.sh \
 # The bad fixtures must trip every control they were written for.
 expect 0 "gke bad trips 9 failures" bash -c \
   'gke/gke-report.sh --file gke/fixtures/cluster-bad.json | grep -qx "failures: 9"'
-expect 0 "kubernetes bad trips 7 findings" bash -c \
-  'kubernetes/cis-workload-report.sh --pods kubernetes/fixtures/pods-bad.json --bindings kubernetes/fixtures/bindings-bad.json | grep -qx "findings: 7"'
+expect 0 "kubernetes bad trips 14 findings" bash -c \
+  'kubernetes/cis-workload-report.sh --pods kubernetes/fixtures/pods-bad.json --bindings kubernetes/fixtures/bindings-bad.json | grep -qx "findings: 14"'
+# Ephemeral containers and workload wrappers (Deployment, CronJob) are walked too.
+# shellcheck disable=SC2016 # $1 expands inside the bash -c script
+for want in 'privileged containers +default/debug +container debugger' \
+  'privileged containers +apps/deployment/web +container app' \
+  'host namespaces +apps/cronjob/backup +hostIPC'; do
+  expect 0 "kubernetes bad reports: $want" bash -c \
+    'kubernetes/cis-workload-report.sh --pods kubernetes/fixtures/pods-bad.json --bindings kubernetes/fixtures/bindings-bad.json | grep -Eq "$1"' _ "$want"
+done
 
 exit "$fail"

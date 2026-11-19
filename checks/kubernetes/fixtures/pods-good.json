@@ -1,17 +1,127 @@
 {
   "items": [
     {
-      "metadata": {"namespace": "web", "name": "web-7d9f"},
+      "metadata": {
+        "namespace": "web",
+        "name": "web-7d9f"
+      },
       "spec": {
-        "securityContext": {"runAsNonRoot": true, "runAsUser": 65532},
+        "securityContext": {
+          "runAsNonRoot": true,
+          "runAsUser": 65532
+        },
         "containers": [
-          {"name": "web", "securityContext": {"allowPrivilegeEscalation": false, "readOnlyRootFilesystem": true}}
+          {
+            "name": "web",
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "readOnlyRootFilesystem": true
+            }
+          }
+        ],
+        "ephemeralContainers": [
+          {
+            "name": "debugger",
+            "securityContext": {
+              "allowPrivilegeEscalation": false
+            }
+          }
         ]
       }
     },
     {
-      "metadata": {"namespace": "kube-system", "name": "node-agent-x2"},
-      "spec": {"hostNetwork": true, "containers": [{"name": "a", "securityContext": {"privileged": true}}]}
+      "metadata": {
+        "namespace": "kube-system",
+        "name": "node-agent-x2"
+      },
+      "spec": {
+        "hostNetwork": true,
+        "containers": [
+          {
+            "name": "a",
+            "securityContext": {
+              "privileged": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "namespace": "apps",
+        "name": "web"
+      },
+      "spec": {
+        "template": {
+          "spec": {
+            "securityContext": {
+              "runAsNonRoot": true
+            },
+            "containers": [
+              {
+                "name": "app",
+                "securityContext": {
+                  "allowPrivilegeEscalation": false
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "CronJob",
+      "metadata": {
+        "namespace": "apps",
+        "name": "backup"
+      },
+      "spec": {
+        "jobTemplate": {
+          "spec": {
+            "template": {
+              "spec": {
+                "securityContext": {
+                  "runAsNonRoot": true
+                },
+                "containers": [
+                  {
+                    "name": "app",
+                    "securityContext": {
+                      "allowPrivilegeEscalation": false
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "DaemonSet",
+      "metadata": {
+        "namespace": "kube-system",
+        "name": "node-agent"
+      },
+      "spec": {
+        "template": {
+          "spec": {
+            "hostNetwork": true,
+            "containers": [
+              {
+                "name": "a",
+                "securityContext": {
+                  "privileged": true
+                }
+              }
+            ]
+          }
+        }
+      }
     }
   ]
 }
