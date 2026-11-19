@@ -4,9 +4,9 @@ Policy-as-code, report first. Every policy ships with unit tests and good/bad fi
 
 | Path | Engine | Target | What it denies |
 | --- | --- | --- | --- |
-| `opa/terraform/gcp.rego` | OPA / Conftest | Terraform plan JSON | `google_service_account_key`; bucket IAM granting `allUsers` / `allAuthenticatedUsers`; buckets without `public_access_prevention = "enforced"` or uniform bucket-level access; firewall ingress from `0.0.0.0/0` or `::/0` to 22 / 3389 (including port ranges and `protocol = "all"`). Warns on buckets without CMEK. |
+| `opa/terraform/gcp.rego` | OPA / Conftest | Terraform plan JSON | `google_service_account_key`; bucket IAM granting `allUsers` / `allAuthenticatedUsers`; buckets without `public_access_prevention = "enforced"` or uniform bucket-level access; firewall ingress from `0.0.0.0/0` or `::/0` to 22/tcp or 3389/tcp+udp, across every allow block, including port ranges, blocks without ports, `protocol = "all"` and numeric protocols (`6`, `17`). Warns on buckets without CMEK. |
 | `opa/kubernetes/pod_security.rego` | OPA / Conftest | Kubernetes manifests | privileged containers, hostPID / hostIPC / hostNetwork, hostPath volumes, missing `allowPrivilegeEscalation: false`, missing `runAsNonRoot: true`, `runAsUser: 0`, dangerous added capabilities. Warns on hostPort and missing memory limits. |
-| `checkov/checks/` | Checkov | Terraform HCL | `CKV_STB_GCP_1` bucket public access prevention, `CKV2_STB_GCP_2` SSH/RDP open to the internet, `CKV_STB_GCP_3` service-account keys, `CKV_STB_GCP_4` public bucket IAM members. |
+| `checkov/checks/` | Checkov | Terraform HCL | `CKV_STB_GCP_1` bucket public access prevention, `CKV_STB_GCP_2` SSH/RDP open to the internet (every allow block, port ranges, no-ports and `all`, numeric protocols), `CKV_STB_GCP_3` service-account keys, `CKV_STB_GCP_4` public bucket IAM members. |
 
 ## Usage
 

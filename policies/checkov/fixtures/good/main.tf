@@ -22,3 +22,45 @@ resource "google_storage_bucket_iam_member" "reader" {
   role   = "roles/storage.objectViewer"
   member = "serviceAccount:reader@example.iam.gserviceaccount.com"
 }
+
+resource "google_compute_firewall" "https_world" {
+  name          = "https-world"
+  network       = "default"
+  direction     = "INGRESS"
+  source_ranges = ["0.0.0.0/0"]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["443"]
+  }
+
+  allow {
+    protocol = "tcp"
+    ports    = ["80", "8443-8444"]
+  }
+}
+
+resource "google_compute_firewall" "dns_udp_world" {
+  name          = "dns-udp-world"
+  network       = "default"
+  direction     = "INGRESS"
+  source_ranges = ["0.0.0.0/0"]
+
+  allow {
+    protocol = "udp"
+    ports    = ["53"]
+  }
+}
+
+resource "google_compute_firewall" "ssh_world_disabled" {
+  name          = "ssh-world-disabled"
+  network       = "default"
+  direction     = "INGRESS"
+  source_ranges = ["0.0.0.0/0"]
+  disabled      = true
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+}
