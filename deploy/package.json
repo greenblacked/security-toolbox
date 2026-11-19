@@ -1,0 +1,8 @@
+{
+  "name": "security-toolbox-deploy",
+  "private": true,
+  "description": "Pinned Wrangler for the security site deploy.",
+  "dependencies": {
+    "wrangler": "4.149.0"
+  }
+}
