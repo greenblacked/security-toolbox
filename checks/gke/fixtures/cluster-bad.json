@@ -1,0 +1,19 @@
+{
+  "name": "legacy",
+  "location": "europe-west1-b",
+  "shieldedNodes": {"enabled": false},
+  "networkConfig": {"datapathProvider": "LEGACY_DATAPATH"},
+  "legacyAbac": {"enabled": true},
+  "masterAuth": {"clientKey": "redacted-placeholder"},
+  "nodePools": [
+    {
+      "name": "default-pool",
+      "config": {
+        "serviceAccount": "default",
+        "workloadMetadataConfig": {"mode": "GCE_METADATA"},
+        "shieldedInstanceConfig": {"enableIntegrityMonitoring": false}
+      },
+      "management": {"autoUpgrade": false}
+    }
+  ]
+}
