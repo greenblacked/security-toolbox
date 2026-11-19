@@ -150,31 +150,20 @@ jobs:
       - id: analyze
         uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066  # v4.39.3
       # analyze uploads the results to code scanning but never fails on them, so
-      # any result in the SARIF also fails this job.
+      # any result in the SARIF also fails this job. The check fails closed: each
+      # scanned language needs a non-empty <lang>.sarif with runs that all carry
+      # a results array. Its crafted-case test runs first.
+      - name: Test the SARIF check
+        run: |
+          set -Eeuo pipefail
+          .github/scripts/test-check-sarif.sh
       - name: Fail on any CodeQL result
         env:
           SARIF_DIR: ${{ steps.analyze.outputs.sarif-output }}
+          LANGUAGES: ${{ needs.codeql-languages.outputs.languages }}
         run: |
           set -Eeuo pipefail
-          shopt -s nullglob
-          files=("$SARIF_DIR"/*.sarif)
-          if [ "${#files[@]}" -eq 0 ]; then
-            echo "::error::no SARIF file in ${SARIF_DIR}"
-            exit 1
-          fi
-          total=0
-          for file in "${files[@]}"; do
-            count=$(jq '[.runs[].results[]?] | length' "$file")
-            total=$((total + count))
-            jq -r '.runs[].results[]? |
-              "::error file=\(.locations[0].physicalLocation.artifactLocation.uri // ""),line=\(.locations[0].physicalLocation.region.startLine // 1),title=\(.ruleId)::\(.message.text)"' "$file"
-            echo "$(basename "$file"): ${count} result(s)"
-          done
-          if [ "$total" -ne 0 ]; then
-            echo "::error::CodeQL reported ${total} result(s)"
-            exit 1
-          fi
-          echo "CodeQL: no results"
+          .github/scripts/check-sarif.sh "$SARIF_DIR" "$LANGUAGES"
 
   permissions-audit:
     name: permissions audit
