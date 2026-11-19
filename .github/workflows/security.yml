@@ -103,8 +103,34 @@ jobs:
           ruff format --check . || true
           # No Python yet; job stays green. Remove || true when code is added.
 
+  codeql-languages:
+    name: codeql languages
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      languages: ${{ steps.detect.outputs.languages }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      # CodeQL exits 32 for a language with no source, so only languages the tree
+      # actually has are scanned: actions always, python once a .py file is tracked.
+      - id: detect
+        name: Pick the CodeQL languages from the tracked files
+        run: |
+          set -Eeuo pipefail
+          languages=actions
+          if [ -n "$(git ls-files -- '*.py')" ]; then
+            languages="${languages},python"
+          fi
+          echo "CodeQL languages: ${languages}"
+          echo "languages=${languages}" >> "$GITHUB_OUTPUT"
+
   codeql:
     name: codeql
+    needs: [codeql-languages]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -114,14 +140,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
-      # The tree has workflows but no Python, and CodeQL exits 32 for a language
-      # with no source. Add python here with the first .py file.
       - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066  # v4.39.3
         with:
-          languages: actions
+          languages: ${{ needs.codeql-languages.outputs.languages }}
           queries: security-extended
       # Code scanning is not available on this private repository, so the SARIF
-      # stays on the runner instead of being uploaded.
+      # stays on the runner instead of being uploaded. Drop upload: never (and
+      # restore security-events: write) once the repository is public.
       - id: analyze
         uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066  # v4.39.3
         with:
