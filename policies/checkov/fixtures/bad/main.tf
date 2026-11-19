@@ -155,3 +155,76 @@ resource "google_storage_bucket_access_control" "public_authenticated" {
   entity = "allAuthenticatedUsers"
   role   = "READER"
 }
+
+# Public grants through every other GCS ACL and IAM surface (existing buckets/objects).
+
+resource "google_storage_bucket_acl" "predefined_public_read_write" {
+  bucket         = "existing-public-site"
+  predefined_acl = "publicReadWrite"
+}
+
+resource "google_storage_bucket_acl" "predefined_authenticated_read" {
+  bucket         = "existing-public-site"
+  predefined_acl = "authenticatedRead"
+}
+
+resource "google_storage_bucket_acl" "default_acl_public_read" {
+  bucket      = "existing-public-site"
+  role_entity = ["OWNER:project-owners-123456"]
+  default_acl = "publicRead"
+}
+
+resource "google_storage_object_acl" "predefined_public_read" {
+  bucket         = "existing-public-site"
+  object         = "index.html"
+  predefined_acl = "publicRead"
+}
+
+resource "google_storage_object_acl" "role_entity_public" {
+  bucket      = "existing-public-site"
+  object      = "report.pdf"
+  role_entity = ["READER:allUsers"]
+}
+
+resource "google_storage_default_object_acl" "role_entity_public" {
+  bucket      = "existing-public-site"
+  role_entity = ["OWNER:project-owners-123456", "READER:allAuthenticatedUsers"]
+}
+
+resource "google_storage_object_access_control" "public_entity" {
+  bucket = "existing-public-site"
+  object = "logo.png"
+  entity = "allUsers"
+  role   = "READER"
+}
+
+resource "google_storage_default_object_access_control" "public_entity" {
+  bucket = "existing-public-site"
+  entity = "allUsers"
+  role   = "READER"
+}
+
+resource "google_storage_managed_folder_iam_member" "public" {
+  bucket         = "existing-public-site"
+  managed_folder = "downloads/"
+  role           = "roles/storage.objectViewer"
+  member         = "allUsers"
+}
+
+resource "google_storage_managed_folder_iam_binding" "public" {
+  bucket         = "existing-public-site"
+  managed_folder = "downloads/"
+  role           = "roles/storage.objectViewer"
+  members        = ["allAuthenticatedUsers"]
+}
+
+resource "google_storage_managed_folder_iam_policy" "public" {
+  bucket         = "existing-public-site"
+  managed_folder = "downloads/"
+  policy_data    = jsonencode({
+    bindings = [{
+      role    = "roles/storage.objectViewer"
+      members = ["allUsers"]
+    }]
+  })
+}

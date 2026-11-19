@@ -1,11 +1,14 @@
-"""Checkov custom check: bucket IAM and ACLs must not grant allUsers or allAuthenticatedUsers.
+"""Checkov custom check: GCS IAM and ACLs must not grant allUsers or allAuthenticatedUsers.
 
-Members are matched exactly, so a private identity such as
-group:allUsers@example.com is not treated as public.
+Members, entities and predefined ACL names are matched exactly, so a private
+identity such as group:allUsers@example.com is not treated as public.
 
-Covers google_storage_bucket_iam_member, _iam_binding and _iam_policy, and
-the ACL resources (entity, or role_entity entries such as "READER:allUsers"). For
-_iam_policy, policy_data is inspected when Checkov can resolve it statically:
+Covers bucket and managed-folder IAM (member, members, policy_data), ACL
+entities, role_entity entries such as "READER:allUsers", and the predefined
+ACLs publicRead / publicReadWrite / authenticatedRead on google_storage_bucket_acl
+(predefined_acl, default_acl) and google_storage_object_acl (predefined_acl).
+The full coverage table is in policies/README.md. For *_iam_policy,
+policy_data is inspected when Checkov can resolve it statically:
 a jsonencode(...) literal, a JSON string, or a reference to a
 data.google_iam_policy in the same module (Checkov renders its binding blocks).
 Anything it cannot resolve (a variable, a module output, a file() call) is
@@ -19,6 +22,26 @@ from checkov.common.models.enums import CheckCategories, CheckResult
 from checkov.terraform.checks.resource.base_resource_check import BaseResourceCheck
 
 PUBLIC_MEMBERS = {"allUsers", "allAuthenticatedUsers"}
+
+# Predefined ACLs that grant allUsers or allAuthenticatedUsers; private,
+# projectPrivate, bucketOwnerRead and bucketOwnerFullControl are private.
+PUBLIC_PREDEFINED_ACLS = {"publicRead", "publicReadWrite", "authenticatedRead"}
+
+# Resource type -> attributes holding a predefined ACL name. default_acl sets
+# the bucket's predefined default object ACL.
+PREDEFINED_ACL_ATTRIBUTES = {
+    "google_storage_bucket_acl": ("predefined_acl", "default_acl"),
+    "google_storage_object_acl": ("predefined_acl",),
+}
+
+IAM_RESOURCES = (
+    "google_storage_bucket_iam_member",
+    "google_storage_bucket_iam_binding",
+    "google_storage_bucket_iam_policy",
+    "google_storage_managed_folder_iam_member",
+    "google_storage_managed_folder_iam_binding",
+    "google_storage_managed_folder_iam_policy",
+)
 
 ACL_ENTITY_RESOURCES = (
     "google_storage_bucket_access_control",
@@ -75,19 +98,27 @@ def has_public_member(bindings: list[dict]) -> bool:
 class GCSNoPublicMembers(BaseResourceCheck):
     def __init__(self) -> None:
         super().__init__(
-            name="GCS bucket IAM does not grant allUsers or allAuthenticatedUsers",
+            name="GCS IAM and ACLs do not grant allUsers or allAuthenticatedUsers",
             id="CKV_STB_GCP_4",
             categories=(CheckCategories.IAM,),
             supported_resources=(
-                "google_storage_bucket_iam_member",
-                "google_storage_bucket_iam_binding",
-                "google_storage_bucket_iam_policy",
+                *IAM_RESOURCES,
                 *ACL_ENTITY_RESOURCES,
                 *ACL_ROLE_ENTITY_RESOURCES,
             ),
         )
 
     def scan_resource_conf(self, conf: dict) -> CheckResult:
+        # entity_type is set by Checkov before scanning; fall back to every
+        # predefined-ACL attribute when called directly (tests).
+        resource_type = getattr(self, "entity_type", None)
+        attributes = PREDEFINED_ACL_ATTRIBUTES.get(resource_type) or (
+            "predefined_acl",
+            "default_acl",
+        )
+        for attribute in attributes:
+            if any(v in PUBLIC_PREDEFINED_ACLS for v in _flatten(conf.get(attribute))):
+                return CheckResult.FAILED
         if "policy_data" in conf:
             bindings = policy_bindings(conf["policy_data"])
             if bindings is None:

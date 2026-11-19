@@ -33,7 +33,7 @@ f, w = len(d.get("failures") or []), len(d.get("warnings") or [])
 print(f"failures={f} warnings={w}")
 sys.exit(0 if (f, w) == (int(sys.argv[1]), int(sys.argv[2])) else 1)' "$4" "$5"
 }
-expect pass "terraform plan bad: 21 failures, 1 warning" count_conftest opa/terraform terraform.gcp opa/terraform/fixtures/plan-bad.json 21 1
+expect pass "terraform plan bad: 32 failures, 1 warning" count_conftest opa/terraform terraform.gcp opa/terraform/fixtures/plan-bad.json 32 1
 expect pass "kubernetes bad: 8 failures, 2 warnings" count_conftest opa/kubernetes kubernetes.pod_security opa/kubernetes/fixtures/pod-bad.yaml 8 2
 expect pass "kubernetes good" conftest test -p opa/kubernetes -n kubernetes.pod_security opa/kubernetes/fixtures/deployment-good.yaml
 expect fail "kubernetes bad" conftest test -p opa/kubernetes -n kubernetes.pod_security opa/kubernetes/fixtures/pod-bad.yaml
@@ -42,8 +42,8 @@ if command -v checkov >/dev/null 2>&1; then
   ids=CKV_STB_GCP_1,CKV_STB_GCP_2,CKV_STB_GCP_3,CKV_STB_GCP_4,CKV_STB_GCP_5
   expect pass "checkov good" checkov -d checkov/fixtures/good --external-checks-dir checkov/checks --check "$ids" --quiet --compact
   expect fail "checkov bad" checkov -d checkov/fixtures/bad --external-checks-dir checkov/checks --check "$ids" --quiet --compact
-  # The bad fixture must fail all five checks on every resource (17), and the
-  # good fixture must pass on every resource (12).
+  # The bad fixture must fail all five checks on every resource (28), and the
+  # good fixture must pass on every resource (24).
   # shellcheck disable=SC2329  # invoked indirectly through expect
   count_checkov() { # count_checkov <dir> <passed> <failed>
     checkov -d "$1" --external-checks-dir checkov/checks --check "$ids" --compact -o json --soft-fail \
@@ -56,8 +56,8 @@ print(f"passed={p} failed={f} failing_ids={sorted(ids)}")
 want_p, want_f = int(sys.argv[1]), int(sys.argv[2])
 sys.exit(0 if (p, f) == (want_p, want_f) and (want_f == 0 or len(ids) == 5) else 1)' "$2" "$3"
   }
-  expect pass "checkov good: 12 passed, 0 failed" count_checkov checkov/fixtures/good 12 0
-  expect pass "checkov bad: 0 passed, 17 failed across all five checks" count_checkov checkov/fixtures/bad 0 17
+  expect pass "checkov good: 24 passed, 0 failed" count_checkov checkov/fixtures/good 24 0
+  expect pass "checkov bad: 0 passed, 28 failed across all five checks" count_checkov checkov/fixtures/bad 0 28
   # policy_data Checkov cannot resolve must not be treated as private.
   # shellcheck disable=SC2016  # ${...} is Terraform syntax, deliberately not expanded
   expect pass "checkov unresolved policy_data is UNKNOWN" python3 -c '
@@ -84,6 +84,16 @@ assert members.scan_resource_conf({"entity": ["allAuthenticatedUsers"]}) == R.FA
 assert members.scan_resource_conf({"entity": ["group-allUsers@example.com"]}) == R.PASSED
 assert members.scan_resource_conf({"role_entity": [["READER:allUsers"]]}) == R.FAILED
 assert members.scan_resource_conf({"role_entity": [["READER:group-allUsers@example.com"]]}) == R.PASSED
+for resource_type, attribute in (
+    ("google_storage_bucket_acl", "predefined_acl"),
+    ("google_storage_bucket_acl", "default_acl"),
+    ("google_storage_object_acl", "predefined_acl"),
+):
+    members.entity_type = resource_type
+    for public in ("publicRead", "publicReadWrite", "authenticatedRead"):
+        assert members.scan_resource_conf({attribute: [public]}) == R.FAILED, (resource_type, attribute, public)
+    for private in ("private", "projectPrivate", "bucketOwnerRead", "bucketOwnerFullControl", "public-read", "publicread"):
+        assert members.scan_resource_conf({attribute: [private]}) == R.PASSED, (resource_type, attribute, private)
 '
 else
   echo "skip - checkov not installed"

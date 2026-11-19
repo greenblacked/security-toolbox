@@ -105,3 +105,82 @@ resource "google_storage_bucket_acl" "lookalike_acl" {
   bucket      = google_storage_bucket.logs.name
   role_entity = ["OWNER:project-owners-123456", "READER:group-allUsers@example.com"]
 }
+
+# Private counterparts for every GCS ACL and IAM surface.
+
+resource "google_storage_bucket_acl" "predefined_project_private" {
+  bucket         = "existing-private-data"
+  predefined_acl = "projectPrivate"
+}
+
+resource "google_storage_bucket_acl" "predefined_private" {
+  bucket         = "existing-private-exports"
+  predefined_acl = "private"
+}
+
+resource "google_storage_bucket_acl" "default_acl_bucket_owner" {
+  bucket      = "existing-private-data"
+  role_entity = ["OWNER:project-owners-123456"]
+  default_acl = "bucketOwnerFullControl"
+}
+
+resource "google_storage_object_acl" "predefined_bucket_owner_read" {
+  bucket         = "existing-private-data"
+  object         = "export.csv"
+  predefined_acl = "bucketOwnerRead"
+}
+
+resource "google_storage_object_acl" "role_entity_lookalike" {
+  bucket      = "existing-private-data"
+  object      = "report.pdf"
+  role_entity = ["READER:group-allUsers@example.com"]
+}
+
+resource "google_storage_default_object_acl" "role_entity_lookalike" {
+  bucket      = "existing-private-data"
+  role_entity = ["OWNER:project-owners-123456", "READER:user-allAuthenticatedUsers@x.com"]
+}
+
+resource "google_storage_bucket_access_control" "group_entity" {
+  bucket = "existing-private-data"
+  entity = "group-allUsers@example.com"
+  role   = "READER"
+}
+
+resource "google_storage_object_access_control" "project_entity" {
+  bucket = "existing-private-data"
+  object = "export.csv"
+  entity = "project-viewers-123456"
+  role   = "READER"
+}
+
+resource "google_storage_default_object_access_control" "group_entity" {
+  bucket = "existing-private-data"
+  entity = "group-readers@example.com"
+  role   = "READER"
+}
+
+resource "google_storage_managed_folder_iam_member" "lookalike" {
+  bucket         = "existing-private-data"
+  managed_folder = "shared/"
+  role           = "roles/storage.objectViewer"
+  member         = "group:allUsers@example.com"
+}
+
+resource "google_storage_managed_folder_iam_binding" "lookalike" {
+  bucket         = "existing-private-data"
+  managed_folder = "shared/"
+  role           = "roles/storage.objectViewer"
+  members        = ["user:allAuthenticatedUsers@x.com"]
+}
+
+resource "google_storage_managed_folder_iam_policy" "private" {
+  bucket         = "existing-private-data"
+  managed_folder = "shared/"
+  policy_data    = jsonencode({
+    bindings = [{
+      role    = "roles/storage.objectViewer"
+      members = ["group:allUsers@example.com"]
+    }]
+  })
+}
