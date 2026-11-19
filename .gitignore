@@ -1,0 +1,8 @@
+# Local tool installs and build state
+.venv/
+node_modules/
+.wrangler/
+build/
+__pycache__/
+*.pyc
+.checkov/

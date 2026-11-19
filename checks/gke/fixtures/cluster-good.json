@@ -1,0 +1,24 @@
+{
+  "name": "prod",
+  "location": "europe-west1",
+  "workloadIdentityConfig": {"workloadPool": "example-project.svc.id.goog"},
+  "shieldedNodes": {"enabled": true},
+  "binaryAuthorization": {"evaluationMode": "PROJECT_SINGLETON_POLICY_ENFORCE"},
+  "networkConfig": {"datapathProvider": "ADVANCED_DATAPATH"},
+  "privateClusterConfig": {"enablePrivateNodes": true},
+  "masterAuthorizedNetworksConfig": {"enabled": true},
+  "legacyAbac": {},
+  "masterAuth": {},
+  "releaseChannel": {"channel": "REGULAR"},
+  "nodePools": [
+    {
+      "name": "default",
+      "config": {
+        "serviceAccount": "gke-nodes@example-project.iam.gserviceaccount.com",
+        "workloadMetadataConfig": {"mode": "GKE_METADATA"},
+        "shieldedInstanceConfig": {"enableSecureBoot": true, "enableIntegrityMonitoring": true}
+      },
+      "management": {"autoUpgrade": true, "autoRepair": true}
+    }
+  ]
+}

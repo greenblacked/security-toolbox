@@ -1,0 +1,14 @@
+{
+  "items": [
+    {
+      "metadata": {"name": "system:masters-binding"},
+      "roleRef": {"kind": "ClusterRole", "name": "cluster-admin"},
+      "subjects": [{"kind": "Group", "name": "system:masters"}]
+    },
+    {
+      "metadata": {"name": "platform-viewers"},
+      "roleRef": {"kind": "ClusterRole", "name": "view"},
+      "subjects": [{"kind": "Group", "name": "platform@example.com"}]
+    }
+  ]
+}
