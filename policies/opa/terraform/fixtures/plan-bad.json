@@ -1,0 +1,481 @@
+{
+  "format_version": "1.2",
+  "resource_changes": [
+    {
+      "address": "google_compute_firewall.ssh_world",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "name": "allow-ssh-world",
+          "direction": "INGRESS",
+          "source_ranges": [
+            "0.0.0.0/0"
+          ],
+          "allow": [
+            {
+              "protocol": "tcp",
+              "ports": [
+                "20-25"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_compute_firewall.rdp_world",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "after": {
+          "name": "allow-rdp-world",
+          "source_ranges": [
+            "::/0"
+          ],
+          "allow": [
+            {
+              "protocol": "all"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket.site",
+      "type": "google_storage_bucket",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "name": "example-site",
+          "location": "EU",
+          "public_access_prevention": "inherited",
+          "uniform_bucket_level_access": false
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket_iam_member.public",
+      "type": "google_storage_bucket_iam_member",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "example-site",
+          "role": "roles/storage.objectViewer",
+          "member": "allUsers"
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket_iam_binding.public",
+      "type": "google_storage_bucket_iam_binding",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "example-site",
+          "role": "roles/storage.objectViewer",
+          "members": [
+            "allAuthenticatedUsers"
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_service_account_key.ci",
+      "type": "google_service_account_key",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "service_account_id": "projects/example/serviceAccounts/ci@example.iam.gserviceaccount.com",
+          "public_key_type": "TYPE_X509_PEM_FILE"
+        }
+      }
+    },
+    {
+      "address": "google_compute_firewall.ssh_in_second_block",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "name": "ssh-in-second-block",
+          "direction": "INGRESS",
+          "source_ranges": [
+            "0.0.0.0/0"
+          ],
+          "allow": [
+            {
+              "protocol": "tcp",
+              "ports": [
+                "443"
+              ]
+            },
+            {
+              "protocol": "tcp",
+              "ports": [
+                "22"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_compute_firewall.all_tcp_ports_range",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "name": "all-tcp-ports-range",
+          "direction": "INGRESS",
+          "source_ranges": [
+            "0.0.0.0/0"
+          ],
+          "allow": [
+            {
+              "protocol": "tcp",
+              "ports": [
+                "1-65535"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_compute_firewall.range_covering_ssh",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "name": "range-covering-ssh",
+          "direction": "INGRESS",
+          "source_ranges": [
+            "0.0.0.0/0"
+          ],
+          "allow": [
+            {
+              "protocol": "tcp",
+              "ports": [
+                "20-25"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_compute_firewall.tcp_without_ports",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "name": "tcp-without-ports",
+          "direction": "INGRESS",
+          "source_ranges": [
+            "0.0.0.0/0"
+          ],
+          "allow": [
+            {
+              "protocol": "tcp"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_compute_firewall.protocol_all",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "name": "protocol-all",
+          "direction": "INGRESS",
+          "source_ranges": [
+            "0.0.0.0/0"
+          ],
+          "allow": [
+            {
+              "protocol": "all"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_compute_firewall.numeric_tcp_ssh",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "name": "numeric-tcp-ssh",
+          "direction": "INGRESS",
+          "source_ranges": [
+            "0.0.0.0/0"
+          ],
+          "allow": [
+            {
+              "protocol": "6",
+              "ports": [
+                "22"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_compute_firewall.udp_rdp_ipv6",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "name": "udp-rdp-ipv6",
+          "direction": "INGRESS",
+          "source_ranges": [
+            "::/0"
+          ],
+          "allow": [
+            {
+              "protocol": "17",
+              "ports": [
+                "3389"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket_iam_policy.existing_public",
+      "type": "google_storage_bucket_iam_policy",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "policy_data": "{\"bindings\": [{\"role\": \"roles/storage.legacyBucketOwner\", \"members\": [\"projectOwner:example-project\"]}, {\"role\": \"roles/storage.objectViewer\", \"members\": [\"allUsers\"]}]}"
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket_acl.public_reader",
+      "type": "google_storage_bucket_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "role_entity": [
+            "OWNER:project-owners-123456",
+            "READER:allUsers"
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket_access_control.public_authenticated",
+      "type": "google_storage_bucket_access_control",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "entity": "allAuthenticatedUsers",
+          "role": "READER"
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket_acl.predefined_public_read_write",
+      "type": "google_storage_bucket_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "predefined_acl": "publicReadWrite"
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket_acl.predefined_authenticated_read",
+      "type": "google_storage_bucket_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "predefined_acl": "authenticatedRead"
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket_acl.default_acl_public_read",
+      "type": "google_storage_bucket_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "role_entity": [
+            "OWNER:project-owners-123456"
+          ],
+          "default_acl": "publicRead"
+        }
+      }
+    },
+    {
+      "address": "google_storage_object_acl.predefined_public_read",
+      "type": "google_storage_object_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "object": "index.html",
+          "predefined_acl": "publicRead"
+        }
+      }
+    },
+    {
+      "address": "google_storage_object_acl.role_entity_public",
+      "type": "google_storage_object_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "object": "report.pdf",
+          "role_entity": [
+            "READER:allUsers"
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_storage_default_object_acl.role_entity_public",
+      "type": "google_storage_default_object_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "role_entity": [
+            "OWNER:project-owners-123456",
+            "READER:allAuthenticatedUsers"
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_storage_object_access_control.public_entity",
+      "type": "google_storage_object_access_control",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "object": "logo.png",
+          "entity": "allUsers",
+          "role": "READER"
+        }
+      }
+    },
+    {
+      "address": "google_storage_default_object_access_control.public_entity",
+      "type": "google_storage_default_object_access_control",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "entity": "allUsers",
+          "role": "READER"
+        }
+      }
+    },
+    {
+      "address": "google_storage_managed_folder_iam_member.public",
+      "type": "google_storage_managed_folder_iam_member",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "managed_folder": "downloads/",
+          "role": "roles/storage.objectViewer",
+          "member": "allUsers"
+        }
+      }
+    },
+    {
+      "address": "google_storage_managed_folder_iam_binding.public",
+      "type": "google_storage_managed_folder_iam_binding",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "managed_folder": "downloads/",
+          "role": "roles/storage.objectViewer",
+          "members": [
+            "allAuthenticatedUsers"
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_storage_managed_folder_iam_policy.public",
+      "type": "google_storage_managed_folder_iam_policy",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "managed_folder": "downloads/",
+          "policy_data": "{\"bindings\": [{\"role\": \"roles/storage.objectViewer\", \"members\": [\"allUsers\"]}]}"
+        }
+      }
+    }
+  ]
+}
