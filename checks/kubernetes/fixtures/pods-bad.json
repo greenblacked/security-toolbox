@@ -1,0 +1,13 @@
+{
+  "items": [
+    {
+      "metadata": {"namespace": "default", "name": "debug"},
+      "spec": {
+        "hostPID": true,
+        "hostNetwork": true,
+        "volumes": [{"name": "root", "hostPath": {"path": "/"}}],
+        "containers": [{"name": "shell", "securityContext": {"privileged": true, "runAsUser": 0}}]
+      }
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "items": [
+    {
+      "metadata": {"namespace": "web", "name": "web-7d9f"},
+      "spec": {
+        "securityContext": {"runAsNonRoot": true, "runAsUser": 65532},
+        "containers": [
+          {"name": "web", "securityContext": {"allowPrivilegeEscalation": false, "readOnlyRootFilesystem": true}}
+        ]
+      }
+    },
+    {
+      "metadata": {"namespace": "kube-system", "name": "node-agent-x2"},
+      "spec": {"hostNetwork": true, "containers": [{"name": "a", "securityContext": {"privileged": true}}]}
+    }
+  ]
+}
