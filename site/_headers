@@ -1,0 +1,16 @@
+# Response headers for the static assets, applied by Cloudflare Workers at upload.
+# https://developers.cloudflare.com/workers/static-assets/headers/
+# The site loads only its own files: no inline script or style, no third parties.
+/*
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+
+# Keep the workers.dev hostnames out of search results; security.szolotov.com is canonical.
+https://:worker.:subdomain.workers.dev/*
+  X-Robots-Tag: noindex
