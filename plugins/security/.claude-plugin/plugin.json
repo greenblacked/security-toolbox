@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "security",
-  "description": "Platform and cloud security skills adapted from greenblacked/AI: IaC plan review, image hardening, secret rotation, access review, host hardening and security review of changes. Dry-run / report first.",
+  "description": "Platform and cloud security skills adapted from greenblacked/AI: IaC plan review, image hardening, secret rotation, access review, host hardening, security review of changes, threat modelling, dependency triage, certificate automation, detection engineering and compromise evidence preservation. Dry-run / report first.",
   "author": {
     "name": "Serhii Zolotov",
     "url": "https://github.com/greenblacked"
@@ -17,6 +17,10 @@
     "terraform",
     "supply-chain",
     "kubernetes",
-    "gcp"
+    "gcp",
+    "iam",
+    "threat-modeling",
+    "detection",
+    "certificates"
   ]
 }

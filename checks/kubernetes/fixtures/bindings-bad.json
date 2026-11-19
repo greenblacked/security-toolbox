@@ -1,0 +1,9 @@
+{
+  "items": [
+    {
+      "metadata": {"name": "ci-deployer-admin"},
+      "roleRef": {"kind": "ClusterRole", "name": "cluster-admin"},
+      "subjects": [{"kind": "ServiceAccount", "namespace": "ci", "name": "deployer"}]
+    }
+  ]
+}

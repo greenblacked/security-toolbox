@@ -98,8 +98,8 @@ jobs:
           set -Eeuo pipefail
           python -m pip install "ruff==${RUFF_VERSION}"
       - name: Lint, including the bandit security rules
-        # With no Python tracked both commands pass on their own, so nothing here
-        # is allowed to fail open.
+        # Rules come from ruff.toml. Any finding or unformatted file fails the job;
+        # nothing here is allowed to fail open.
         run: |
           set -Eeuo pipefail
           ruff check --output-format=github .
