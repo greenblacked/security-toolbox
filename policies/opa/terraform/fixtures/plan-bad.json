@@ -283,6 +283,36 @@
           "policy_data": "{\"bindings\": [{\"role\": \"roles/storage.legacyBucketOwner\", \"members\": [\"projectOwner:example-project\"]}, {\"role\": \"roles/storage.objectViewer\", \"members\": [\"allUsers\"]}]}"
         }
       }
+    },
+    {
+      "address": "google_storage_bucket_acl.public_reader",
+      "type": "google_storage_bucket_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "role_entity": [
+            "OWNER:project-owners-123456",
+            "READER:allUsers"
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket_access_control.public_authenticated",
+      "type": "google_storage_bucket_access_control",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "existing-public-site",
+          "entity": "allAuthenticatedUsers",
+          "role": "READER"
+        }
+      }
     }
   ]
 }

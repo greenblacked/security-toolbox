@@ -165,7 +165,70 @@ test_bucket_iam_policy_unknown_warns if {
 	count(gcp.warn) == 1 with input as plan
 }
 
-test_bucket_iam_policy_null_or_invalid_warns if {
-	count(gcp.warn) == 1 with input as bucket_policy_plan({"bucket": "b", "policy_data": null})
-	count(gcp.warn) == 1 with input as bucket_policy_plan({"bucket": "b", "policy_data": "not json"})
+test_bucket_iam_policy_null_is_unknown if {
+	some msg in gcp.warn with input as bucket_policy_plan({"bucket": "b", "policy_data": null})
+	contains(msg, "not known at plan time")
+}
+
+test_bucket_iam_policy_invalid_json_has_own_warning if {
+	plan := bucket_policy_plan({"bucket": "b", "policy_data": "not json"})
+	count(gcp.warn) == 1 with input as plan
+	some msg in gcp.warn with input as plan
+	contains(msg, "not a valid IAM policy JSON object")
+	not contains(msg, "not known at plan time")
+}
+
+test_bucket_iam_policy_non_object_json_warns if {
+	some msg in gcp.warn with input as bucket_policy_plan({"bucket": "b", "policy_data": "[1, 2]"})
+	contains(msg, "not a valid IAM policy JSON object")
+}
+
+one(type, after) := {"resource_changes": [{
+	"address": sprintf("%s.r", [type]),
+	"type": type,
+	"change": {"actions": ["create"], "after": after},
+}]}
+
+private_lookalikes := ["group:allUsers@example.com", "user:allAuthenticatedUsers@x.com", "serviceAccount:allusers@p.iam.gserviceaccount.com"]
+
+test_private_lookalike_member_allowed if {
+	every m in private_lookalikes {
+		count(gcp.deny) == 0 with input as one("google_storage_bucket_iam_member", {"member": m})
+	}
+}
+
+test_private_lookalike_binding_allowed if {
+	count(gcp.deny) == 0 with input as one("google_storage_bucket_iam_binding", {"members": private_lookalikes})
+}
+
+test_private_lookalike_policy_data_allowed if {
+	pd := json.marshal({"bindings": [{"role": "roles/storage.objectViewer", "members": private_lookalikes}]})
+	plan := bucket_policy_plan({"bucket": "b", "policy_data": pd})
+	count(gcp.deny) == 0 with input as plan
+	count(gcp.warn) == 0 with input as plan
+}
+
+test_public_access_control_entity_denied if {
+	count(gcp.deny) == 1 with input as one("google_storage_bucket_access_control", {"entity": "allUsers", "role": "READER"})
+	count(gcp.deny) == 1 with input as one("google_storage_default_object_access_control", {"entity": "allAuthenticatedUsers", "role": "READER"})
+}
+
+test_private_lookalike_access_control_entity_allowed if {
+	count(gcp.deny) == 0 with input as one("google_storage_bucket_access_control", {"entity": "group-allUsers@example.com", "role": "READER"})
+}
+
+test_public_role_entity_denied if {
+	plan := one("google_storage_bucket_acl", {"role_entity": ["OWNER:project-owners-123", "READER:allUsers"]})
+	count(gcp.deny) == 1 with input as plan
+	count(gcp.deny) == 1 with input as one("google_storage_default_object_acl", {"role_entity": ["READER:allAuthenticatedUsers"]})
+}
+
+test_private_lookalike_role_entity_allowed if {
+	plan := one("google_storage_bucket_acl", {"role_entity": ["READER:group-allUsers@example.com", "READER:user-allAuthenticatedUsers@x.com"]})
+	count(gcp.deny) == 0 with input as plan
+}
+
+test_null_members_do_not_error if {
+	count(gcp.deny) == 0 with input as one("google_storage_bucket_iam_binding", {"members": null})
+	count(gcp.deny) == 0 with input as one("google_storage_bucket_acl", {"role_entity": null})
 }

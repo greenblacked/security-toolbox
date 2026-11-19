@@ -179,6 +179,52 @@
           "policy_data": "{\"bindings\": [{\"role\": \"roles/storage.objectViewer\", \"members\": [\"group:readers@example.com\", \"serviceAccount:reader@example.iam.gserviceaccount.com\"]}]}"
         }
       }
+    },
+    {
+      "address": "google_storage_bucket_iam_member.lookalike_group",
+      "type": "google_storage_bucket_iam_member",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "example-logs",
+          "role": "roles/storage.objectViewer",
+          "member": "group:allUsers@example.com"
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket_iam_binding.lookalike_user",
+      "type": "google_storage_bucket_iam_binding",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "example-logs",
+          "role": "roles/storage.objectViewer",
+          "members": [
+            "user:allAuthenticatedUsers@x.com"
+          ]
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket_acl.lookalike_acl",
+      "type": "google_storage_bucket_acl",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "example-logs",
+          "role_entity": [
+            "OWNER:project-owners-123456",
+            "READER:group-allUsers@example.com"
+          ]
+        }
+      }
     }
   ]
 }
