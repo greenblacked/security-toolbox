@@ -17,7 +17,7 @@ The baseline usually names what to audit. Start from these categories and map th
 - **Time and trust** — changes to system time, and to the files that decide what is trusted (host keys, CA bundles).
 - **Execution of the sensitive binaries** — the baseline may name specific tools, or ask for `execve` of a set of paths.
 
-```bash
+```text
 # A starting shape, not a copy-paste baseline:
 -w /etc/passwd -p wa -k identity
 -w /etc/shadow -p wa -k identity

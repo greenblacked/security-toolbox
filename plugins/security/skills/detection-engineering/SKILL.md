@@ -1,6 +1,6 @@
 ---
 name: detection-engineering
-description: "Write, test and retire security detection rules. A rule is accepted only with a one-sentence hypothesis naming attacker behaviour, a log source and field verified populated, a Sigma or native rule in version control, a positive test that replays an emulated event, a 30-day backtest with measured alert and false-positive counts, a triage note, an owner and a severity that decides page versus ticket. Tune with narrow expiring exclusions, retire a rule only with no true positive and no passing test, and treat ATT&CK as an inventory, not a target. Use for \"write a detection for impossible travel\", \"our SIEM alerts are all noise\", \"how do we know this rule would catch it\", \"detection as code\", \"map detections to ATT&CK\". Not for SLO and reliability paging (alert-design), application telemetry (instrumentation), design-time threats (threat-model), a code diff (security-review), measuring an existing alert's history (alert-backtest)."
+description: "Write, test and retire security detection rules. A rule is accepted only with a one-sentence hypothesis naming attacker behaviour, a log source and field verified populated, a Sigma or native rule in version control, a positive test that replays an emulated event, a 30-day backtest with measured alert and false-positive counts, a triage note, an owner and a severity that decides page versus ticket. Tune with narrow expiring exclusions, retire a rule only with no true positive and no passing test, and treat ATT&CK as an inventory, not a target. Use for \"write a detection for impossible travel\", \"our SIEM alerts are all noise\", \"how do we know this rule would catch it\", \"detection as code\", \"map detections to ATT&CK\". Not for SLO and reliability paging (alert-design, not in this toolbox), application telemetry (instrumentation, not in this toolbox), design-time threats (threat-model), a code diff (security-review), measuring an existing alert's history (alert-backtest, not in this toolbox)."
 allowed-tools: "Read, Grep, Glob"
 ---
 
@@ -16,7 +16,7 @@ Only Read, Grep and Glob are pre-approved. Writing or editing a rule or record f
 
 Use for: authoring a rule for a named attacker behaviour, testing and tuning existing rules, reducing alert noise, retiring rules, and reporting coverage.
 
-Do not use for: paging on service reliability and SLOs (`alert-design`), emitting application telemetry (`instrumentation`), finding threats at design time (`threat-model`), reviewing a code change (`security-review`), or backtesting an alert that already exists (`alert-backtest`).
+Do not use for: paging on service reliability and SLOs (`alert-design`, not in this toolbox), emitting application telemetry (`instrumentation`, not in this toolbox), finding threats at design time (`threat-model`), reviewing a code change (`security-review`), or backtesting an alert that already exists (`alert-backtest`, not in this toolbox).
 
 ## Acceptance gate
 

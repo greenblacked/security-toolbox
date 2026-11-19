@@ -41,7 +41,7 @@ conftest test --policy policies/opa/terraform --namespace terraform.gcp plan.jso
 
 ## Structure
 
-```
+```text
 checks/     # read-only report scripts and checklists, with fixtures
 policies/   # OPA/Conftest and Checkov policies, with fixtures
 plugins/    # security skills (SKILL.md procedures)

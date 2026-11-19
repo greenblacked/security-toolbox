@@ -1,6 +1,6 @@
 ---
 name: threat-model
-description: "Model what could go wrong with a design before the code exists — draw the data flows and mark every trust boundary first, because a threat lives where data crosses one; apply STRIDE per crossing rather than per component, because a crossing has two named parties and a payload and a component has neither; write down what you are choosing not to mitigate and get a name against it; and rerun when a boundary moves rather than on a calendar. Use when a feature, service or integration is being designed, when a design document needs its security section, or when someone asks what an attacker could do with this. Not for reviewing a diff (security-review), designing login or tokens (auth-design), IAM permissions (access-review), or a live compromise (secret-rotation)."
+description: "Model what could go wrong with a design before the code exists — draw the data flows and mark every trust boundary first, because a threat lives where data crosses one; apply STRIDE per crossing rather than per component, because a crossing has two named parties and a payload and a component has neither; write down what you are choosing not to mitigate and get a name against it; and rerun when a boundary moves rather than on a calendar. Use when a feature, service or integration is being designed, when a design document needs its security section, or when someone asks what an attacker could do with this. Not for reviewing a diff (security-review), designing login or tokens (auth-design, not in this toolbox), IAM permissions (access-review), or a live compromise (secret-rotation)."
 allowed-tools: "Read, Grep, Glob, Write, Edit"
 ---
 
@@ -28,7 +28,7 @@ trust changes hands.
   which crossings are reachable by whom.
 - Do not close a threat with "we would notice". Detection is a mitigation only if
   something is actually emitting the signal and someone is actually alerted on it. The
-  emitting is `instrumentation` and the alerting is `alert-design`; until both exist the
+  emitting is `instrumentation` (not in this toolbox) and the alerting is `alert-design` (not in this toolbox); until both exist the
   threat is open.
 
 ## Workflow
@@ -117,7 +117,10 @@ admin path — which is the ranking that matters and needs no score.
 
 **Retrigger** — the structural changes that oblige a rerun.
 
-The four framing questions this follows — what are we building, what can go wrong, what
-are we doing about it, did we do a good job — STRIDE itself, and the four response states
-in step 3 are OWASP's, from
-[the threat modelling cheat sheet](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/cheatsheets/Threat_Modeling_Cheat_Sheet.md).
+STRIDE comes from Loren Kohnfelder and Praerit Garg's 1999 Microsoft paper "The Threats to Our
+Products" ([Microsoft](https://learn.microsoft.com/en-us/security/engineering/threat-modeling-with-dev-ops)).
+The four framing questions this follows — what are we working on, what can go wrong, what are
+we going to do about it, did we do a good job — are Adam Shostack's
+([Four Question Framework](https://shostack.org/resources/threat-modeling)), and the four
+response states in step 3 are the ones Shostack lists, as summarised in OWASP's
+[threat modelling cheat sheet](https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/cheatsheets/Threat_Modeling_Cheat_Sheet.md).

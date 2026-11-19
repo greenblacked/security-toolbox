@@ -69,12 +69,14 @@ Expressions are expanded into the script text before the shell runs, so a PR tit
 
 ```yaml
 # Vulnerable
-- run: echo "Title: ${{ github.event.pull_request.title }}"
+- run: |
+    echo "Title: ${{ github.event.pull_request.title }}"
 
 # Safe: pass through the environment and quote it
 - env:
     PR_TITLE: ${{ github.event.pull_request.title }}
-  run: echo "Title: $PR_TITLE"
+  run: |
+    echo "Title: $PR_TITLE"
 ```
 
 Attacker-controllable fields include `github.event.pull_request.title`, `.body` and `.head.ref`, `github.event.issue.title` and `.body`, `github.event.comment.body`, `github.head_ref` and commit messages. The same applies to `actions/github-script` `script:` blocks. Moving even trusted values (`needs.*.result`, `inputs.*`) into `env:` keeps the pattern consistent and zizmor's pedantic audit quiet.

@@ -36,7 +36,7 @@ Usually bites on admin and support actions, on anything money touches, and on de
 
 Useful answer covers the payload and its metadata, including where it ends up
 incidentally: a log line, an error message, a URL, an analytics event, a support
-transcript. Personal data landing in logs belongs to `data-privacy`; this step's job is to
+transcript. Personal data landing in logs belongs to `data-privacy` (not in this toolbox); this step's job is to
 notice the flow exists.
 
 Usually bites on errors that quote input, on debug endpoints, and on any store shared

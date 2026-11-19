@@ -1,6 +1,6 @@
 ---
 name: dependency-triage
-description: "Work a queue of dependency vulnerability alerts — Dependabot, npm audit, pip-audit, govulncheck — into a decision each: reachability before severity, CVSS base versus environmental, EPSS and CISA KEV as the two signals that mean today rather than this quarter, direct versus transitive and the three ways to fix a transitive one, patch bumps batched behind the suite while behaviour changes go alone, suppressions with an expiry date and a named reason, and the malicious or typosquatted package that is an incident, not a queue item. Use this skill whenever someone asks \"twelve dependabot PRs, which matter\", \"is this CVE actually exploitable for us\", \"npm audit says 40 vulnerabilities\", \"can we ignore this one\", or has a backlog nobody reads. Not for a planned major-version move (dependency-upgrade), a container image scan gate (image-hardening), or a leaked credential (secret-rotation)."
+description: "Work a queue of dependency vulnerability alerts — Dependabot, npm audit, pip-audit, govulncheck — into a decision each: reachability before severity, CVSS base versus environmental, EPSS and CISA KEV as the two signals that mean today rather than this quarter, direct versus transitive and the three ways to fix a transitive one, patch bumps batched behind the suite while behaviour changes go alone, suppressions with an expiry date and a named reason, and the malicious or typosquatted package that is an incident, not a queue item. Use this skill whenever someone asks \"twelve dependabot PRs, which matter\", \"is this CVE actually exploitable for us\", \"npm audit says 40 vulnerabilities\", \"can we ignore this one\", or has a backlog nobody reads. Not for a planned major-version move (dependency-upgrade, not in this toolbox), a container image scan gate (image-hardening), or a leaked credential (secret-rotation)."
 allowed-tools: "Read, Grep, Glob"
 ---
 
@@ -14,7 +14,7 @@ The job is hard because the queue is designed to be uniform and your exposure is
 
 Use for: a backlog of Dependabot, Renovate, Snyk, `npm audit`, `pip-audit`, `govulncheck` or `osv-scanner` findings; deciding whether a specific CVE or GHSA matters here; fixing a vulnerable transitive dependency; setting up a weekly cadence; judging whether a dev-only finding needs work; responding to a package that turns out to be malicious.
 
-Do not use for: moving onto a new major version of a framework or runtime, whether or not an advisory prompted it — that is `dependency-upgrade`, and this skill hands over the moment the answer is "we need to be on the next major". Choosing a base image, setting a scanner severity gate, or triaging OS-package CVEs inside a built container is `image-hardening`. Reviewing a diff for vulnerability classes is `security-review`. A credential that has leaked is `secret-rotation`. The pattern behind a ReDoS advisory, rather than the queue decision, is `regex-safety-review`.
+Do not use for: moving onto a new major version of a framework or runtime, whether or not an advisory prompted it — that is `dependency-upgrade` (not in this toolbox), and this skill hands over the moment the answer is "we need to be on the next major". Choosing a base image, setting a scanner severity gate, or triaging OS-package CVEs inside a built container is `image-hardening`. Reviewing a diff for vulnerability classes is `security-review`. A credential that has leaked is `secret-rotation`. The pattern behind a ReDoS advisory, rather than the queue decision, is `regex-safety-review` (not in this toolbox).
 
 ## Workflow
 
@@ -191,7 +191,7 @@ updates:
 
 Renovate's `minimumReleaseAge` is worth setting alongside this — a cooldown of a few days on new releases costs you almost nothing in exposure and takes you out of the blast radius of the compromised-release window described in step 9.
 
-**The isolated change.** Anything with a minor or major bump, a changelog entry mentioning behaviour, a dependency that appears in your public API's types, or a package whose patch you had to force. One change, one PR, its own review. If the isolated change turns out to need a major version, stop: that is `dependency-upgrade`, with its own sequencing and its own breaking-change grep.
+**The isolated change.** Anything with a minor or major bump, a changelog entry mentioning behaviour, a dependency that appears in your public API's types, or a package whose patch you had to force. One change, one PR, its own review. If the isolated change turns out to need a major version, stop: that is `dependency-upgrade` (not in this toolbox), with its own sequencing and its own breaking-change grep.
 
 Review the lockfile diff itself, not only the version numbers. New transitive packages arriving in a "patch" bump, a package gaining a `postinstall` script, or a registry URL changing are all visible there and nowhere else.
 
@@ -239,7 +239,7 @@ The response, in order:
 
 1. **Stop the spread.** Pin away from the bad version and block it — an `overrides` entry or a registry deny rule — before anything else, because CI is still resolving it while you investigate.
 2. **Treat it as credential exposure, not as a version bump.** Install-time code on a CI runner sees whatever that runner holds: registry publish tokens, cloud credentials, cache contents, the checkout's `.git` config. Upgrading to a clean version does not undo execution. Hand the credential work to `secret-rotation` and start it in parallel rather than after.
-3. **Establish the blast radius from the lockfile history**, not from memory. `git log -p -- package-lock.json` tells you when the bad version entered and which builds ran after it. Across more than a handful of repositories, hand this read to the `supply-chain-exposure-reader` subagent rather than repeating it by hand in each one — it returns the same table for every repository in scope, split into resolved and executed, with the secrets each executed run's job could reach.
+3. **Establish the blast radius from the lockfile history**, not from memory. `git log -p -- package-lock.json` tells you when the bad version entered and which builds ran after it. Across more than a handful of repositories, hand this read to the `supply-chain-exposure-reader` subagent (not in this toolbox) rather than repeating it by hand in each one — it returns the same table for every repository in scope, split into resolved and executed, with the secrets each executed run's job could reach.
 4. **Remove rather than upgrade** where the package is dispensable. A registry account that has been compromised once is not a stronger dependency after the fix than it was before.
 5. **Report it** to the registry's security contact and to the OSV malicious-packages process, so the next team's scanner catches it.
 
@@ -275,7 +275,7 @@ Whoever runs it rotates, and it is announced in the same channel each week. A tr
 
 **Deduplicating by pull request instead of by advisory.** The same decision gets made four times in a monorepo, differently each time, and the inconsistency is invisible afterwards.
 
-**Dismissing an alert because the fix is a major version.** That is a real constraint, but it is a scheduling decision, not an assessment. Record it as an exception with a date and hand the upgrade itself to `dependency-upgrade`.
+**Dismissing an alert because the fix is a major version.** That is a real constraint, but it is a scheduling decision, not an assessment. Record it as an exception with a date and hand the upgrade itself to `dependency-upgrade` (not in this toolbox).
 
 ## Reference files
 

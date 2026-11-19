@@ -1,6 +1,6 @@
 ---
 name: certificate-automation
-description: "Move a certificate estate onto automated ACME issuance and renewal ahead of the CA/Browser Forum's shrinking maximum lifetimes. Inventory from outside first — CT logs and endpoint scans, not only what the team tracks — because the one nobody owns is the risk. Classify endpoints as native-ACME, cert-manager, cloud-managed, or an appliance that cannot automate, then automate renewal on ACME Renewal Information where supported and a lifetime-fraction backstop otherwise, and alert on renewal failure, not the clock alone. Use for an ACME rollout, a certificate inventory, a schedule ahead of a validity cut, or an appliance stuck on manual renewal. Not for a leaked or compromised certificate or key (secret-rotation), whether an expiry alert pages or tickets (alert-design), a Terraform diff on a certificate resource (iac-review), or migrating the CA or PKI vendor (plan-platform-migration)."
+description: "Move a certificate estate onto automated ACME issuance and renewal ahead of the CA/Browser Forum's shrinking maximum lifetimes. Inventory from outside first — CT logs and endpoint scans, not only what the team tracks — because the one nobody owns is the risk. Classify endpoints as native-ACME, cert-manager, cloud-managed, or an appliance that cannot automate, then automate renewal on ACME Renewal Information where supported and a lifetime-fraction backstop otherwise, and alert on renewal failure, not the clock alone. Use for an ACME rollout, a certificate inventory, a schedule ahead of a validity cut, or an appliance stuck on manual renewal. Not for a leaked or compromised certificate or key (secret-rotation), whether an expiry alert pages or tickets (alert-design, not in this toolbox), a Terraform diff on a certificate resource (iac-review), or migrating the CA or PKI vendor (plan-platform-migration, not in this toolbox)."
 allowed-tools: "Bash(jq:*), Read, Grep, Glob"
 ---
 
@@ -14,7 +14,7 @@ The job is hard because the deadline moves under you. Ballot SC-081, adopted 202
 
 Use for: inventorying an estate's TLS certificates including the ones nobody has tracked; deciding which endpoints can run ACME directly, via cert-manager, via a cloud-managed certificate service, or not at all; standing up automated issuance and renewal with a monitored failure mode; setting a renewal schedule that survives the 2026–2029 validity cuts; and building a runbook for the appliances that cannot automate.
 
-Do not use for: rotating or containing a certificate or private key that has already leaked or is suspected compromised — that is an incident, and `secret-rotation` owns it; deciding whether a certificate-expiry signal should page or only ticket — that is `alert-design`'s classification, not this skill's; reviewing a Terraform or OpenTofu diff that happens to touch a certificate resource — that is `iac-review`; or replacing the CA or PKI vendor itself as a project — that is `plan-platform-migration`. This skill assumes the CA and the endpoints are trusted and intact; it automates keeping them current.
+Do not use for: rotating or containing a certificate or private key that has already leaked or is suspected compromised — that is an incident, and `secret-rotation` owns it; deciding whether a certificate-expiry signal should page or only ticket — that is the classification in `alert-design` (not in this toolbox), not this skill's; reviewing a Terraform or OpenTofu diff that happens to touch a certificate resource — that is `iac-review`; or replacing the CA or PKI vendor itself as a project — that is `plan-platform-migration` (not in this toolbox). This skill assumes the CA and the endpoints are trusted and intact; it automates keeping them current.
 
 ## Hard gates
 
@@ -111,7 +111,7 @@ echo | openssl s_client -connect host.example.com:443 -servername host.example.c
   | openssl x509 -noout -enddate
 ```
 
-Whether a given expiry or renewal-failure signal should page someone or only open a ticket is `alert-design`'s classification, not this skill's — hand it off rather than deciding severity here. What this skill owns is making sure the signal exists at all and is generated from outside the renewal automation, so a client that has silently stopped running is still caught.
+Whether a given expiry or renewal-failure signal should page someone or only open a ticket is the classification in `alert-design` (not in this toolbox), not this skill's — hand it off rather than deciding severity here. What this skill owns is making sure the signal exists at all and is generated from outside the renewal automation, so a client that has silently stopped running is still caught.
 
 ### 6. Handle the failure modes that survive automation
 
@@ -146,7 +146,7 @@ Automating issuance does not remove every way a certificate outage still happens
 [pinned intermediates, hard-coded chains, OCSP dependence, appliance runbooks — each confirmed or flagged]
 
 ## Handed off
-[anything routed to secret-rotation, alert-design, iac-review or plan-platform-migration, and why]
+[anything routed to secret-rotation, iac-review, alert-design or plan-platform-migration (the last two are not in this toolbox), and why]
 
 ## Remaining risk
 [unowned certificates, appliances with no automation path yet, and the date each becomes urgent]
