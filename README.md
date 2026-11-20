@@ -4,7 +4,7 @@
 
 Security checks, best practices, automated guardrails and policy-as-code for cloud platforms (GCP primary), Kubernetes, Terraform, GitHub Actions / CI, secrets and supply chain.
 
-Practical, report / dry-run first. Complements [ops-toolbox](https://github.com/greenblacked/ops-toolbox). Documentation site: [security.szolotov.com](https://security.szolotov.com) (coming soon).
+Practical, report / dry-run first. Complements [ops-toolbox](https://github.com/greenblacked/ops-toolbox). Documentation site: [security.szolotov.com](https://security.szolotov.com).
 
 ## Quick start
 
@@ -45,8 +45,8 @@ conftest test --policy policies/opa/terraform --namespace terraform.gcp plan.jso
 checks/     # read-only report scripts and checklists, with fixtures
 policies/   # OPA/Conftest and Checkov policies, with fixtures
 plugins/    # security skills (SKILL.md procedures)
-docs/       # MkDocs source
-site/       # hand-written homepage for security.szolotov.com
+docs/       # Markdown guide source
+site/       # homepage and shared styles for security.szolotov.com
 ```
 
 See [docs/](docs/) and the live site when published.

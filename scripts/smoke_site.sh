@@ -58,4 +58,16 @@ check_route /github/ 'Repository baseline'
 check_route /secrets/ 'Delivery patterns'
 check_route /contributing/ 'Keep checks modular'
 check_route /ci/ 'Credentials and GitHub environments'
+check_route /guides.css '.guide-layout'
+check_route /search/ 'Search guides'
 check_route /search/search_index.json 'Kubernetes / GKE'
+
+if [ "${3:-}" = noindex ]; then
+  headers="$(mktemp)"
+  trap 'rm -f "$body" "$headers"' EXIT
+  curl --fail --silent --show-error --location --max-time 15 --dump-header "$headers" --output /dev/null "$url/"
+  if ! grep -iqE '^x-robots-tag:[[:space:]]*noindex' "$headers"; then
+    echo "::error::${url}/ is missing X-Robots-Tag: noindex" >&2
+    exit 1
+  fi
+fi
