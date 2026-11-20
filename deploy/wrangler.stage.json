@@ -1,0 +1,7 @@
+{
+  "name": "security-stage",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "routes": [{ "pattern": "stage.security.szolotov.com", "custom_domain": true }],
+  "assets": { "directory": "../site", "html_handling": "auto-trailing-slash", "not_found_handling": "404-page" }
+}
