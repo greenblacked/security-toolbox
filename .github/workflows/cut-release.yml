@@ -109,7 +109,7 @@ jobs:
           actor = os.environ["ACTOR"]
           body = {
               "tag": "v" + os.environ["VERSION"],
-              "message": Path(notes).read_text(encoding="utf-8").rstrip("\\n") + "\\n",
+              "message": Path(notes).read_text(encoding="utf-8").rstrip("\n") + "\n",
               "object": os.environ["GITHUB_SHA"],
               "type": "commit",
               "tagger": {"name": actor, "email": os.environ["ACTOR_ID"] + "+" + actor + "@users.noreply.github.com"},
