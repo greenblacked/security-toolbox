@@ -5,6 +5,17 @@ annotated Git tag in the form `vX.Y.Z`. See [releasing a version](docs/ci.md#rel
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-20
+
+### Changed
+
+- Refresh the documentation site with platform guide navigation, a copyable
+  read-only Kubernetes quickstart, warm Light and Dark themes, and responsive layouts.
+- Add a self-hosted Instrument Sans font and license, stronger control borders,
+  and underlined links in guides.
+- Promote tested changes from development through staging to production on main,
+  with exact promotion and release tree verification.
+
 ## [0.1.0] - 2026-11-20
 
 ### Added
