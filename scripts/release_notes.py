@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Read release notes and enforce monotonic tags."""
+
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -16,7 +18,9 @@ def sections(text):
         version = match.group(1)
         if VERSION.fullmatch(version):
             end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
-            body = re.split(r"^\[[^]]+\]:\s", text[match.end():end], maxsplit=1, flags=re.M)[0].strip()
+            body = re.split(r"^\[[^]]+\]:\s", text[match.end() : end], maxsplit=1, flags=re.M)[
+                0
+            ].strip()
             result.append((version, body))
     return result
 
@@ -63,8 +67,12 @@ def main():
         elif command == "check-tags":
             if sys.argv[2] != version:
                 raise ValueError("version is not latest")
-            tags = subprocess.run(["git", "tag", "--list", "v*"], check=True,
-                                  capture_output=True, text=True).stdout.splitlines()
+            git = shutil.which("git")
+            if git is None:
+                raise OSError("git not found on PATH")
+            tags = subprocess.run(  # noqa: S603 - resolved executable, fixed arguments
+                [git, "tag", "--list", "v*"], check=True, capture_output=True, text=True
+            ).stdout.splitlines()
             check_tags(version, tags)
         else:
             raise ValueError("unknown command")
