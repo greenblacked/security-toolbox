@@ -12,7 +12,8 @@ try {
 
 function renderTheme() {
   document.documentElement.dataset.theme = current;
-  toggle.setAttribute('aria-label', `Change theme, current theme: ${labels[current]}`);
+  toggle.textContent = labels[current];
+  toggle.setAttribute('aria-label', `${labels[current]} theme. Change theme`);
 }
 
 renderTheme();
