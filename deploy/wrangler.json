@@ -3,6 +3,7 @@
   "compatibility_date": "2026-10-01",
   "workers_dev": true,
   "preview_urls": true,
+  "previews": {},
   "routes": [
     {
       "pattern": "security.szolotov.com",
@@ -10,7 +11,6 @@
       "previews_enabled": true
     }
   ],
-  "previews": {},
   "assets": {
     "directory": "../site",
     "html_handling": "auto-trailing-slash",

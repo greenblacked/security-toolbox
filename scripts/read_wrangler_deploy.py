@@ -137,8 +137,8 @@ def parse_active(text: str) -> str:
     return version_id
 
 
-def _is_production_custom_domain(target: object) -> bool:
-    """Whether a deploy target is Wrangler's rendering of the production custom domain.
+def _is_known_custom_domain(target: object) -> bool:
+    """Whether a deploy target is a known custom domain rendered by Wrangler.
 
     Wrangler adds ``https://`` to a ``workers.dev`` target only. A custom-domain route is
     the bare pattern followed by ``(custom domain)``, ``(custom domain - zone id: ...)``
@@ -150,7 +150,8 @@ def _is_production_custom_domain(target: object) -> bool:
     if not isinstance(target, str):
         return False
     host, separator, rest = target.partition(" ")
-    if host != CUSTOM_DOMAIN or not separator:
+    allowed = {CUSTOM_DOMAIN, f"stage.{CUSTOM_DOMAIN}", f"dev.{CUSTOM_DOMAIN}"}
+    if host not in allowed or not separator:
         return False
     marker = "(custom domain"
     if not (rest.startswith(marker) and rest[len(marker) : len(marker) + 1] in (")", " ")):
@@ -185,8 +186,8 @@ def parse_deploy(text: str) -> tuple[str, str, str]:
                 url = _acceptable(target)
                 if url is not None:
                     found.append(url)
-                if _is_production_custom_domain(target):
-                    custom_found = PRODUCTION_URL
+                if _is_known_custom_domain(target):
+                    custom_found = "https://" + target.partition(" ")[0]
         if not found:
             continue
         # Fewer labels first, then the shorter URL. A preview host is longer.
