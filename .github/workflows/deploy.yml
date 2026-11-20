@@ -1,33 +1,15 @@
 ---
-# Checks the Worker Cloudflare will serve, and previews it.
-#
-# A pull request runs `wrangler deploy --dry-run` against the packaged
-# site and guides. That needs no credential, and this file's dry-run job never
-# names one: a pull request, including one from a fork, cannot read the token
-# by editing a step that already holds it, because no step here holds it.
-#
-# A push to the stage branch, or Run workflow from that branch, uploads a
-# Preview named stage of the Worker security. The Preview has a workers.dev
-# URL and a custom address when configured. It is a separate Worker version, so
-# production is untouched. Production is not this file: release.yml deploys the Worker
-# security after a vX.Y.Z tag. Cloudflare credentials are repository secrets
-# (CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID, with optional
-# vars.CLOUDFLARE_ACCOUNT_ID). The staging and production environments still
-# gate when those jobs run. docs/ci.md records the permissions the token
-# needs and the environment rules those deploys need.
 name: Deploy
 
 on:
   pull_request:
   push:
-    branches: [stage]
-  workflow_dispatch:
+    branches: [dev, stage]
 
 permissions: {}
 
 concurrency:
-  group: >-
-    deploy-${{ github.event.pull_request.number || github.ref }}
+  group: deploy-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
@@ -46,139 +28,96 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
-        with:
-          python-version: '3.13'
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version: '22.23.3'
-          # The package-manager cache is a download Wrangler does not need, and
-          # this job's node_modules has to be the lockfile's, not a cache entry.
           package-manager-cache: false
-      - name: Build the site and guides
-        run: |
-          set -Eeuo pipefail
-          python -m pip install --disable-pip-version-check -r docs/requirements.txt
-          python scripts/package_worker_site.py
-      - name: Check the Wrangler pin against the lockfile
-        run: |
-          set -Eeuo pipefail
-          python scripts/check_wrangler_pin.py
-      - name: Install Wrangler
-        working-directory: deploy
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Build and check deployment configuration
         run: |
           set -Eeuo pipefail
           npm ci --ignore-scripts
-          installed=$(./node_modules/.bin/wrangler --version)
-          if [ "$installed" != "$WRANGLER_VERSION" ]; then
-            echo "::error::installed wrangler is ${installed}, pin is ${WRANGLER_VERSION}"
-            exit 1
-          fi
-      - name: Check the Worker without deploying it
-        working-directory: deploy
-        # --no-autoconfig: wrangler 4 turns framework detection on by default and
-        # will rewrite a project it does not recognise. --no-install-skills: the
-        # same release can install agent skills into the checkout; the default is
-        # off, and naming it keeps a later default from doing that in CI.
-        run: |
-          set -Eeuo pipefail
-          ./node_modules/.bin/wrangler deploy --dry-run --config wrangler.json \
-            --no-autoconfig --no-install-skills
+          node scripts/build_site.cjs
+          python scripts/check_wrangler_pin.py
+          cd deploy
+          npm ci --ignore-scripts
+          test "$(./node_modules/.bin/wrangler --version)" = "$WRANGLER_VERSION"
+          for config in wrangler.json wrangler.dev.json wrangler.stage.json; do
+            ./node_modules/.bin/wrangler deploy --dry-run --config "$config" \
+              --no-autoconfig --no-install-skills
+          done
 
-  preview:
-    name: preview
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+  deploy:
+    name: deploy ${{ github.ref_name }}
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/stage')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
     environment:
-      name: staging
+      name: ${{ github.ref_name == 'dev' && 'development' || 'staging' }}
       url: ${{ steps.smoke.outputs.url }}
     steps:
-      - name: The stage Preview uploads from the stage branch only
-        env:
-          REF_TYPE: ${{ github.ref_type }}
-          REF_NAME: ${{ github.ref_name }}
-        run: |
-          set -Eeuo pipefail
-          if [ "$REF_TYPE" != branch ] || [ "$REF_NAME" != stage ]; then
-            echo "::error::the stage Preview uploads from the stage branch only, not ${REF_TYPE} ${REF_NAME}"
-            exit 1
-          fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
-        with:
-          python-version: '3.13'
-      - name: Build the site and guides
-        run: |
-          set -Eeuo pipefail
-          python -m pip install --disable-pip-version-check -r docs/requirements.txt
-          python scripts/package_worker_site.py
-      - name: Mark stage noindex and record the revision
-        # Custom-domain Previews do not get Cloudflare's automatic
-        # X-Robots-Tag: noindex. The job writes site/_headers and leaves
-        # site/index.html unchanged. It does not write a robots.txt that
-        # would block crawlers from seeing the header.
-        run: |
-          set -Eeuo pipefail
-          python scripts/prepare_stage_site.py
-          printf '%s\n' "$GITHUB_SHA" > site/version.txt
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version: '22.23.3'
           package-manager-cache: false
-      - name: Check the Wrangler pin against the lockfile
-        run: |
-          set -Eeuo pipefail
-          python scripts/check_wrangler_pin.py
-      - name: Install Wrangler
-        working-directory: deploy
-        # No token in this step. --ignore-scripts so a dependency script does not
-        # run in the job that is about to receive one.
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Build and mark non-production assets
         run: |
           set -Eeuo pipefail
           npm ci --ignore-scripts
-          installed=$(./node_modules/.bin/wrangler --version)
-          if [ "$installed" != "$WRANGLER_VERSION" ]; then
-            echo "::error::installed wrangler is ${installed}, pin is ${WRANGLER_VERSION}"
-            exit 1
-          fi
-      - name: Upload the stage Preview
+          node scripts/build_site.cjs
+          python scripts/prepare_stage_site.py
+          printf '%s\n' "$GITHUB_SHA" > site/version.txt
+          python scripts/check_wrangler_pin.py
+          cd deploy
+          npm ci --ignore-scripts
+          test "$(./node_modules/.bin/wrangler --version)" = "$WRANGLER_VERSION"
+      - name: Deploy the branch Worker
         id: deploy
         working-directory: deploy
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          DEV_TOKEN: ${{ secrets.CLOUDFLARE_DEV_API_TOKEN }}
+          STAGE_TOKEN: ${{ secrets.CLOUDFLARE_STAGE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
-          GIT_SHA: ${{ github.sha }}
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.jsonl
         run: |
           set -Eeuo pipefail
+          case "$GITHUB_REF" in
+            refs/heads/dev) config=wrangler.dev.json; export CLOUDFLARE_API_TOKEN="$DEV_TOKEN" ;;
+            refs/heads/stage) config=wrangler.stage.json; export CLOUDFLARE_API_TOKEN="$STAGE_TOKEN" ;;
+            *) echo '::error::unexpected deployment branch'; exit 1 ;;
+          esac
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo "::error::set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID as repository secrets"
-            echo "::error::CLOUDFLARE_ACCOUNT_ID may also be a variable (docs/ci.md)"
+            echo '::error::environment-specific Cloudflare token or account ID missing'
             exit 1
           fi
-          # wrangler preview takes no --no-autoconfig; --no-install-skills is a
-          # global flag and keeps a later default from installing into the checkout.
-          # The Preview is a version of the Worker security, so it cannot roll
-          # production back and there is nothing to roll back here.
-          ./node_modules/.bin/wrangler preview --config wrangler.json --name stage \
-            --no-install-skills \
-            --message "stage ${GIT_SHA:0:7}" --tag "$GIT_SHA"
-          python "$GITHUB_WORKSPACE/scripts/read_wrangler_deploy.py" --preview \
-            "$WRANGLER_OUTPUT_FILE_PATH" >> "$GITHUB_OUTPUT"
-      - name: Smoke-test the stage Preview
+          ./node_modules/.bin/wrangler deploy --config "$config" \
+            --no-autoconfig --no-install-skills --message "${GITHUB_REF_NAME} ${GITHUB_SHA:0:7}" --tag "$GITHUB_SHA"
+          python "$GITHUB_WORKSPACE/scripts/read_wrangler_deploy.py" "$WRANGLER_OUTPUT_FILE_PATH" >> "$GITHUB_OUTPUT"
+      - name: Verify deployed revision and custom domain
         id: smoke
         env:
           WORKERS_DEV_URL: ${{ steps.deploy.outputs.url }}
           CUSTOM_URL: ${{ steps.deploy.outputs.custom_url }}
         run: |
           set -Eeuo pipefail
-          scripts/smoke_site.sh "$WORKERS_DEV_URL" "$GITHUB_SHA"
-          printf 'url=%s\n' "$WORKERS_DEV_URL" >> "$GITHUB_OUTPUT"
-          if [ "$CUSTOM_URL" != "https://stage.security.szolotov.com" ]; then
-            echo "::warning::Custom preview domain unavailable. Tested preview: ${WORKERS_DEV_URL}"
+          case "$GITHUB_REF" in
+            refs/heads/dev) expected_domain=https://dev.security.szolotov.com ;;
+            refs/heads/stage) expected_domain=https://stage.security.szolotov.com ;;
+            *) exit 1 ;;
+          esac
+          if [ "$CUSTOM_URL" != "$expected_domain" ]; then
+            echo "::error::expected custom domain $expected_domain, got $CUSTOM_URL"
+            exit 1
           fi
+          scripts/smoke_site.sh "$WORKERS_DEV_URL" "$GITHUB_SHA" noindex
+          printf 'url=%s\n' "$expected_domain" >> "$GITHUB_OUTPUT"

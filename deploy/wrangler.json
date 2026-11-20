@@ -6,11 +6,9 @@
   "routes": [
     {
       "pattern": "security.szolotov.com",
-      "custom_domain": true,
-      "previews_enabled": true
+      "custom_domain": true
     }
   ],
-  "previews": {},
   "assets": {
     "directory": "../site",
     "html_handling": "auto-trailing-slash",
