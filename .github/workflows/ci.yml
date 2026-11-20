@@ -257,10 +257,10 @@ jobs:
         run: |
           set -Eeuo pipefail
           cargo test --locked
-      - name: cargo build
+      - name: cargo build --release
         run: |
           set -Eeuo pipefail
-          cargo build --locked
+          cargo build --release --locked
 
   rust-supply-chain:
     name: rust supply chain
