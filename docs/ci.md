@@ -34,8 +34,8 @@ To fix:
 
 1. Repository Settings → Environments → production.
 2. Deployment branches and tags → Selected branches and tags.
-3. Add the `prod` branch (or choose All branches if you accept the broader policy).
-4. Keep the required reviewer if you want the approval gate.
+3. Add the `prod` branch.
+4. Keep the required reviewer to retain the approval gate.
 5. Re-run the failed Release workflow.
 
 This setting is not stored in the repository. An administrator authenticated with `gh` and authorized to manage repository environments can add and verify the exact `prod` branch rule with `jq` installed:
