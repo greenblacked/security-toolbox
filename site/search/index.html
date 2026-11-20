@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Search | Security Toolbox</title>
+  <link rel="stylesheet" href="/home.css">
+  <link rel="stylesheet" href="/guides.css">
+  <script src="/theme.js" defer></script>
+  <script src="/search.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-header"><div class="wrap header-inner">
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>Security Toolbox</a>
+    <div class="header-actions"><a class="repo-link" href="https://github.com/greenblacked/security-toolbox">GitHub ↗</a><button type="button" id="theme-toggle" hidden>Theme</button></div>
+  </div></header>
+  <main id="main" class="wrap search-page">
+    <h1>Search guides</h1>
+    <form id="search-form" role="search">
+      <label for="search-query">Search terms</label>
+      <div class="search-controls"><input id="search-query" name="q" type="search" required><button type="submit">Search</button></div>
+    </form>
+    <p id="search-status" role="status" aria-live="polite">Enter a term to search the guides.</p>
+    <ul id="search-results"></ul>
+  </main>
+  <footer class="site-footer"><div class="wrap footer-inner"><a href="/">Security Toolbox</a><a href="https://github.com/greenblacked/security-toolbox">View on GitHub ↗</a></div></footer>
+</body>
+</html>
