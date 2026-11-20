@@ -93,15 +93,17 @@ jobs:
         with:
           path: ~/.cache/pip
           key: pip-ruff-${{ runner.os }}-${{ hashFiles('.github/workflows/security.yml') }}
-      - run: |
+      - name: Install ruff
+        run: |
           set -Eeuo pipefail
           python -m pip install "ruff==${RUFF_VERSION}"
       - name: Lint, including the bandit security rules
+        # Rules come from ruff.toml. Any finding or unformatted file fails the job;
+        # nothing here is allowed to fail open.
         run: |
           set -Eeuo pipefail
-          ruff check --output-format=github . || true
-          ruff format --check . || true
-          # No Python yet; job stays green. Remove || true when code is added.
+          ruff check --output-format=github .
+          ruff format --check .
 
   codeql-languages:
     name: codeql languages
@@ -134,8 +136,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
-      actions: read  # CodeQL reads this run's metadata in a private repository
+      actions: read  # CodeQL reads this workflow run's metadata
       contents: read
+      security-events: write  # upload the CodeQL results to code scanning
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
@@ -144,39 +147,23 @@ jobs:
         with:
           languages: ${{ needs.codeql-languages.outputs.languages }}
           queries: security-extended
-      # Code scanning is not available on this private repository, so the SARIF
-      # stays on the runner instead of being uploaded. Drop upload: never (and
-      # restore security-events: write) once the repository is public.
       - id: analyze
         uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066  # v4.39.3
-        with:
-          upload: never
-      # analyze never fails on findings, and with no upload nothing else would show
-      # them, so any result in the SARIF fails this job.
+      # analyze uploads the results to code scanning but never fails on them, so
+      # any result in the SARIF also fails this job. The check fails closed: each
+      # scanned language needs a non-empty <lang>.sarif with runs that all carry
+      # a results array. Its crafted-case test runs first.
+      - name: Test the SARIF check
+        run: |
+          set -Eeuo pipefail
+          .github/scripts/test-check-sarif.sh
       - name: Fail on any CodeQL result
         env:
           SARIF_DIR: ${{ steps.analyze.outputs.sarif-output }}
+          LANGUAGES: ${{ needs.codeql-languages.outputs.languages }}
         run: |
           set -Eeuo pipefail
-          shopt -s nullglob
-          files=("$SARIF_DIR"/*.sarif)
-          if [ "${#files[@]}" -eq 0 ]; then
-            echo "::error::no SARIF file in ${SARIF_DIR}"
-            exit 1
-          fi
-          total=0
-          for file in "${files[@]}"; do
-            count=$(jq '[.runs[].results[]?] | length' "$file")
-            total=$((total + count))
-            jq -r '.runs[].results[]? |
-              "::error file=\(.locations[0].physicalLocation.artifactLocation.uri // ""),line=\(.locations[0].physicalLocation.region.startLine // 1),title=\(.ruleId)::\(.message.text)"' "$file"
-            echo "$(basename "$file"): ${count} result(s)"
-          done
-          if [ "$total" -ne 0 ]; then
-            echo "::error::CodeQL reported ${total} result(s)"
-            exit 1
-          fi
-          echo "CodeQL: no results"
+          .github/scripts/check-sarif.sh "$SARIF_DIR" "$LANGUAGES"
 
   permissions-audit:
     name: permissions audit
@@ -319,13 +306,25 @@ jobs:
       contents: read
     steps:
       - name: All security checks must pass
+        # Job results go through env, not ${{ }} inside the script.
+        env:
+          SECRETS_RESULT: ${{ needs.secrets.result }}
+          WORKFLOWS_RESULT: ${{ needs.workflows.result }}
+          PYTHON_RESULT: ${{ needs.python.result }}
+          CODEQL_RESULT: ${{ needs.codeql.result }}
+          PERMISSIONS_RESULT: ${{ needs.permissions-audit.result }}
         run: |
           set -Eeuo pipefail
-          if [[ "${{ needs.secrets.result }}" != "success" ||
-                "${{ needs.workflows.result }}" != "success" ||
-                "${{ needs.python.result }}" != "success" ||
-                "${{ needs.codeql.result }}" != "success" ||
-                "${{ needs.permissions-audit.result }}" != "success" ]]; then
+          failed=0
+          for pair in "secrets=$SECRETS_RESULT" "workflows=$WORKFLOWS_RESULT" \
+            "python=$PYTHON_RESULT" "codeql=$CODEQL_RESULT" \
+            "permissions-audit=$PERMISSIONS_RESULT"; do
+            if [[ "${pair#*=}" != "success" ]]; then
+              echo "::error::${pair%%=*} job result: ${pair#*=}"
+              failed=1
+            fi
+          done
+          if [[ "$failed" -ne 0 ]]; then
             echo "::error::one or more security jobs failed"
             exit 1
           fi

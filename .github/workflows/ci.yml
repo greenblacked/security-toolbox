@@ -17,6 +17,21 @@ concurrency:
     && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+env:
+  ACTIONLINT_VERSION: '1.7.12'
+  # From actionlint_<version>_checksums.txt on the release.
+  ACTIONLINT_SHA256: '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8'
+  SHELLCHECK_VERSION: '0.11.0'
+  # sha256 of the release tarball, recorded when the pin was set.
+  SHELLCHECK_SHA256: '8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198'
+  YAMLLINT_VERSION: '1.38.0'
+  OPA_VERSION: '1.22.4'
+  # From opa_linux_amd64_static.sha256 on the release.
+  OPA_SHA256: '35e3b352e715e80624ead6c89930d8585f6f7d94cdc409eb2a9fe36620dcccba'
+  CONFTEST_VERSION: '0.71.1'
+  # From checksums.txt on the release.
+  CONFTEST_SHA256: 'c3f6b2a753bd56e377a1e51a95ae3e057f926f2e9139f7d5b5dfbbaf810f7985'
+
 jobs:
   site:
     name: site check
@@ -36,9 +51,184 @@ jobs:
           test -f deploy/wrangler.json
           echo "site skeleton ok"
 
+  docs:
+    name: docs build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/pip
+          key: pip-mkdocs-${{ runner.os }}-${{ hashFiles('docs/requirements.txt') }}
+      - name: Install MkDocs
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --quiet -r docs/requirements.txt
+      - name: Build the docs strictly, outside site/
+        # mkdocs.yml sets site_dir: build/docs. The build must leave the tree clean,
+        # so it can never overwrite the hand-written site/ the Worker serves.
+        run: |
+          set -Eeuo pipefail
+          mkdocs build --strict
+          if [ -n "$(git status --porcelain)" ]; then
+            git status --porcelain
+            echo "::error::mkdocs build changed tracked or unignored files"
+            exit 1
+          fi
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/pip
+          key: pip-yamllint-${{ runner.os }}-${{ hashFiles('.github/workflows/ci.yml') }}
+      - name: Install shellcheck, actionlint and yamllint
+        run: |
+          set -Eeuo pipefail
+          bin="$RUNNER_TEMP/bin"
+          mkdir -p "$bin"
+          fetch() {
+            curl -fsSL --retry 3 --retry-connrefused --retry-delay 2 --retry-max-time 150 \
+              --connect-timeout 20 --max-time 60 -o "$1" "$2"
+          }
+          sc="shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
+          fetch "$sc" "https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VERSION}/${sc}"
+          echo "${SHELLCHECK_SHA256}  ${sc}" | sha256sum --check --status
+          tar -xJf "$sc" --strip-components=1 -C "$bin" "shellcheck-v${SHELLCHECK_VERSION}/shellcheck"
+          al="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          fetch "$al" "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${al}"
+          echo "${ACTIONLINT_SHA256}  ${al}" | sha256sum --check --status
+          tar -xzf "$al" -C "$bin" actionlint
+          rm -f "$sc" "$al"
+          echo "$bin" >> "$GITHUB_PATH"
+          python -m pip install --quiet "yamllint==${YAMLLINT_VERSION}"
+      - name: actionlint
+        # actionlint also runs shellcheck over every run: block, since it is on PATH.
+        run: |
+          set -Eeuo pipefail
+          actionlint -version
+          actionlint
+      - name: shellcheck
+        run: |
+          set -Eeuo pipefail
+          shellcheck --version
+          git ls-files -z -- '*.sh' '*.bash' | xargs -0 -r shellcheck -S style
+      - name: yamllint
+        run: |
+          set -Eeuo pipefail
+          yamllint --version
+          yamllint --strict .
+
+  policy-tests:
+    name: policy tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/pip
+          key: pip-checkov-${{ runner.os }}-${{ hashFiles('.github/requirements/checkov.txt') }}
+      - name: Install opa, conftest and checkov
+        # opa and conftest are release binaries checked against the published
+        # sha256. checkov and every dependency install with --require-hashes,
+        # into a virtual environment whose python3 the policy tests then use.
+        run: |
+          set -Eeuo pipefail
+          bin="$RUNNER_TEMP/bin"
+          mkdir -p "$bin"
+          fetch() {
+            curl -fsSL --retry 3 --retry-connrefused --retry-delay 2 --retry-max-time 150 \
+              --connect-timeout 20 --max-time 120 -o "$1" "$2"
+          }
+          fetch opa "https://github.com/open-policy-agent/opa/releases/download/v${OPA_VERSION}/opa_linux_amd64_static"
+          echo "${OPA_SHA256}  opa" | sha256sum --check --status
+          install -m 0755 opa "$bin/opa"
+          ct="conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz"
+          fetch "$ct" "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/${ct}"
+          echo "${CONFTEST_SHA256}  ${ct}" | sha256sum --check --status
+          tar -xzf "$ct" -C "$bin" conftest
+          rm -f opa "$ct"
+          venv="$RUNNER_TEMP/checkov"
+          python -m venv "$venv"
+          "$venv/bin/python" -m pip install --quiet --require-hashes --no-deps \
+            -r .github/requirements/checkov.txt
+          "$venv/bin/python" -m pip check
+          echo "$bin" >> "$GITHUB_PATH"
+          echo "$venv/bin" >> "$GITHUB_PATH"
+      - name: Tool versions
+        run: |
+          set -Eeuo pipefail
+          opa version
+          conftest --version
+          checkov --version
+          python3 -c 'import checkov'
+      - name: conftest verify
+        run: |
+          set -Eeuo pipefail
+          conftest verify -p policies/opa
+      - name: Policy tests
+        # policies/test.sh skips checkov when it is missing; here it must run.
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/policy-tests.log"
+          policies/test.sh | tee "$out"
+          if grep -q '^skip - checkov' "$out"; then
+            echo "::error::checkov tests were skipped"
+            exit 1
+          fi
+      - name: Check tests
+        run: |
+          set -Eeuo pipefail
+          checks/test.sh
+
+
+  helper-tests:
+    name: helper tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Wrangler helper tests
+        run: |
+          set -Eeuo pipefail
+          python scripts/test_wrangler_helpers.py
+
   ci:
     name: ci
-    needs: [site]
+    needs: [site, docs, lint, policy-tests, helper-tests]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -46,8 +236,23 @@ jobs:
       contents: read
     steps:
       - name: CI gate
+        env:
+          SITE_RESULT: ${{ needs.site.result }}
+          DOCS_RESULT: ${{ needs.docs.result }}
+          LINT_RESULT: ${{ needs.lint.result }}
+          POLICY_RESULT: ${{ needs.policy-tests.result }}
+          HELPER_RESULT: ${{ needs.helper-tests.result }}
         run: |
-          if [[ "${{ needs.site.result }}" != "success" ]]; then
+          set -Eeuo pipefail
+          failed=0
+          for pair in "site=$SITE_RESULT" "docs=$DOCS_RESULT" "lint=$LINT_RESULT" \
+            "policy-tests=$POLICY_RESULT" "helper-tests=$HELPER_RESULT"; do
+            if [[ "${pair#*=}" != "success" ]]; then
+              echo "::error::${pair%%=*} job result: ${pair#*=}"
+              failed=1
+            fi
+          done
+          if [[ "$failed" -ne 0 ]]; then
             exit 1
           fi
           echo "CI passed"

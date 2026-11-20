@@ -3,22 +3,29 @@ site_url: https://security.szolotov.com
 site_description: Security checks, best practices and automated guardrails
 repo_url: https://github.com/greenblacked/security-toolbox
 repo_name: greenblacked/security-toolbox
+# Built output goes under build/, never into site/: site/ holds the hand-written
+# homepage the Worker serves, and a default build would overwrite it.
+site_dir: build/docs
+# docs/requirements.txt pins the build tools; it is not a page to publish.
+exclude_docs: |
+  requirements.txt
 
 theme:
   name: material
+  font: false
   palette:
-    - scheme: default
-      primary: indigo
-      accent: indigo
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
     - scheme: slate
-      primary: indigo
-      accent: indigo
+      primary: black
+      accent: lime
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
+    - scheme: default
+      primary: black
+      accent: green
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
   features:
     - navigation.tabs
     - navigation.sections
@@ -32,6 +39,7 @@ nav:
   - GCP: gcp/index.md
   - Terraform: terraform/index.md
   - GitHub & CI: github/index.md
+  - CI & deploy: ci.md
   - Secrets: secrets/index.md
   - Contributing: contributing.md
 
