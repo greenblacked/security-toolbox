@@ -13,16 +13,40 @@ url="${url%/}"
 body="$(mktemp)"
 trap 'rm -f "$body"' EXIT
 
+fetch_route() {
+  local path="$1" timeout="$2"
+  curl --silent --show-error --location --max-time "$timeout" \
+    --output "$body" --write-out '%{http_code}' "${url}${path}"
+}
+
+wait_for_revision() {
+  local status delay
+  for delay in 0 2 4 8 16; do
+    sleep "$delay"
+    status="$(fetch_route /version.txt 5)" || status="unavailable"
+    if [ "$status" = 200 ] && [ "$(tr -d '\r\n' < "$body")" = "$expected" ]; then
+      echo "GET ${url}/version.txt served the expected revision"
+      return 0
+    fi
+    echo "Waiting for ${url} to serve the expected revision (HTTP $status)"
+  done
+  echo "::error::${url}/version.txt did not serve the expected revision $expected" >&2
+  return 1
+}
+
 check_route() {
   local path="$1" marker="$2" status
-  status="$(curl --silent --show-error --location --max-time 15 \
-    --output "$body" --write-out '%{http_code}' "${url}${path}")" || status="unavailable"
+  status="$(fetch_route "$path" 15)" || status="unavailable"
   echo "GET ${url}${path} answered HTTP $status"
   if [ "$status" != 200 ] || ! grep -Fq -- "$marker" "$body"; then
     echo "::error::${url}${path} did not serve the expected content" >&2
     return 1
   fi
 }
+
+if [ -n "$expected" ]; then
+  wait_for_revision
+fi
 
 check_route / 'Practical security for'
 check_route /home.css '--accent:'
@@ -35,12 +59,3 @@ check_route /secrets/ 'Delivery patterns'
 check_route /contributing/ 'Keep checks modular'
 check_route /ci/ 'Credentials and GitHub environments'
 check_route /search/search_index.json 'Kubernetes / GKE'
-
-if [ -n "$expected" ]; then
-  check_route /version.txt "$expected"
-  deployed="$(tr -d '\r\n' < "$body")"
-  if [ "$deployed" != "$expected" ]; then
-    echo "::error::${url}/version.txt served '${deployed}', expected '${expected}'" >&2
-    exit 1
-  fi
-fi
