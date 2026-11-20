@@ -44,10 +44,8 @@ jobs:
           cd deploy
           npm ci --ignore-scripts
           test "$(./node_modules/.bin/wrangler --version)" = "$WRANGLER_VERSION"
-          for config in wrangler.json wrangler.dev.json wrangler.stage.json; do
-            ./node_modules/.bin/wrangler deploy --dry-run --config "$config" \
-              --no-autoconfig --no-install-skills
-          done
+          ./node_modules/.bin/wrangler deploy --dry-run --config wrangler.json \
+            --no-autoconfig --no-install-skills
 
   deploy:
     name: deploy ${{ github.ref_name }}
@@ -81,7 +79,7 @@ jobs:
           cd deploy
           npm ci --ignore-scripts
           test "$(./node_modules/.bin/wrangler --version)" = "$WRANGLER_VERSION"
-      - name: Deploy the branch Worker
+      - name: Upload the branch preview
         id: deploy
         working-directory: deploy
         env:
@@ -92,17 +90,17 @@ jobs:
         run: |
           set -Eeuo pipefail
           case "$GITHUB_REF" in
-            refs/heads/dev) config=wrangler.dev.json; export CLOUDFLARE_API_TOKEN="$DEV_TOKEN" ;;
-            refs/heads/stage) config=wrangler.stage.json; export CLOUDFLARE_API_TOKEN="$STAGE_TOKEN" ;;
+            refs/heads/dev) export CLOUDFLARE_API_TOKEN="$DEV_TOKEN" ;;
+            refs/heads/stage) export CLOUDFLARE_API_TOKEN="$STAGE_TOKEN" ;;
             *) echo '::error::unexpected deployment branch'; exit 1 ;;
           esac
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
             echo '::error::Cloudflare token missing (set the branch-specific token or CLOUDFLARE_API_TOKEN) or CLOUDFLARE_ACCOUNT_ID missing'
             exit 1
           fi
-          ./node_modules/.bin/wrangler deploy --config "$config" \
-            --no-autoconfig --no-install-skills --message "${GITHUB_REF_NAME} ${GITHUB_SHA:0:7}" --tag "$GITHUB_SHA"
-          python "$GITHUB_WORKSPACE/scripts/read_wrangler_deploy.py" "$WRANGLER_OUTPUT_FILE_PATH" >> "$GITHUB_OUTPUT"
+          ./node_modules/.bin/wrangler preview --name "$GITHUB_REF_NAME" --config wrangler.json \
+            --no-install-skills --message "${GITHUB_REF_NAME} ${GITHUB_SHA:0:7}" --tag "$GITHUB_SHA"
+          python "$GITHUB_WORKSPACE/scripts/read_wrangler_deploy.py" --preview "$WRANGLER_OUTPUT_FILE_PATH" >> "$GITHUB_OUTPUT"
       - name: Verify deployed revision and custom domain
         id: smoke
         env:
@@ -115,9 +113,16 @@ jobs:
             refs/heads/stage) expected_domain=https://stage.security.szolotov.com ;;
             *) exit 1 ;;
           esac
-          if [ "$CUSTOM_URL" != "$expected_domain" ]; then
+          case "$WORKERS_DEV_URL" in
+            "https://${GITHUB_REF_NAME}-security."*.workers.dev) ;;
+            *) echo "::error::unexpected named preview URL: $WORKERS_DEV_URL"; exit 1 ;;
+          esac
+          scripts/smoke_site.sh "$WORKERS_DEV_URL" "$GITHUB_SHA" noindex
+          if [ -n "$CUSTOM_URL" ] && [ "$CUSTOM_URL" != "$expected_domain" ]; then
             echo "::error::expected custom domain $expected_domain, got $CUSTOM_URL"
             exit 1
           fi
-          scripts/smoke_site.sh "$WORKERS_DEV_URL" "$GITHUB_SHA" noindex
-          printf 'url=%s\n' "$expected_domain" >> "$GITHUB_OUTPUT"
+          if [ -z "$CUSTOM_URL" ]; then
+            echo "::warning::Custom preview domain unavailable: $expected_domain"
+          fi
+          printf 'url=%s\n' "$WORKERS_DEV_URL" >> "$GITHUB_OUTPUT"
