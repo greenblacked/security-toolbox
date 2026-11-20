@@ -19,6 +19,9 @@ terraform show -json tfplan > plan.json
 conftest test --policy policies/opa/terraform --namespace terraform.gcp plan.json
 # Self-tests against fixtures
 ./checks/test.sh && ./policies/test.sh
+# Rust port of the checks (stb), offline against exported JSON
+(cd checks && cargo build --release --locked)
+checks/target/release/stb gke --file prod.json --format sarif > gke.sarif
 ```
 
 ## What's here
@@ -42,7 +45,7 @@ conftest test --policy policies/opa/terraform --namespace terraform.gcp plan.jso
 ## Structure
 
 ```text
-checks/     # read-only report scripts and checklists, with fixtures
+checks/     # read-only report scripts and checklists, with fixtures; stb/ is the Rust port
 policies/   # OPA/Conftest and Checkov policies, with fixtures
 plugins/    # security skills (SKILL.md procedures)
 docs/       # MkDocs source
