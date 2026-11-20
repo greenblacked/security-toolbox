@@ -35,14 +35,25 @@ class CheckWranglerPin(unittest.TestCase):
 
     def test_environment_custom_domains(self):
         for host in ("dev.security.szolotov.com", "stage.security.szolotov.com"):
-            log = json.dumps({"type": "deploy", "targets": [
-                "https://security-dev.account.workers.dev", f"{host} (custom domain)"
-            ]})
+            log = json.dumps(
+                {
+                    "type": "deploy",
+                    "targets": [
+                        "https://security-dev.account.workers.dev",
+                        f"{host} (custom domain)",
+                    ],
+                }
+            )
             self.assertEqual(parse_deploy(log)[2], f"https://{host}")
-        log = json.dumps({"type": "deploy", "targets": [
-            "https://security-dev.account.workers.dev",
-            "dev.security.szolotov.com.evil.com (custom domain)",
-        ]})
+        log = json.dumps(
+            {
+                "type": "deploy",
+                "targets": [
+                    "https://security-dev.account.workers.dev",
+                    "dev.security.szolotov.com.evil.com (custom domain)",
+                ],
+            }
+        )
         self.assertEqual(parse_deploy(log)[2], "")
 
     def test_match(self) -> None:
