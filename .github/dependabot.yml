@@ -16,3 +16,11 @@ updates:
         update-types:
           - minor
           - patch
+  - package-ecosystem: cargo
+    directory: /checks
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci

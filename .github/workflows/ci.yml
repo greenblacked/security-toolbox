@@ -31,6 +31,15 @@ env:
   CONFTEST_VERSION: '0.71.1'
   # From checksums.txt on the release.
   CONFTEST_SHA256: 'c3f6b2a753bd56e377a1e51a95ae3e057f926f2e9139f7d5b5dfbbaf810f7985'
+  CARGO_DENY_VERSION: '0.22.0'
+  # From cargo-deny-<version>-x86_64-unknown-linux-musl.tar.gz.sha256 on the release.
+  CARGO_DENY_SHA256: '98c56e6a408bfa5c3c60744b6015aaa6aa08f743fdeb88386d06fca035bb1786'
+  CARGO_AUDIT_VERSION: '0.23.0'
+  # sha256 of the release tarball, matching the digest GitHub lists for the asset.
+  CARGO_AUDIT_SHA256: '4f01c74ed84b2dffd0b1d37012a62cdf2a92c96e25bdf8eec7fcc0d4d3eb7811'
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: '0'
+  CARGO_NET_RETRY: '10'
 
 jobs:
   site:
@@ -207,9 +216,103 @@ jobs:
           set -Eeuo pipefail
           checks/test.sh
 
+  rust:
+    name: rust
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: checks
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the toolchain from rust-toolchain.toml
+        # rustup reads checks/rust-toolchain.toml, so the channel and the
+        # rustfmt and clippy components come from that one file.
+        run: |
+          set -Eeuo pipefail
+          rustup --version
+          rustup set auto-self-update disable
+          rustup toolchain install
+          rustup component add rustfmt clippy
+          rustc --version
+          cargo --version
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0  # v2.9.3
+        with:
+          workspaces: checks -> target
+          # Only main writes the cache; pull requests read it.
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: cargo fmt
+        run: |
+          set -Eeuo pipefail
+          cargo fmt --all --check
+      - name: cargo clippy
+        run: |
+          set -Eeuo pipefail
+          cargo clippy --all-targets --locked -- -D warnings
+      - name: cargo test
+        run: |
+          set -Eeuo pipefail
+          cargo test --locked
+      - name: cargo build --release
+        run: |
+          set -Eeuo pipefail
+          cargo build --release --locked
+
+  rust-supply-chain:
+    name: rust supply chain
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: checks
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the toolchain, cargo-deny and cargo-audit
+        # Release tarballs checked against pinned sha256 values.
+        run: |
+          set -Eeuo pipefail
+          rustup set auto-self-update disable
+          rustup toolchain install
+          bin="$RUNNER_TEMP/bin"
+          mkdir -p "$bin"
+          fetch() {
+            curl -fsSL --retry 3 --retry-connrefused --retry-delay 2 --retry-max-time 150 \
+              --connect-timeout 20 --max-time 120 -o "$1" "$2"
+          }
+          deny="cargo-deny-${CARGO_DENY_VERSION}-x86_64-unknown-linux-musl"
+          fetch "$RUNNER_TEMP/${deny}.tar.gz" \
+            "https://github.com/EmbarkStudios/cargo-deny/releases/download/${CARGO_DENY_VERSION}/${deny}.tar.gz"
+          echo "${CARGO_DENY_SHA256}  $RUNNER_TEMP/${deny}.tar.gz" | sha256sum --check --status
+          tar -xzf "$RUNNER_TEMP/${deny}.tar.gz" -C "$bin" --strip-components=1 "${deny}/cargo-deny"
+          audit="cargo-audit-x86_64-unknown-linux-musl-v${CARGO_AUDIT_VERSION}"
+          fetch "$RUNNER_TEMP/${audit}.tgz" \
+            "https://github.com/rustsec/rustsec/releases/download/cargo-audit/v${CARGO_AUDIT_VERSION}/${audit}.tgz"
+          echo "${CARGO_AUDIT_SHA256}  $RUNNER_TEMP/${audit}.tgz" | sha256sum --check --status
+          tar -xzf "$RUNNER_TEMP/${audit}.tgz" -C "$bin" --strip-components=1 "${audit}/cargo-audit"
+          rm -f "$RUNNER_TEMP/${deny}.tar.gz" "$RUNNER_TEMP/${audit}.tgz"
+          echo "$bin" >> "$GITHUB_PATH"
+      - name: cargo deny (advisories, bans, licenses, sources)
+        run: |
+          set -Eeuo pipefail
+          cargo deny --version
+          cargo deny --locked check advisories bans licenses sources
+      - name: cargo audit
+        run: |
+          set -Eeuo pipefail
+          cargo audit --version
+          cargo audit --deny warnings
+
   ci:
     name: ci
-    needs: [site, docs, lint, policy-tests]
+    needs: [site, docs, lint, policy-tests, rust, rust-supply-chain]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -222,11 +325,14 @@ jobs:
           DOCS_RESULT: ${{ needs.docs.result }}
           LINT_RESULT: ${{ needs.lint.result }}
           POLICY_RESULT: ${{ needs.policy-tests.result }}
+          RUST_RESULT: ${{ needs.rust.result }}
+          RUST_SUPPLY_CHAIN_RESULT: ${{ needs.rust-supply-chain.result }}
         run: |
           set -Eeuo pipefail
           failed=0
           for pair in "site=$SITE_RESULT" "docs=$DOCS_RESULT" "lint=$LINT_RESULT" \
-            "policy-tests=$POLICY_RESULT"; do
+            "policy-tests=$POLICY_RESULT" "rust=$RUST_RESULT" \
+            "rust-supply-chain=$RUST_SUPPLY_CHAIN_RESULT"; do
             if [[ "${pair#*=}" != "success" ]]; then
               echo "::error::${pair%%=*} job result: ${pair#*=}"
               failed=1
