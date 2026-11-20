@@ -1,16 +1,16 @@
 # CI and deploy
 
-The website uses a hand-written homepage, shared styles and a small first-party Markdown renderer. Guide source is in `docs/`; `node scripts/build_site.cjs` writes guide routes into `site/` for deployment. It disables raw HTML and fails on unresolved local Markdown links. A local search index supports keyboard-accessible guide search at `/search/`. Install the pinned parser with `npm ci --ignore-scripts`. The pull request dry-run builds the site and checks all three Wrangler configs without Cloudflare credentials.
+The website uses a hand-written homepage, shared styles and a small first-party Markdown renderer. Guide source is in `docs/`; `node scripts/build_site.cjs` writes guide routes into `site/` for deployment. It disables raw HTML and fails on unresolved local Markdown links. A local search index supports keyboard-accessible guide search at `/search/`. Install the pinned parser with `npm ci --ignore-scripts`. The pull request dry-run builds the site and checks the Wrangler config without Cloudflare credentials.
 
 ## Deployment paths
 
 | Branch | Worker | Address | Trigger |
 | --- | --- | --- | --- |
-| `dev` | `security-dev` | https://dev.security.szolotov.com | Push to `dev` |
-| `stage` | `security-stage` | https://stage.security.szolotov.com | Push to `stage` |
+| `dev` | `security` preview `dev` | https://dev.security.szolotov.com | Push to `dev` |
+| `stage` | `security` preview `stage` | https://stage.security.szolotov.com | Push to `stage` |
 | `prod` | `security` | https://security.szolotov.com | Merged same-repository `stage` to `prod` pull request |
 
-The development and staging jobs use distinct Workers, write a commit SHA to `version.txt`, and set `X-Robots-Tag: noindex` through the static asset `_headers` file. Smoke checks verify the expected revision, guide content and noindex header on the Worker's reported `workers.dev` URL. The custom domain must also be reported by Wrangler. Noindex is not access control: use Cloudflare Access if content must be private.
+Development and staging upload named previews of `security`, write a commit SHA to `version.txt`, and set `X-Robots-Tag: noindex` through the static asset `_headers` file. Smoke checks verify the expected revision, guide content and noindex header on the reported named `workers.dev` preview URL. The job warns if the expected custom preview hostname is not reported, and rejects an unexpected hostname. Custom hostnames require previews enabled on the production custom domain and DNS readiness; existing direct records can shadow the preview route. Verify the cutover independently before relying on these hostnames. Noindex is not access control: use Cloudflare Access if content must be private.
 
 Production is deployed only by the merged promotion PR, not by a tag, direct push or manual dispatch. The job checks out the merge SHA and verifies that `prod` still points to it immediately before deploying. A newer push can still race that check, so protect `prod` against direct pushes and serialize promotions. The `production` GitHub environment must retain its required reviewer approval. The job records the currently active Worker version, deploys, verifies the expected commit and contents on `workers.dev`, confirms the custom domain and checks the new version serves 100% of traffic. If a later step fails after deployment begins, it attempts to roll back to the recorded version. Custom-domain requests from GitHub runners may be blocked by Bot Fight Mode, so they are informational, not the blocking smoke check.
 
@@ -26,7 +26,7 @@ Promote a tested `stage` commit through a same-repository pull request to `prod`
 
 ## Migration and rollback
 
-Keep `main` as the default branch during migration. Review and merge this change through the normal `main` process first, then create or update `dev`, `stage` and `prod` from the reviewed commit using controlled PRs and protections. GitHub evaluates the production workflow from the PR base branch, so `prod` must already contain the new workflow before a `stage` to `prod` promotion can run it. Verify environment rules and token permissions before triggering branch deployments. Confirm the two new domains are free and the zone/account and token scopes are correct before the first deployment. These changes create or update Workers and domain routes when the workflows run; the repository change alone does not do so.
+Keep `main` as the default branch during migration. Review and promote changes through controlled PRs and protections. GitHub evaluates the production workflow from the PR base branch, so `prod` must already contain the release workflow before a `stage` to `prod` promotion can run it. Verify environment rules and token permissions before triggering deployments. Enable preview traffic for the production custom domain and verify DNS and certificate readiness before using the custom preview hostnames. Existing direct domain routes may continue to serve the old Workers until a separately reviewed cutover. These workflows do not remove those routes.
 
 After deployment, verify the Worker revision and status in Cloudflare, and check each domain from a client not blocked by Bot Fight Mode. If a production release fails, inspect the workflow rollback result and active version. If automatic rollback fails, use the Cloudflare dashboard or `wrangler rollback VERSION_ID --config deploy/wrangler.json --yes` with an authorised token, then verify the active version and site. Development and staging can be restored by a reviewed revert and a new branch push. Treat any restoration of the legacy tag workflow as a separate reviewed change; do not enable two production deployment paths simultaneously.
 
@@ -39,7 +39,7 @@ python scripts/test_wrangler_helpers.py
 export WRANGLER_VERSION=4.149.0
 python scripts/check_wrangler_pin.py
 node scripts/build_site.cjs
-(cd deploy && npm ci --ignore-scripts && for config in wrangler.json wrangler.dev.json wrangler.stage.json; do ./node_modules/.bin/wrangler deploy --dry-run --config "$config" --no-autoconfig --no-install-skills; done)
+(cd deploy && npm ci --ignore-scripts && ./node_modules/.bin/wrangler deploy --dry-run --config wrangler.json --no-autoconfig --no-install-skills)
 ```
 
 Do not run a live Wrangler deploy from a workstation unless that upload is intended.
