@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
-# Require the homepage and Kubernetes guide on the deployed Worker.
-# Used on the workers.dev address, not the custom domain (Bot Fight Mode on the
-# zone can answer a GitHub runner with 403). A second argument, when set, is
-# the release tag that site/version.txt must serve.
+# Verify live URLs on the deployed Worker, using workers.dev to avoid zone-level bot challenges.
 set -Eeuo pipefail
 
 url="${1:-}"
@@ -11,43 +8,39 @@ if [ -z "$url" ]; then
   echo "usage: smoke_site.sh <url> [expected_version]" >&2
   exit 1
 fi
+url="${url%/}"
 
-tmp="$(mktemp)"
-trap 'rm -f "$tmp"' EXIT
+body="$(mktemp)"
+trap 'rm -f "$body"' EXIT
 
-# wrangler reports an origin; request the homepage.
-code="$(curl --silent --show-error --location --max-time 20 \
-  --output "$tmp" --write-out '%{http_code}' "${url}/" || true)"
+check_route() {
+  local path="$1" marker="$2" status
+  status="$(curl --silent --show-error --location --max-time 15 \
+    --output "$body" --write-out '%{http_code}' "${url}${path}")" || status="unavailable"
+  echo "GET ${url}${path} answered HTTP $status"
+  if [ "$status" != 200 ] || ! grep -Fq -- "$marker" "$body"; then
+    echo "::error::${url}${path} did not serve the expected content" >&2
+    return 1
+  fi
+}
 
-echo "GET ${url}/ answered HTTP ${code:-none}"
-if [ "$code" != 200 ]; then
-  echo "::error::${url} did not return HTTP 200" >&2
-  exit 1
-fi
-if ! grep -q 'Security Toolbox' "$tmp"; then
-  echo "::error::${url} did not serve the Security Toolbox site" >&2
-  exit 1
-fi
-
-guide_code="$(curl --silent --show-error --location --max-time 20 \
-  --output "$tmp" --write-out '%{http_code}' "${url}/kubernetes/" || true)"
-echo "GET ${url}/kubernetes/ answered HTTP ${guide_code:-none}"
-if [ "$guide_code" != 200 ] || ! grep -Fq 'Cluster (GKE)' "$tmp"; then
-  echo "::error::${url}/kubernetes/ did not serve the Kubernetes guide" >&2
-  exit 1
-fi
+check_route / 'Practical security for'
+check_route /home.css '--accent:'
+check_route /theme.js 'renderTheme'
+check_route /kubernetes/ 'Cluster (GKE)'
+check_route /gcp/ 'Organisation policies worth enforcing'
+check_route /terraform/ 'Policies in this repository'
+check_route /github/ 'Repository baseline'
+check_route /secrets/ 'Delivery patterns'
+check_route /contributing/ 'Keep checks modular'
+check_route /ci/ 'Credentials and GitHub environments'
+check_route /search/search_index.json 'Kubernetes / GKE'
 
 if [ -n "$expected" ]; then
-  vcode="$(curl --silent --show-error --location --max-time 20 \
-    --output "$tmp" --write-out '%{http_code}' "${url}/version.txt" || true)"
-  echo "GET ${url}/version.txt answered HTTP ${vcode:-none}"
-  if [ "$vcode" != 200 ]; then
-    echo "::error::${url}/version.txt did not return HTTP 200" >&2
-    exit 1
-  fi
-  got="$(tr -d '\r\n' < "$tmp")"
-  if [ "$got" != "$expected" ]; then
-    echo "::error::${url}/version.txt served '${got}', not '${expected}'" >&2
+  check_route /version.txt "$expected"
+  deployed="$(tr -d '\r\n' < "$body")"
+  if [ "$deployed" != "$expected" ]; then
+    echo "::error::${url}/version.txt served '${deployed}', expected '${expected}'" >&2
     exit 1
   fi
 fi

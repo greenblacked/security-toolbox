@@ -16,12 +16,12 @@ def main() -> None:
 
     with tempfile.TemporaryDirectory() as temporary:
         output = Path(temporary)
-        subprocess.run(
-            [sys.executable, "-m", "mkdocs", "build", "--strict", "--site-dir", str(output)],  # noqa: S603
+        subprocess.run(  # noqa: S603
+            [sys.executable, "-m", "mkdocs", "build", "--strict", "--site-dir", str(output)],
             cwd=root,
             check=True,
         )
-        for path in ("kubernetes", "gcp", "terraform", "github", "secrets", "contributing"):
+        for path in ("kubernetes", "gcp", "terraform", "github", "secrets", "contributing", "ci"):
             if not (output / path / "index.html").is_file():
                 raise SystemExit(f"Missing generated guide: {path}/index.html")
 

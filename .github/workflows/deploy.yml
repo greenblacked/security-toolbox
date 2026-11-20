@@ -7,10 +7,9 @@
 # by editing a step that already holds it, because no step here holds it.
 #
 # A push to the stage branch, or Run workflow from that branch, uploads a
-# Preview named stage of the Worker security, served at
-# https://stage.security.szolotov.com once the custom domain allows Preview
-# traffic. A Preview is a separate version of the Worker, so production is
-# untouched. Production is not this file: release.yml deploys the Worker
+# Preview named stage of the Worker security. The Preview has a workers.dev
+# URL and a custom address when configured. It is a separate Worker version, so
+# production is untouched. Production is not this file: release.yml deploys the Worker
 # security after a vX.Y.Z tag. Cloudflare credentials are repository secrets
 # (CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID, with optional
 # vars.CLOUDFLARE_ACCOUNT_ID). The staging and production environments still
@@ -95,7 +94,7 @@ jobs:
       contents: read
     environment:
       name: staging
-      url: ${{ vars.DEPLOY_URL }}
+      url: ${{ steps.smoke.outputs.url }}
     steps:
       - name: The stage Preview uploads from the stage branch only
         env:
@@ -118,7 +117,7 @@ jobs:
           set -Eeuo pipefail
           python -m pip install --disable-pip-version-check -r docs/requirements.txt
           python scripts/package_worker_site.py
-      - name: Mark the stage site noindex
+      - name: Mark stage noindex and record the revision
         # Custom-domain Previews do not get Cloudflare's automatic
         # X-Robots-Tag: noindex. The job writes site/_headers and leaves
         # site/index.html unchanged. It does not write a robots.txt that
@@ -126,6 +125,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           python scripts/prepare_stage_site.py
+          printf '%s\n' "$GITHUB_SHA" > site/version.txt
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version: '22.23.3'
@@ -171,25 +171,14 @@ jobs:
           python "$GITHUB_WORKSPACE/scripts/read_wrangler_deploy.py" --preview \
             "$WRANGLER_OUTPUT_FILE_PATH" >> "$GITHUB_OUTPUT"
       - name: Smoke-test the stage Preview
+        id: smoke
         env:
           WORKERS_DEV_URL: ${{ steps.deploy.outputs.url }}
-        run: scripts/smoke_site.sh "$WORKERS_DEV_URL"
-      - name: Check the stage Preview's address
-        # The upload step already failed if wrangler preview did or if it
-        # reported no acceptable URL; this checks Wrangler reported the stage
-        # host, which proves the domain is enabled for Preview traffic.
-        env:
           CUSTOM_URL: ${{ steps.deploy.outputs.custom_url }}
-          WORKERS_DEV_URL: ${{ steps.deploy.outputs.url }}
         run: |
           set -Eeuo pipefail
-          stage_url=https://stage.security.szolotov.com
-          if [ "$CUSTOM_URL" != "$stage_url" ]; then
-            # Preview traffic on a custom domain is a setting on the domain, which
-            # wrangler preview does not change.
-            echo "::error::Wrangler did not report ${stage_url} for this Preview"
-            echo "::error::reported: custom '${CUSTOM_URL}', workers.dev '${WORKERS_DEV_URL}'"
-            echo "::error::the owner must enable security.szolotov.com for Preview traffic (docs/ci.md)"
-            exit 1
+          scripts/smoke_site.sh "$WORKERS_DEV_URL" "$GITHUB_SHA"
+          printf 'url=%s\n' "$WORKERS_DEV_URL" >> "$GITHUB_OUTPUT"
+          if [ "$CUSTOM_URL" != "https://stage.security.szolotov.com" ]; then
+            echo "::warning::Custom preview domain unavailable. Tested preview: ${WORKERS_DEV_URL}"
           fi
-          echo "Wrangler reported ${stage_url} for this Preview"
