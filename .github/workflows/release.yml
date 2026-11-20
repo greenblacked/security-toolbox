@@ -123,6 +123,12 @@ jobs:
             echo "::error::not deploying without a version to roll back to"
             exit 1
           fi
+      - name: Write the release version marker
+        # site/version.txt is not committed. The smoke test fetches it from
+        # workers.dev to confirm this tag's assets are what the Worker serves.
+        run: |
+          set -Eeuo pipefail
+          printf '%s\n' "$TAG" > site/version.txt
       - name: Deploy the production Worker
         id: deploy
         working-directory: deploy
@@ -171,7 +177,7 @@ jobs:
             echo "::error::reported custom domain: '${CUSTOM_URL}'; it was not attached"
             exit 1
           fi
-          scripts/smoke_site.sh "$WORKERS_DEV_URL"
+          scripts/smoke_site.sh "$WORKERS_DEV_URL" "$TAG"
       - name: Confirm production serves the deployed version
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

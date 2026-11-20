@@ -33,9 +33,6 @@ concurrency:
 
 env:
   WRANGLER_VERSION: '4.149.0'
-  # wrangler 4 refuses to run below Node 22. Not a *_VERSION name: a weekly
-  # freshness check that compared those to the newest release would see a
-  # different major from the one wrangler supports.
   WRANGLER_SEND_METRICS: 'false'
 
 jobs:
@@ -112,10 +109,10 @@ jobs:
         with:
           python-version: '3.13'
       - name: Mark the stage site noindex
-        # wrangler preview has no --noindex flag. The catalogue deploy in the AI
-        # repository applies --noindex at site-build time; this repository's
-        # homepage is hand-written, so the Preview job writes robots.txt and
-        # leaves site/index.html unchanged.
+        # Custom-domain Previews do not get Cloudflare's automatic
+        # X-Robots-Tag: noindex. The job writes site/_headers and leaves
+        # site/index.html unchanged. It does not write a robots.txt that
+        # would block crawlers from seeing the header.
         run: |
           set -Eeuo pipefail
           python scripts/prepare_stage_site.py

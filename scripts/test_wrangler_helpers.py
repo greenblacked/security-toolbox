@@ -5,12 +5,14 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 
 from check_wrangler_pin import problems
-from prepare_stage_site import ROBOTS
+from prepare_stage_site import NOINDEX_BLOCK, merge_headers
 from prepare_stage_site import main as prepare_main
 from read_wrangler_deploy import parse_active, parse_deploy, parse_preview
 
@@ -127,7 +129,7 @@ class ReadWranglerDeploy(unittest.TestCase):
 
 
 class PrepareStageSite(unittest.TestCase):
-    def test_writes_robots_and_leaves_index(self) -> None:
+    def _site(self) -> tuple[Path, Path, str]:
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         site = Path(tmp.name) / "site"
@@ -135,9 +137,64 @@ class PrepareStageSite(unittest.TestCase):
         index = site / "index.html"
         body = "<!doctype html><title>Security Toolbox</title>\n"
         index.write_text(body, encoding="utf-8")
+        return site, index, body
+
+    def test_writes_headers_and_leaves_index(self) -> None:
+        site, index, body = self._site()
         self.assertEqual(prepare_main([str(site)]), 0)
-        self.assertEqual((site / "robots.txt").read_text(encoding="utf-8"), ROBOTS)
+        self.assertEqual((site / "_headers").read_text(encoding="utf-8"), NOINDEX_BLOCK)
+        self.assertFalse((site / "robots.txt").exists())
         self.assertEqual(index.read_text(encoding="utf-8"), body)
+
+    def test_removes_untracked_blocking_robots(self) -> None:
+        site, index, body = self._site()
+        (site / "robots.txt").write_text("User-agent: *\nDisallow: /\n", encoding="utf-8")
+        self.assertEqual(prepare_main([str(site)]), 0)
+        self.assertFalse((site / "robots.txt").exists())
+        self.assertEqual((site / "_headers").read_text(encoding="utf-8"), NOINDEX_BLOCK)
+        self.assertEqual(index.read_text(encoding="utf-8"), body)
+
+    def test_merge_headers_appends_and_is_idempotent(self) -> None:
+        existing = "/assets/*\n  Cache-Control: public, max-age=60\n"
+        merged = merge_headers(existing)
+        self.assertIn("Cache-Control: public, max-age=60", merged)
+        self.assertTrue(merged.endswith(NOINDEX_BLOCK))
+        self.assertEqual(merge_headers(merged), merged)
+
+    def test_merges_tracked_headers(self) -> None:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        root = Path(tmp.name)
+        site = root / "site"
+        site.mkdir()
+        index = site / "index.html"
+        body = "<!doctype html><title>Security Toolbox</title>\n"
+        index.write_text(body, encoding="utf-8")
+        existing = "/assets/*\n  Cache-Control: public, max-age=60\n"
+        (site / "_headers").write_text(existing, encoding="utf-8")
+        self._git(root, ["init"])
+        self._git(root, ["add", "site/_headers"])
+        self._git(
+            root,
+            [
+                "-c",
+                "user.name=greenblacked",
+                "-c",
+                "user.email=zolotov.98@gmail.com",
+                "commit",
+                "-m",
+                "headers",
+            ],
+        )
+        self.assertEqual(prepare_main([str(site)]), 0)
+        self.assertEqual((site / "_headers").read_text(encoding="utf-8"), merge_headers(existing))
+        self.assertEqual(index.read_text(encoding="utf-8"), body)
+
+    def _git(self, root: Path, args: list[str]) -> None:
+        git = shutil.which("git")
+        if git is None:
+            self.fail("git is not on PATH")
+        subprocess.run([git, "-C", str(root), *args], check=True, capture_output=True)  # noqa: S603
 
     def test_missing_index(self) -> None:
         tmp = tempfile.TemporaryDirectory()
