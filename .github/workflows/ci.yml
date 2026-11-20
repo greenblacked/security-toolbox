@@ -207,9 +207,28 @@ jobs:
           set -Eeuo pipefail
           checks/test.sh
 
+
+  helper-tests:
+    name: helper tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Wrangler helper tests
+        run: |
+          set -Eeuo pipefail
+          python scripts/test_wrangler_helpers.py
+
   ci:
     name: ci
-    needs: [site, docs, lint, policy-tests]
+    needs: [site, docs, lint, policy-tests, helper-tests]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -222,11 +241,12 @@ jobs:
           DOCS_RESULT: ${{ needs.docs.result }}
           LINT_RESULT: ${{ needs.lint.result }}
           POLICY_RESULT: ${{ needs.policy-tests.result }}
+          HELPER_RESULT: ${{ needs.helper-tests.result }}
         run: |
           set -Eeuo pipefail
           failed=0
           for pair in "site=$SITE_RESULT" "docs=$DOCS_RESULT" "lint=$LINT_RESULT" \
-            "policy-tests=$POLICY_RESULT"; do
+            "policy-tests=$POLICY_RESULT" "helper-tests=$HELPER_RESULT"; do
             if [[ "${pair#*=}" != "success" ]]; then
               echo "::error::${pair%%=*} job result: ${pair#*=}"
               failed=1

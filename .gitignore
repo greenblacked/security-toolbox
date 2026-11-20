@@ -6,3 +6,8 @@ build/
 __pycache__/
 *.pyc
 .checkov/
+
+# Written on the runner for a stage Preview or a release; not committed
+site/robots.txt
+site/_headers
+site/version.txt

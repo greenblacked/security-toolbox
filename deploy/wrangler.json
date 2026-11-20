@@ -10,6 +10,7 @@
       "previews_enabled": true
     }
   ],
+  "previews": {},
   "assets": {
     "directory": "../site",
     "html_handling": "auto-trailing-slash",
