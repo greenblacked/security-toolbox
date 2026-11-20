@@ -1,0 +1,130 @@
+---
+name: Cut release
+
+on:
+  push:
+    branches: [prod]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Latest CHANGELOG version, X.Y.Z (leave empty to derive it)'
+        required: false
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: cut-release
+  cancel-in-progress: false
+
+jobs:
+  cut:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: write
+      pull-requests: read
+    steps:
+      - name: Require prod
+        run: |
+          set -Eeuo pipefail
+          if [ "$GITHUB_REF" != refs/heads/prod ]; then
+            echo "::error::cut releases from prod"
+            exit 1
+          fi
+      - name: Verify exact promotion and current prod
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          if ! [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::invalid commit SHA"
+            exit 1
+          fi
+          current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/prod" --jq .object.sha)
+          if [ "$current" != "$GITHUB_SHA" ]; then
+            echo "::error::release commit is not the current prod HEAD"
+            exit 1
+          fi
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls?per_page=100" |
+            jq -e --arg repo "$GITHUB_REPOSITORY" --arg sha "$GITHUB_SHA" '
+              any(.[][]; .state == "closed" and
+                (.merged_at | type == "string" and length > 0) and
+                .base.ref == "prod" and .head.ref == "stage" and
+                .base.repo.full_name == $repo and .head.repo.full_name == $repo and
+                .merge_commit_sha == $sha)
+            ' > /dev/null || {
+              echo "::error::commit is not the merge of a same-repository stage to prod PR"
+              exit 1
+            }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Validate version and prepare notes
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          set -Eeuo pipefail
+          version=$(python scripts/release_notes.py latest)
+          if [ -n "$REQUESTED_VERSION" ] && [ "$REQUESTED_VERSION" != "$version" ]; then
+            echo "::error::requested version must match latest CHANGELOG version $version"
+            exit 1
+          fi
+          python scripts/release_notes.py check-tags "$version"
+          python scripts/release_notes.py notes "$version" > "$RUNNER_TEMP/notes.md"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+      - name: Create or verify annotated tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACTOR: ${{ github.actor }}
+          ACTOR_ID: ${{ github.actor_id }}
+        run: |
+          set -Eeuo pipefail
+          tag="v$VERSION"
+          # Fetch refs before testing. Failure to contact origin fails closed.
+          git fetch --force --tags origin
+          if git show-ref --verify --quiet "refs/tags/$tag"; then
+            type=$(git cat-file -t "refs/tags/$tag")
+            target=$(git rev-parse "refs/tags/$tag^{commit}")
+            if [ "$type" != tag ] || [ "$target" != "$GITHUB_SHA" ]; then
+              echo "::error::$tag already exists and is not an annotated tag at $GITHUB_SHA"
+              exit 1
+            fi
+            echo "::notice::$tag already points at this commit; retrying dispatch"
+          else
+            current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/prod" --jq .object.sha)
+            test "$current" = "$GITHUB_SHA" || { echo "::error::prod moved"; exit 1; }
+            python - "$RUNNER_TEMP/notes.md" "$RUNNER_TEMP/tag.json" <<'PY'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          notes, request = sys.argv[1:]
+          actor = os.environ["ACTOR"]
+          body = {
+              "tag": "v" + os.environ["VERSION"],
+              "message": Path(notes).read_text(encoding="utf-8").rstrip("\n") + "\n",
+              "object": os.environ["GITHUB_SHA"],
+              "type": "commit",
+              "tagger": {"name": actor, "email": os.environ["ACTOR_ID"] + "+" + actor + "@users.noreply.github.com"},
+          }
+          Path(request).write_text(json.dumps(body), encoding="utf-8")
+          PY
+            tag_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/tags" --input "$RUNNER_TEMP/tag.json" --jq .sha)
+            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$tag" -f sha="$tag_sha" --silent
+          fi
+      - name: Dispatch release on the tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          if ! gh workflow run release.yml --repo "$GITHUB_REPOSITORY" --ref "v$VERSION"; then
+            echo "::error::tag exists but dispatch failed; rerun Cut release on prod or dispatch release.yml on v$VERSION"
+            exit 1
+          fi
