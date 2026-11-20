@@ -40,8 +40,6 @@ jobs:
           set -Eeuo pipefail
           npm ci --ignore-scripts
           node scripts/build_site.cjs
-          npm --prefix deploy install --package-lock-only --ignore-scripts --no-fund --no-audit
-          echo "GENERATED_DEPLOY_LOCK=$(gzip -c deploy/package-lock.json | base64 -w 0)"
           python scripts/check_wrangler_pin.py
           cd deploy
           npm ci --ignore-scripts
