@@ -123,9 +123,14 @@ jobs:
             exit 1
           fi
           verified=false
+          expected_marker="$(mktemp)"
+          response_body="$(mktemp)"
+          trap 'rm -f "$expected_marker" "$response_body"' EXIT
+          printf '%s\n' "$GITHUB_SHA" > "$expected_marker"
           for attempt in 1 2 3 4; do
-            if revision=$(curl --fail --silent --show-error --location --max-time 15 "$expected_domain/version.txt") &&
-              [ "$revision" = "$GITHUB_SHA" ]; then
+            if status=$(curl --silent --show-error --max-time 15 --output "$response_body" \
+              --write-out '%{http_code}' "$expected_domain/version.txt") &&
+              [ "$status" = 200 ] && cmp -s "$expected_marker" "$response_body"; then
               verified=true
               break
             fi
