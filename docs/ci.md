@@ -2,7 +2,7 @@
 
 This repository has two required GitHub Actions checks on `main`: `ci` and `security`. They are unchanged here. Site deploys are a separate path, modelled on [greenblacked/AI](https://github.com/greenblacked/AI): one Worker, two environments, no credential on a pull request.
 
-The Worker is `security` in `deploy/wrangler.json`. Production is [https://security.szolotov.com](https://security.szolotov.com). The homepage Cloudflare serves is the hand-written file `site/index.html`. MkDocs builds documentation into `build/docs` and must never write into `site/`.
+The Worker is `security` in `deploy/wrangler.json`. Production is [https://security.szolotov.com](https://security.szolotov.com). The homepage Cloudflare serves is the hand-written file `site/index.html`. MkDocs builds documentation into `build/docs`. Before the Wrangler dry-run, preview upload or release, `scripts/package_worker_site.py` adds the generated guides and assets to the runner’s `site/` directory and preserves the hand-written homepage.
 
 ## `.github/workflows/deploy.yml` — dry-run and stage
 
@@ -23,7 +23,7 @@ Then, after the same pin check and `npm ci --ignore-scripts` — and only after 
 
 `wrangler preview` does not attach custom domains. Routes, including `previews_enabled`, come from `wrangler deploy` (the first release applies `deploy/wrangler.json`) or from the dashboard, which is why the first push to `stage` can fail the address check until Preview traffic is enabled on the domain. If the Worker does not exist yet, `wrangler preview` creates it first, with `workers.dev` on and no custom domain or production deployment, so a Worker appearing after a push to `stage` is that and not a stray production deploy.
 
-`scripts/read_wrangler_deploy.py --preview` reads the `preview` line Wrangler writes to `WRANGLER_OUTPUT_FILE_PATH` and keeps a URL only when it is `https`, with no user, port, path or query, on a `workers.dev` host or at or below `security.szolotov.com`. The job fetches nothing from stage. It checks through Wrangler only: the step fails if `wrangler preview` failed, if Wrangler reported no acceptable URL, or if it did not report `https://stage.security.szolotov.com` for the Preview. In the last case it logs an error that the owner must enable `security.szolotov.com` for Preview traffic.
+`scripts/read_wrangler_deploy.py --preview` reads the `preview` line Wrangler writes to `WRANGLER_OUTPUT_FILE_PATH` and keeps a URL only when it is `https`, with no user, port, path or query, on a `workers.dev` host or at or below `security.szolotov.com`. The job smoke-tests the homepage and Kubernetes guide on the reported `workers.dev` preview, then checks the custom hostname through Wrangler: the step fails if `wrangler preview` failed, if Wrangler reported no acceptable URL, or if it did not report `https://stage.security.szolotov.com` for the Preview. In the last case it logs an error that the owner must enable `security.szolotov.com` for Preview traffic.
 
 ## `.github/workflows/release.yml` — production
 
@@ -33,7 +33,7 @@ The job installs the same pinned Wrangler, after the pin check and `npm ci --ign
 
 1. Reads the version production is serving with `wrangler deployments status --json`, through `scripts/read_wrangler_deploy.py --active`, so a later failure can roll back to exactly that version. A first release, when the Worker has no deployments yet, warns and continues with nothing to roll back to.
 2. Runs `wrangler deploy --config wrangler.json --no-autoconfig --no-install-skills`.
-3. Requires Wrangler to report `https://security.szolotov.com` and a `workers.dev` address. `workers_dev` in `deploy/wrangler.json` must stay `true`: that address is how the release is smoke-tested. Before the deploy, the job writes `site/version.txt` on the runner with the tag (it is not committed). `scripts/smoke_site.sh` fetches the `workers.dev` URL, requires HTTP 200 with the site title in the body, and requires `/version.txt` to serve that same tag. The custom domain is not fetched as a blocking check; Bot Fight Mode on the zone can answer a GitHub runner with HTTP 403, and no WAF rule can skip it.
+3. Requires Wrangler to report `https://security.szolotov.com` and a `workers.dev` address. `workers_dev` in `deploy/wrangler.json` must stay `true`: that address is how the release is smoke-tested. Before the deploy, the job writes `site/version.txt` on the runner with the tag (it is not committed). `scripts/smoke_site.sh` fetches the `workers.dev` URL, requires HTTP 200 and the expected content on the homepage and Kubernetes guide, and requires `/version.txt` to serve that same tag. The custom domain is not fetched as a blocking check; Bot Fight Mode on the zone can answer a GitHub runner with HTTP 403, and no WAF rule can skip it.
 4. Confirms `wrangler deployments status --json` shows the version just deployed serving all traffic (`--active-is`).
 5. Logs the HTTP status of `https://security.szolotov.com/` as a notice when it is 403, and never fails the job for that.
 6. On failure after a deploy started, rolls back to the version recorded in step 1.

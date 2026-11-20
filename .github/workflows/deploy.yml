@@ -1,8 +1,8 @@
 ---
 # Checks the Worker Cloudflare will serve, and previews it.
 #
-# A pull request runs `wrangler deploy --dry-run` against the hand-written
-# site in site/. That needs no credential, and this file's dry-run job never
+# A pull request runs `wrangler deploy --dry-run` against the packaged
+# site and guides. That needs no credential, and this file's dry-run job never
 # names one: a pull request, including one from a fork, cannot read the token
 # by editing a step that already holds it, because no step here holds it.
 #
@@ -56,6 +56,11 @@ jobs:
           # The package-manager cache is a download Wrangler does not need, and
           # this job's node_modules has to be the lockfile's, not a cache entry.
           package-manager-cache: false
+      - name: Build the site and guides
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check -r docs/requirements.txt
+          python scripts/package_worker_site.py
       - name: Check the Wrangler pin against the lockfile
         run: |
           set -Eeuo pipefail
@@ -108,6 +113,11 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: '3.13'
+      - name: Build the site and guides
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check -r docs/requirements.txt
+          python scripts/package_worker_site.py
       - name: Mark the stage site noindex
         # Custom-domain Previews do not get Cloudflare's automatic
         # X-Robots-Tag: noindex. The job writes site/_headers and leaves
@@ -160,6 +170,10 @@ jobs:
             --message "stage ${GIT_SHA:0:7}" --tag "$GIT_SHA"
           python "$GITHUB_WORKSPACE/scripts/read_wrangler_deploy.py" --preview \
             "$WRANGLER_OUTPUT_FILE_PATH" >> "$GITHUB_OUTPUT"
+      - name: Smoke-test the stage Preview
+        env:
+          WORKERS_DEV_URL: ${{ steps.deploy.outputs.url }}
+        run: scripts/smoke_site.sh "$WORKERS_DEV_URL"
       - name: Check the stage Preview's address
         # The upload step already failed if wrangler preview did or if it
         # reported no acceptable URL; this checks Wrangler reported the stage

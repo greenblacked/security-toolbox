@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fetch the Worker at URL and require HTTP 200 with the site title in the body.
+# Require the homepage and Kubernetes guide on the deployed Worker.
 # Used on the workers.dev address, not the custom domain (Bot Fight Mode on the
 # zone can answer a GitHub runner with 403). A second argument, when set, is
 # the release tag that site/version.txt must serve.
@@ -26,6 +26,14 @@ if [ "$code" != 200 ]; then
 fi
 if ! grep -q 'Security Toolbox' "$tmp"; then
   echo "::error::${url} did not serve the Security Toolbox site" >&2
+  exit 1
+fi
+
+guide_code="$(curl --silent --show-error --location --max-time 20 \
+  --output "$tmp" --write-out '%{http_code}' "${url}/kubernetes/" || true)"
+echo "GET ${url}/kubernetes/ answered HTTP ${guide_code:-none}"
+if [ "$guide_code" != 200 ] || ! grep -Fq 'Cluster (GKE)' "$tmp"; then
+  echo "::error::${url}/kubernetes/ did not serve the Kubernetes guide" >&2
   exit 1
 fi
 
