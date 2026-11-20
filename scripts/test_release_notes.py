@@ -1,4 +1,5 @@
 import unittest
+
 from release_notes import check_tags, latest, notes
 
 LOG = """# Changelog
@@ -24,8 +25,11 @@ class ReleaseNotesTests(unittest.TestCase):
             check_tags("0.1.0", ["v0.2.0"])
 
     def test_empty_duplicate_or_out_of_order_refused(self):
-        for text in ("## [1.0.0]\n", LOG + "\n## [0.1.0]\n- duplicate\n",
-                     LOG + "\n## [1.0.0]\n- newer\n"):
+        for text in (
+            "## [1.0.0]\n",
+            LOG + "\n## [0.1.0]\n- duplicate\n",
+            LOG + "\n## [1.0.0]\n- newer\n",
+        ):
             with self.subTest(text=text), self.assertRaises(ValueError):
                 latest(text)
 
