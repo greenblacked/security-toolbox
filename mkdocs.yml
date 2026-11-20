@@ -3,6 +3,12 @@ site_url: https://security.szolotov.com
 site_description: Security checks, best practices and automated guardrails
 repo_url: https://github.com/greenblacked/security-toolbox
 repo_name: greenblacked/security-toolbox
+# Built output goes under build/, never into site/: site/ holds the hand-written
+# homepage the Worker serves, and a default build would overwrite it.
+site_dir: build/docs
+# docs/requirements.txt pins the build tools; it is not a page to publish.
+exclude_docs: |
+  requirements.txt
 
 theme:
   name: material

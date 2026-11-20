@@ -1,0 +1,11 @@
+---
+# yamllint for workflows, mkdocs.yml and dependabot.yml. Run with --strict, so a
+# warning fails too. Line length is off: long run: lines (regexes, URLs) are
+# clearer unwrapped, and actionlint already parses every workflow.
+extends: relaxed
+ignore: |
+  build/
+  node_modules/
+  .venv/
+rules:
+  line-length: disable
