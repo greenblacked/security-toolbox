@@ -96,7 +96,7 @@ jobs:
       name: production
       url: https://security.szolotov.com
     env:
-      WRANGLER_VERSION: '4.149.0'
+      WRANGLER_VERSION: '4.166.0'
       WRANGLER_SEND_METRICS: 'false'
       RELEASE_SHA: ${{ github.sha }}
     steps:
