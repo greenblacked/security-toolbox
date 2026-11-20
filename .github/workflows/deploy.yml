@@ -101,7 +101,7 @@ jobs:
           ./node_modules/.bin/wrangler preview --name "$GITHUB_REF_NAME" --config wrangler.json \
             --no-install-skills --message "${GITHUB_REF_NAME} ${GITHUB_SHA:0:7}" --tag "$GITHUB_SHA"
           python "$GITHUB_WORKSPACE/scripts/read_wrangler_deploy.py" --preview "$WRANGLER_OUTPUT_FILE_PATH" >> "$GITHUB_OUTPUT"
-      - name: Verify deployed revision and custom domain
+      - name: Verify preview revision and reported custom domain
         id: smoke
         env:
           WORKERS_DEV_URL: ${{ steps.deploy.outputs.url }}
@@ -118,11 +118,27 @@ jobs:
             *) echo "::error::unexpected named preview URL: $WORKERS_DEV_URL"; exit 1 ;;
           esac
           scripts/smoke_site.sh "$WORKERS_DEV_URL" "$GITHUB_SHA" noindex
-          if [ -n "$CUSTOM_URL" ] && [ "$CUSTOM_URL" != "$expected_domain" ]; then
-            echo "::error::expected custom domain $expected_domain, got $CUSTOM_URL"
+          if [ "$CUSTOM_URL" != "$expected_domain" ]; then
+            echo "::error::expected Wrangler to report custom preview domain $expected_domain, got ${CUSTOM_URL:-<none>}"
             exit 1
           fi
-          if [ -z "$CUSTOM_URL" ]; then
-            echo "::warning::Custom preview domain unavailable: $expected_domain"
+          verified=false
+          expected_marker="$(mktemp)"
+          response_body="$(mktemp)"
+          trap 'rm -f "$expected_marker" "$response_body"' EXIT
+          printf '%s\n' "$GITHUB_SHA" > "$expected_marker"
+          for attempt in 1 2 3 4; do
+            if status=$(curl --silent --show-error --max-time 15 --output "$response_body" \
+              --write-out '%{http_code}' "$expected_domain/version.txt") &&
+              [ "$status" = 200 ] && cmp -s "$expected_marker" "$response_body"; then
+              verified=true
+              break
+            fi
+            echo "::warning::custom preview domain revision unavailable or stale (attempt $attempt/4)"
+            if [ "$attempt" -lt 4 ]; then sleep 3; fi
+          done
+          if [ "$verified" != true ]; then
+            echo "::error::could not verify expected revision at $expected_domain/version.txt; check DNS, preview routing, and runner access"
+            exit 1
           fi
-          printf 'url=%s\n' "$WORKERS_DEV_URL" >> "$GITHUB_OUTPUT"
+          printf 'url=%s\n' "$expected_domain" >> "$GITHUB_OUTPUT"
