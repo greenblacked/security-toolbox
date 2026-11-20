@@ -1,18 +1,26 @@
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("/fonts/instrument-sans-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
-  --bg: #101211;
-  --panel: #191d19;
-  --inset: #111611;
-  --ink: #f1f4e9;
-  --muted: #b2bcae;
-  --line: #394438;
-  --control-line: #687766;
-  --accent: #c9f37d;
-  --accent-hover: #d8fa9e;
-  --on-accent: #101611;
-  --panel-hover: #20281e;
+  --bg: #1b1816;
+  --panel: #29221e;
+  --inset: #211b18;
+  --ink: #f7ede2;
+  --muted: #d2beb0;
+  --line: #604c40;
+  --control-line: #b39b8b;
+  --accent: #f1bd70;
+  --accent-hover: #ffcf8b;
+  --on-accent: #21160f;
+  --panel-hover: #382a22;
   --mono: ui-monospace, SFMono-Regular, Consolas, monospace;
-  --sans: system-ui, sans-serif;
+  --sans: "Instrument Sans", system-ui, sans-serif;
   --radius: .5rem;
   --target: 2.75rem;
   --space-1: .5rem;
@@ -25,32 +33,19 @@
 
 html[data-theme="light"] {
   color-scheme: light;
-  --bg: #f2f4ea;
-  --panel: #e7ebde;
-  --inset: #f7f9f1;
-  --ink: #182016;
-  --muted: #4d5949;
-  --line: #9aa78f;
-  --control-line: #687462;
-  --accent: #375621;
-  --accent-hover: #2f491c;
-  --on-accent: #f7f9f1;
-  --panel-hover: #dde6d1;
+  --bg: #f8f1e5;
+  --panel: #eee1ce;
+  --inset: #fffaf1;
+  --ink: #302019;
+  --muted: #604b3f;
+  --line: #bca491;
+  --control-line: #796255;
+  --accent: #90421f;
+  --accent-hover: #713015;
+  --on-accent: #fffaf1;
+  --panel-hover: #e8d5bf;
 }
 
-html[data-theme="reactor"] {
-  --bg: #070d08;
-  --panel: #0f1b11;
-  --inset: #081109;
-  --ink: #e2f7df;
-  --muted: #abc2a9;
-  --line: #386044;
-  --control-line: #5e8266;
-  --accent: #9af5a8;
-  --accent-hover: #b1f9bd;
-  --panel-hover: #162c1b;
-  --on-accent: #081109;
-}
 
 *, ::before, ::after { box-sizing: border-box; }
 html { background: var(--bg); color: var(--ink); }
@@ -277,3 +272,4 @@ a { color: inherit; text-underline-offset: .23em; }
   .guide p { grid-column: 1; }
   .guide span { grid-column: 2; grid-row: 1 / span 2; }
 }
+
