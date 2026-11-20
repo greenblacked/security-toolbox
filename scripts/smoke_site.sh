@@ -48,7 +48,8 @@ if [ -n "$expected" ]; then
   wait_for_revision
 fi
 
-check_route / 'Practical security for'
+check_route / 'id="hero-title"'
+check_route /quickstart.js 'quickstart-command'
 check_route /home.css '--accent:'
 check_route /theme.js 'renderTheme'
 check_route /kubernetes/ 'Cluster (GKE)'
