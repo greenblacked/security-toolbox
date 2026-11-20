@@ -2,7 +2,7 @@
 
 This repository has two required GitHub Actions checks on `main`: `ci` and `security`. They are unchanged here. Site deploys are a separate path, modelled on [greenblacked/AI](https://github.com/greenblacked/AI): one Worker, two environments, no credential on a pull request.
 
-The Worker is `security` in `deploy/wrangler.json`. Production is [https://security.szolotov.com](https://security.szolotov.com). The homepage Cloudflare serves is the hand-written file `site/index.html`. MkDocs builds documentation into `build/docs` and must never write into `site/`.
+The Worker is `security` in `deploy/wrangler.json`. Production is [https://security.szolotov.com](https://security.szolotov.com). The homepage Cloudflare serves is the hand-written file `site/index.html`. MkDocs builds documentation into `build/docs`. Before the Wrangler dry-run, preview upload or release, `scripts/package_worker_site.py` adds the generated guides and assets to the runner’s `site/` directory and preserves the hand-written homepage.
 
 ## `.github/workflows/deploy.yml` — dry-run and stage
 
@@ -11,7 +11,7 @@ Runs on every pull request, on a push to `stage`, and on `workflow_dispatch`. To
 | Job | Check name | Failing means |
 | --- | --- | --- |
 | `dry-run` | `dry-run deploy` | The Wrangler pin disagreed with `deploy/package-lock.json`, or `wrangler deploy --dry-run` rejected the Worker. No credential is read. The job does not run on `workflow_dispatch`. |
-| `preview` | `preview` | The run was not from `stage`, the Cloudflare credential was missing, `wrangler preview` failed or reported no acceptable URL, or Wrangler did not report `https://stage.security.szolotov.com` for the Preview. A Preview has no rollback and production is not touched, so the job stays red until the next push. The job does not run on a pull request. |
+| `preview` | `preview` | The run was not from `stage`, the Cloudflare credential was missing, `wrangler preview` failed or reported no acceptable URL, or the live `workers.dev` preview failed a smoke check. A Preview has no rollback and production is not touched, so the job stays red until the next push. The job does not run on a pull request. |
 
 `dry-run` is the pull request. It asks Wrangler to compile the Worker without uploading it. `--no-autoconfig` and `--no-install-skills` are named because Wrangler 4's defaults would otherwise detect a framework and can install agent skills into the checkout. The install is `npm ci --ignore-scripts` from the lockfile, after `scripts/check_wrangler_pin.py` has required `WRANGLER_VERSION` to be the version both `deploy/package.json` and the lockfile declare, with a sha512 integrity on the wrangler tarball.
 
@@ -21,9 +21,9 @@ Cloudflare documents that a `_headers` file in the [static asset directory](http
 
 Then, after the same pin check and `npm ci --ignore-scripts` — and only after those, so no install script sees the token — it runs `wrangler preview --config wrangler.json --name stage --no-install-skills`. That uploads this commit as a Preview of the one Worker `security`. A Preview is a separate version that Cloudflare serves at its own URL: `https://stage.security.szolotov.com` once the custom domain `security.szolotov.com` has Preview traffic enabled, and a `workers.dev` Preview URL besides. Production traffic keeps running the version the last tag deployed; uploading a Preview does not change it, and a Preview has no rollback because there is nothing to roll back to.
 
-`wrangler preview` does not attach custom domains. Routes, including `previews_enabled`, come from `wrangler deploy` (the first release applies `deploy/wrangler.json`) or from the dashboard, which is why the first push to `stage` can fail the address check until Preview traffic is enabled on the domain. If the Worker does not exist yet, `wrangler preview` creates it first, with `workers.dev` on and no custom domain or production deployment, so a Worker appearing after a push to `stage` is that and not a stray production deploy.
+`wrangler preview` does not attach custom domains. Routes, including `previews_enabled`, come from `wrangler deploy` (the first release applies `deploy/wrangler.json`) or from the dashboard. If the Worker does not exist yet, `wrangler preview` creates it first, with `workers.dev` on and no custom domain or production deployment, so a Worker appearing after a push to `stage` is that and not a stray production deploy.
 
-`scripts/read_wrangler_deploy.py --preview` reads the `preview` line Wrangler writes to `WRANGLER_OUTPUT_FILE_PATH` and keeps a URL only when it is `https`, with no user, port, path or query, on a `workers.dev` host or at or below `security.szolotov.com`. The job fetches nothing from stage. It checks through Wrangler only: the step fails if `wrangler preview` failed, if Wrangler reported no acceptable URL, or if it did not report `https://stage.security.szolotov.com` for the Preview. In the last case it logs an error that the owner must enable `security.szolotov.com` for Preview traffic.
+`scripts/read_wrangler_deploy.py --preview` reads the `preview` line Wrangler writes to `WRANGLER_OUTPUT_FILE_PATH` and keeps a URL only when it is `https`, with no user, port, path or query, on a `workers.dev` host or at or below `security.szolotov.com`. The job smoke-tests the site, guide routes, and search index on the reported `workers.dev` preview. It verifies that `/version.txt` matches the deployed commit, then publishes the tested URL to the GitHub staging environment. If Wrangler does not report `https://stage.security.szolotov.com`, the job emits a warning. The custom address requires Preview traffic to be enabled on the Cloudflare custom domain.
 
 ## `.github/workflows/release.yml` — production
 
@@ -33,10 +33,22 @@ The job installs the same pinned Wrangler, after the pin check and `npm ci --ign
 
 1. Reads the version production is serving with `wrangler deployments status --json`, through `scripts/read_wrangler_deploy.py --active`, so a later failure can roll back to exactly that version. A first release, when the Worker has no deployments yet, warns and continues with nothing to roll back to.
 2. Runs `wrangler deploy --config wrangler.json --no-autoconfig --no-install-skills`.
-3. Requires Wrangler to report `https://security.szolotov.com` and a `workers.dev` address. `workers_dev` in `deploy/wrangler.json` must stay `true`: that address is how the release is smoke-tested. Before the deploy, the job writes `site/version.txt` on the runner with the tag (it is not committed). `scripts/smoke_site.sh` fetches the `workers.dev` URL, requires HTTP 200 with the site title in the body, and requires `/version.txt` to serve that same tag. The custom domain is not fetched as a blocking check; Bot Fight Mode on the zone can answer a GitHub runner with HTTP 403, and no WAF rule can skip it.
+3. Requires Wrangler to report `https://security.szolotov.com` and a `workers.dev` address. `workers_dev` in `deploy/wrangler.json` must stay `true`: that address is how the release is smoke-tested. Before the deploy, the job writes `site/version.txt` on the runner with the tag (it is not committed). `scripts/smoke_site.sh` fetches the `workers.dev` URL, requires HTTP 200 and the expected content on the homepage, guide routes, and search index, and requires `/version.txt` to serve that same tag. The custom domain is not fetched as a blocking check; Bot Fight Mode on the zone can answer a GitHub runner with HTTP 403, and no WAF rule can skip it.
 4. Confirms `wrangler deployments status --json` shows the version just deployed serving all traffic (`--active-is`).
 5. Logs the HTTP status of `https://security.szolotov.com/` as a notice when it is 403, and never fails the job for that.
 6. On failure after a deploy started, rolls back to the version recorded in step 1.
+
+## Releasing a version
+
+Prepare the release by moving the relevant entries from `[Unreleased]` to a
+dated version section in [CHANGELOG.md](https://github.com/greenblacked/security-toolbox/blob/main/CHANGELOG.md).
+Include the changelog in the pull request promoting the tested changes to `main`.
+
+After the pull request merges and its checks pass, create an annotated
+`vX.Y.Z` tag on the merged `main` commit and use the changelog entry as the
+tag message. Pushing the tag starts the [Release workflow](https://github.com/greenblacked/security-toolbox/actions/workflows/release.yml),
+which waits for production environment approval and checks the deployed site
+and version marker.
 
 ## Credentials and GitHub environments
 
@@ -44,7 +56,7 @@ The job installs the same pinned Wrangler, after the pin check and `npm ci --ign
 
 A pull request from this repository can read a repository secret by editing a workflow and naming the secret, which is the trade-off of keeping the token at repository level. Fork pull requests cannot. The dry-run job is written so that a pull request cannot read the token from a step that already holds it, because no step there holds it.
 
-Optional variable `DEPLOY_URL` on either environment is an `https` origin with no path, shown as the environment's deployment link. It is not smoked.
+Optional variable `DEPLOY_URL` on the production environment is an `https` origin with no path, shown as the environment's deployment link. It is not smoked.
 
 ## GitHub and Cloudflare settings
 

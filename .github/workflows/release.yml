@@ -1,5 +1,5 @@
 ---
-# Deploys the hand-written site in site/ to the production Worker `security`
+# Deploys the homepage and guides to the production Worker `security`
 # after a `vX.Y.Z` tag. It holds contents: read, and takes its Cloudflare
 # token from repository secrets, gated by the production environment.
 #
@@ -71,6 +71,11 @@ jobs:
         with:
           node-version: '22.23.3'
           package-manager-cache: false
+      - name: Build the site and guides
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check -r docs/requirements.txt
+          python scripts/package_worker_site.py
       - name: Check the Wrangler pin against the lockfile
         run: |
           set -Eeuo pipefail

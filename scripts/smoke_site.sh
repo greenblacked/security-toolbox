@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
-# Fetch the Worker at URL and require HTTP 200 with the site title in the body.
-# Used on the workers.dev address, not the custom domain (Bot Fight Mode on the
-# zone can answer a GitHub runner with 403). A second argument, when set, is
-# the release tag that site/version.txt must serve.
+# Verify live URLs on the deployed Worker, using workers.dev to avoid zone-level bot challenges.
 set -Eeuo pipefail
 
 url="${1:-}"
@@ -11,35 +8,54 @@ if [ -z "$url" ]; then
   echo "usage: smoke_site.sh <url> [expected_version]" >&2
   exit 1
 fi
+url="${url%/}"
 
-tmp="$(mktemp)"
-trap 'rm -f "$tmp"' EXIT
+body="$(mktemp)"
+trap 'rm -f "$body"' EXIT
 
-# wrangler reports an origin; request the homepage.
-code="$(curl --silent --show-error --location --max-time 20 \
-  --output "$tmp" --write-out '%{http_code}' "${url}/" || true)"
+fetch_route() {
+  local path="$1" timeout="$2"
+  curl --silent --show-error --location --max-time "$timeout" \
+    --output "$body" --write-out '%{http_code}' "${url}${path}"
+}
 
-echo "GET ${url}/ answered HTTP ${code:-none}"
-if [ "$code" != 200 ]; then
-  echo "::error::${url} did not return HTTP 200" >&2
-  exit 1
-fi
-if ! grep -q 'Security Toolbox' "$tmp"; then
-  echo "::error::${url} did not serve the Security Toolbox site" >&2
-  exit 1
-fi
+wait_for_revision() {
+  local status delay
+  for delay in 0 2 4 8 16; do
+    sleep "$delay"
+    status="$(fetch_route /version.txt 5)" || status="unavailable"
+    if [ "$status" = 200 ] && [ "$(tr -d '\r\n' < "$body")" = "$expected" ]; then
+      echo "GET ${url}/version.txt served the expected revision"
+      return 0
+    fi
+    echo "Waiting for ${url} to serve the expected revision (HTTP $status)"
+  done
+  echo "::error::${url}/version.txt did not serve the expected revision $expected" >&2
+  return 1
+}
+
+check_route() {
+  local path="$1" marker="$2" status
+  status="$(fetch_route "$path" 15)" || status="unavailable"
+  echo "GET ${url}${path} answered HTTP $status"
+  if [ "$status" != 200 ] || ! grep -Fq -- "$marker" "$body"; then
+    echo "::error::${url}${path} did not serve the expected content" >&2
+    return 1
+  fi
+}
 
 if [ -n "$expected" ]; then
-  vcode="$(curl --silent --show-error --location --max-time 20 \
-    --output "$tmp" --write-out '%{http_code}' "${url}/version.txt" || true)"
-  echo "GET ${url}/version.txt answered HTTP ${vcode:-none}"
-  if [ "$vcode" != 200 ]; then
-    echo "::error::${url}/version.txt did not return HTTP 200" >&2
-    exit 1
-  fi
-  got="$(tr -d '\r\n' < "$tmp")"
-  if [ "$got" != "$expected" ]; then
-    echo "::error::${url}/version.txt served '${got}', not '${expected}'" >&2
-    exit 1
-  fi
+  wait_for_revision
 fi
+
+check_route / 'Practical security for'
+check_route /home.css '--accent:'
+check_route /theme.js 'renderTheme'
+check_route /kubernetes/ 'Cluster (GKE)'
+check_route /gcp/ 'Organisation policies worth enforcing'
+check_route /terraform/ 'Policies in this repository'
+check_route /github/ 'Repository baseline'
+check_route /secrets/ 'Delivery patterns'
+check_route /contributing/ 'Keep checks modular'
+check_route /ci/ 'Credentials and GitHub environments'
+check_route /search/search_index.json 'Kubernetes / GKE'
