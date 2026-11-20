@@ -38,6 +38,7 @@ nav:
   - GCP: gcp/index.md
   - Terraform: terraform/index.md
   - GitHub & CI: github/index.md
+  - CI & deploy: ci.md
   - Secrets: secrets/index.md
   - Contributing: contributing.md
 

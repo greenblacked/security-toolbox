@@ -6,3 +6,6 @@ build/
 __pycache__/
 *.pyc
 .checkov/
+
+# Written by scripts/prepare_stage_site.py during a stage Preview only
+site/robots.txt
