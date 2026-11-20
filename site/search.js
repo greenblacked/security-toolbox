@@ -31,6 +31,8 @@
     }
   }
   form.addEventListener('submit', event => { event.preventDefault(); search(); });
+  form.hidden = false;
+  status.hidden = false;
   const initial = new URLSearchParams(location.search).get('q');
   if (initial) { input.value = initial; search(); }
 })();
