@@ -38,6 +38,18 @@ The job installs the same pinned Wrangler, after the pin check and `npm ci --ign
 5. Logs the HTTP status of `https://security.szolotov.com/` as a notice when it is 403, and never fails the job for that.
 6. On failure after a deploy started, rolls back to the version recorded in step 1.
 
+## Releasing a version
+
+Prepare the release by moving the relevant entries from `[Unreleased]` to a
+dated version section in [CHANGELOG.md](https://github.com/greenblacked/security-toolbox/blob/main/CHANGELOG.md).
+Include the changelog in the pull request promoting the tested changes to `main`.
+
+After the pull request merges and its checks pass, create an annotated
+`vX.Y.Z` tag on the merged `main` commit and use the changelog entry as the
+tag message. Pushing the tag starts the [Release workflow](https://github.com/greenblacked/security-toolbox/actions/workflows/release.yml),
+which waits for production environment approval and checks the deployed site
+and version marker.
+
 ## Credentials and GitHub environments
 
 `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are repository secrets, with optional `vars.CLOUDFLARE_ACCOUNT_ID` as a fallback, as chosen for this repository. The dry-run job never names them. The preview job runs only from `stage`, in the `staging` environment. The release job runs only on a `vX.Y.Z` tag, in the `production` environment. Environment secrets, if added later, would be preferred by GitHub for those jobs.
