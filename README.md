@@ -49,4 +49,4 @@ docs/       # Markdown guide source
 site/       # homepage and shared styles for security.szolotov.com
 ```
 
-See [docs/](docs/) and the live site when published.
+See [docs/](docs/) and the [live site](https://security.szolotov.com). Deployment and rollout instructions are in [docs/ci.md](docs/ci.md).

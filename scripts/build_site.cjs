@@ -51,7 +51,7 @@ for (const [label, source, url] of pages) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#101211">
+  <meta name="description" content="Security Toolbox guidance for ${escape(label)}.">
   <title>${escape(label)} | Security Toolbox</title>
   <link rel="stylesheet" href="/home.css">
   <link rel="stylesheet" href="/guides.css">
@@ -63,18 +63,21 @@ for (const [label, source, url] of pages) {
     <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>Security Toolbox</a>
     <div class="header-actions">
       <a class="repo-link" href="/search/">Search</a>
-      <a class="repo-link" href="https://github.com/greenblacked/security-toolbox">GitHub ↗</a>
+      <a class="repo-link" href="https://github.com/greenblacked/security-toolbox">GitHub <span aria-hidden="true">↗</span></a>
       <button type="button" id="theme-toggle" hidden>Theme</button>
     </div>
   </div></header>
   <div class="wrap guide-layout">
     <aside class="guide-sidebar"><nav aria-label="Guide navigation"><ul>${links}</ul></nav></aside>
-    <main id="main"><article class="guide-content">${content}</article></main>
-    <aside class="guide-toc"><nav aria-label="On this page"><strong>On this page</strong><ul>${sections}</ul></nav></aside>
+    <main id="main" tabindex="-1">
+      ${sections ? `<details class="guide-jump"><summary>On this page</summary><ul>${sections}</ul></details>` : ''}
+      <article class="guide-content">${content}</article>
+    </main>
+    ${sections ? `<aside class="guide-toc"><nav aria-label="On this page"><strong>On this page</strong><ul>${sections}</ul></nav></aside>` : ''}
   </div>
   <footer class="site-footer"><div class="wrap footer-inner">
-    <a href="/">Security Toolbox</a>
-    <a href="https://github.com/greenblacked/security-toolbox">View on GitHub ↗</a>
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>Security Toolbox</a>
+    <a href="https://github.com/greenblacked/security-toolbox">View on GitHub <span aria-hidden="true">↗</span></a>
   </div></footer>
 </body></html>`;
   const output = path.join(target, url, 'index.html'); fs.mkdirSync(path.dirname(output), {recursive:true}); fs.writeFileSync(output, html);
