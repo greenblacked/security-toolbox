@@ -1,38 +1,50 @@
 ---
-# Only a verified same-repository stage -> prod promotion may deploy.
 name: Release
 
 on:
   push:
-    branches: [prod]
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+  workflow_dispatch:
 
 permissions: {}
 
 concurrency:
-  group: release-production
+  group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  verify:
-    name: verify promotion
+  release:
+    name: release
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:
+      contents: write
       pull-requests: read
     steps:
-      - name: Verify the exact merged promotion
+      - name: Require a version tag
+        run: |
+          set -Eeuo pipefail
+          if [ "$GITHUB_REF_TYPE" != tag ] || ! [[ "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::release requires a vX.Y.Z tag"
+            exit 1
+          fi
+      - name: Verify exact promotion and current prod
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
-          if [ "$GITHUB_REF" != refs/heads/prod ] || ! [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "::error::release requires a prod branch commit SHA"
+          if ! [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::invalid commit SHA"
+            exit 1
+          fi
+          current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/prod" --jq .object.sha)
+          if [ "$current" != "$GITHUB_SHA" ]; then
+            echo "::error::release commit is not the current prod HEAD"
             exit 1
           fi
           gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls?per_page=100" |
             jq -e --arg repo "$GITHUB_REPOSITORY" --arg sha "$GITHUB_SHA" '
-              any(.[][];
-                .state == "closed" and
+              any(.[][]; .state == "closed" and
                 (.merged_at | type == "string" and length > 0) and
                 .base.ref == "prod" and .head.ref == "stage" and
                 .base.repo.full_name == $repo and .head.repo.full_name == $repo and
@@ -41,10 +53,43 @@ jobs:
               echo "::error::commit is not the merge of a same-repository stage to prod PR"
               exit 1
             }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Validate notes and release ordering
+        run: |
+          set -Eeuo pipefail
+          test "$(git cat-file -t "refs/tags/$GITHUB_REF_NAME")" = tag
+          python scripts/release_notes.py check-tags "${GITHUB_REF_NAME#v}"
+          python scripts/release_notes.py notes "$GITHUB_REF_NAME" > "$RUNNER_TEMP/notes.md"
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          if state=$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft 2>/dev/null); then
+            if [ "$state" = true ]; then
+              gh release delete "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --yes
+              state=none
+            fi
+          else
+            state=none
+          fi
+          if [ "$state" = none ]; then
+            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag \
+              --title "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md"
+          else
+            gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+              --title "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md"
+          fi
 
   cloudflare:
     name: cloudflare
-    needs: verify
+    needs: release
     # Every release deploys and can roll back the same production Worker.
     concurrency:
       group: production-cloudflare
@@ -53,14 +98,40 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
+      pull-requests: read
     environment:
       name: production
-      url: ${{ vars.DEPLOY_URL }}
+      url: https://security.szolotov.com
     env:
       WRANGLER_VERSION: '4.149.0'
       WRANGLER_SEND_METRICS: 'false'
       RELEASE_SHA: ${{ github.sha }}
     steps:
+      - name: Verify exact promotion and current prod
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          if ! [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::invalid commit SHA"
+            exit 1
+          fi
+          current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/prod" --jq .object.sha)
+          if [ "$current" != "$GITHUB_SHA" ]; then
+            echo "::error::release commit is not the current prod HEAD"
+            exit 1
+          fi
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls?per_page=100" |
+            jq -e --arg repo "$GITHUB_REPOSITORY" --arg sha "$GITHUB_SHA" '
+              any(.[][]; .state == "closed" and
+                (.merged_at | type == "string" and length > 0) and
+                .base.ref == "prod" and .head.ref == "stage" and
+                .base.repo.full_name == $repo and .head.repo.full_name == $repo and
+                .merge_commit_sha == $sha)
+            ' > /dev/null || {
+              echo "::error::commit is not the merge of a same-repository stage to prod PR"
+              exit 1
+            }
       - name: Validate the reviewed merge
         env:
           MERGE_SHA: ${{ github.sha }}
@@ -153,7 +224,7 @@ jobs:
           set -Eeuo pipefail
           current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/prod" --jq .object.sha)
           if [ "$current" != "$RELEASE_SHA" ]; then
-            echo "::error::prod moved since this PR was merged; refusing to deploy an older revision"
+            echo "::error::prod moved since the promotion was merged; refusing to deploy an older revision"
             exit 1
           fi
       - name: Deploy the production Worker
