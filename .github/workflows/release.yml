@@ -87,12 +87,12 @@ jobs:
         # wrangler rollback picks the version uploaded before the newest one, which
         # after an earlier failed release is that failed release.
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PROD_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PROD_API_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -Eeuo pipefail
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo "::error::set CLOUDFLARE_PROD_API_TOKEN in the production environment and CLOUDFLARE_ACCOUNT_ID"
+            echo "::error::set CLOUDFLARE_PROD_API_TOKEN or CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID"
             echo "::error::CLOUDFLARE_ACCOUNT_ID may also be a variable (docs/ci.md)"
             exit 1
           fi
@@ -136,14 +136,14 @@ jobs:
         id: deploy
         working-directory: deploy
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PROD_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PROD_API_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
           GIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.jsonl
         run: |
           set -Eeuo pipefail
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo "::error::set CLOUDFLARE_PROD_API_TOKEN in the production environment and CLOUDFLARE_ACCOUNT_ID"
+            echo "::error::set CLOUDFLARE_PROD_API_TOKEN or CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID"
             echo "::error::CLOUDFLARE_ACCOUNT_ID may also be a variable (docs/ci.md)"
             exit 1
           fi
@@ -183,14 +183,14 @@ jobs:
           scripts/smoke_site.sh "$WORKERS_DEV_URL" "$RELEASE_SHA"
       - name: Confirm production serves the deployed version
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PROD_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PROD_API_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
           DEPLOYED_VERSION_ID: ${{ steps.deploy.outputs.version_id }}
         working-directory: deploy
         run: |
           set -Eeuo pipefail
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo "::error::set CLOUDFLARE_PROD_API_TOKEN in the production environment and CLOUDFLARE_ACCOUNT_ID"
+            echo "::error::set CLOUDFLARE_PROD_API_TOKEN or CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID"
             echo "::error::CLOUDFLARE_ACCOUNT_ID may also be a variable (docs/ci.md)"
             exit 1
           fi
@@ -227,7 +227,7 @@ jobs:
         if: failure() && steps.deploy.outputs.deployed == 'true'
         working-directory: deploy
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PROD_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PROD_API_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
           PREVIOUS_VERSION_ID: ${{ steps.active.outputs.version_id }}
         run: |
