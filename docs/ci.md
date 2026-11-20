@@ -20,6 +20,26 @@ Create `development` and `staging` GitHub environments restricted to `dev` and `
 
 The current production environment was configured for `v*` tags with reviewer `greenblacked`; the existing `staging` environment and `stage` branch were unprotected when last inspected. These workflow changes do not alter those settings. Configure the environment branch policies for the intended deployment branches and retain production reviewer protection. Protect `stage` and `prod` with PR review, required `ci` and `security` checks, and restrictions on direct pushes, deletion and force pushes. Restrict workflow and environment administrators appropriately: a user who can change workflows, branches or environment protection can affect deployments.
 
+### Production environment branch policy (required)
+
+The Release workflow declares `environment: production` on the cloudflare job. GitHub will reject the job with:
+
+```
+Branch "prod" is not allowed to deploy to production due to environment protection rules.
+```
+
+until the environment explicitly allows the `prod` branch.
+
+To fix:
+
+1. Repository Settings → Environments → production.
+2. Deployment branches and tags → Selected branches and tags.
+3. Add the `prod` branch (or choose All branches if you accept the broader policy).
+4. Keep the required reviewer if you want the approval gate.
+5. Re-run the failed Release workflow.
+
+This setting is not stored in the repository. It must be applied in the GitHub UI (or via the Environments API with appropriate permissions).
+
 ## Releasing a version
 
 Promote a tested `stage` commit through a same-repository pull request to `prod`; the merged PR triggers production deployment after environment approval. Version tags can record releases but do not trigger deployment.
