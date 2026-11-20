@@ -3,6 +3,6 @@
   "private": true,
   "description": "Pinned Wrangler for the security site deploy.",
   "dependencies": {
-    "wrangler": "4.149.0"
+    "wrangler": "4.165.0"
   }
 }
