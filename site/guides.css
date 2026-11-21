@@ -34,6 +34,9 @@
   text-decoration: none;
 }
 .guide-sidebar a:hover, .guide-toc a:hover, .guide-jump a:hover, .guide-menu a:hover { color: var(--accent); text-decoration: underline; }
+.guide-sidebar a, .guide-toc a, .guide-jump a, .guide-menu a {
+  transition: color var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out);
+}
 :is(.guide-sidebar, .guide-menu) a[aria-current="page"] { color: var(--accent); background: var(--panel); font-weight: 700; text-decoration: underline; text-underline-offset: .25em; }
 .guide-menu { display: none; }
 .guide-jump { display: none; margin-bottom: var(--space-4); border-block: 1px solid var(--line); }
@@ -106,6 +109,7 @@
   padding: var(--space-2);
   border-top: 1px solid var(--line);
   text-decoration: none;
+  transition: background-color var(--motion-fast) var(--ease-out);
 }
 #search-results strong { display: block; color: var(--accent); font-size: 1.05rem; }
 .search-section {

@@ -23,6 +23,12 @@
   --sans: "Instrument Sans", system-ui, sans-serif;
   --radius: .15rem;
   --target: 2.75rem;
+  /* One timing system: every effect below names one of these. */
+  --motion-fast: 160ms;
+  --motion-base: 320ms;
+  --motion-slow: 520ms;
+  --ease-out: cubic-bezier(.22, .61, .36, 1);
+  --ease-in-out: cubic-bezier(.4, 0, .2, 1);
   --space-1: .5rem;
   --space-2: .75rem;
   --space-3: 1rem;
@@ -99,7 +105,7 @@ a { color: inherit; text-underline-offset: .23em; }
   border-radius: var(--radius);
   color: var(--accent);
 }
-.brand-mark::after { content: "›_"; font: 700 .8rem var(--mono); }
+.brand-mark::after { content: "вЂє_"; font: 700 .8rem var(--mono); }
 .site-nav, .header-actions, .footer-links {
   display: flex;
   flex-wrap: wrap;
@@ -329,4 +335,125 @@ body:has(.hero) {
   .tool-panel h3 { padding: 1.2rem; }
   .tool-panel a { padding: 1.1rem 1.2rem; }
   #skills > div + div { padding: 1.4rem; }
+}
+
+/* ------------------------------------------------------------------- motion
+   Entrance and ambient motion, written in the site's own code. Every value is a
+   token from :root, everything animates transform and opacity only, and the
+   hidden initial state exists only while motion.js is running: a script that
+   fails to load leaves the page as the finished still. */
+
+/* The accent rule under the headline is part of the design, so it is drawn at
+   rest here and only animated under the motion preference below. */
+.hero h1 em::after {
+  content: "";
+  display: block;
+  width: 3.5rem;
+  height: .12em;
+  margin-top: .22em;
+  background: currentColor;
+  opacity: .55;
+  transform: scaleX(1);
+  transform-origin: 0 50%;
+}
+
+.scroll-progress {
+  position: fixed;
+  z-index: 3;
+  inset: 0 0 auto;
+  height: 2px;
+  background: transparent;
+  pointer-events: none;
+}
+.scroll-progress > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+
+.site-header {
+  transition: box-shadow var(--motion-base) var(--ease-out),
+    background-color var(--motion-base) var(--ease-out);
+}
+.site-header.is-stuck {
+  background: var(--bg);
+  box-shadow: 0 .6rem 1.6rem color-mix(in srgb, #000 22%, transparent);
+}
+
+/* Interaction: the row arrow steps aside, the button lifts, the link underlines. */
+.guide, .tool-panel a { transition: background-color var(--motion-fast) var(--ease-out); }
+.guide span[aria-hidden], .tool-panel a span[aria-hidden] {
+  transition: transform var(--motion-fast) var(--ease-out);
+}
+.guide:hover span[aria-hidden], .tool-panel a:hover span[aria-hidden] { transform: translateX(.3rem); }
+.button.primary {
+  transition: background-color var(--motion-fast) var(--ease-out),
+    transform var(--motion-fast) var(--ease-out),
+    box-shadow var(--motion-fast) var(--ease-out);
+}
+.button.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 .45rem 1rem color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.text-link {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-size: 0 1px;
+  transition: background-size var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out);
+}
+.text-link:hover { background-size: 100% 1px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  html.js [data-reveal] { opacity: 0; transform: translate3d(0, .85rem, 0); }
+  /* If motion.js never runs, the page shows itself anyway after a short wait. */
+  html.js:not(.js-ready) [data-reveal] {
+    animation: reveal-failsafe 1ms linear 2.5s forwards;
+  }
+  html.js [data-reveal].is-visible {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity var(--motion-slow) var(--ease-out) var(--reveal-delay, 0ms),
+      transform var(--motion-slow) var(--ease-out) var(--reveal-delay, 0ms);
+  }
+
+  /* Stagger, set by the markup where the order matters. */
+  .d1 { --reveal-delay: 70ms; }
+  .d2 { --reveal-delay: 140ms; }
+  .d3 { --reveal-delay: 210ms; }
+  .d4 { --reveal-delay: 280ms; }
+  .guide-list > li:nth-child(2), .tool-grid > *:nth-child(2) { --reveal-delay: 80ms; }
+  .guide-list > li:nth-child(3) { --reveal-delay: 160ms; }
+  .guide-list > li:nth-child(4) { --reveal-delay: 240ms; }
+  .guide-list > li:nth-child(5) { --reveal-delay: 320ms; }
+
+  .hero h1 em::after {
+    transform: scaleX(0);
+    animation: rule-draw var(--motion-slow) var(--ease-out) 180ms both;
+  }
+
+  /* Ambient: a terminal caret in the mark and a live status dot. */
+  .brand-mark::after { animation: caret-blink 1.15s steps(1, end) infinite; }
+  .quickstart-kind::before { animation: status-pulse 2.8s var(--ease-in-out) infinite; }
+}
+
+@keyframes rule-draw { to { transform: scaleX(1); } }
+@keyframes reveal-failsafe { to { opacity: 1; transform: none; } }
+@keyframes caret-blink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: .3; } }
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .5; transform: scale(.78); }
+}
+
+/* Reduced motion gets the finished still, with no ambient motion and no reveal. */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

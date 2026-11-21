@@ -345,13 +345,15 @@ for (const page of pages) {
   <meta property="og:url" content="${escape(canonical)}">
   <meta name="twitter:card" content="summary">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <script src="/theme-init.js"></script>
+  <script src="/boot.js"></script>
   <link rel="stylesheet" href="/home.css">
   <link rel="stylesheet" href="/guides.css">
   <script src="/theme.js" defer></script>
+  <script src="/motion.js" defer></script>
   <script type="application/ld+json">${structuredData}</script>
 </head>
 <body>
+  <div class="scroll-progress" aria-hidden="true"><span></span></div>
   <a class="skip" href="#main">Skip to content</a>
   <header class="site-header"><div class="wrap header-inner">
     <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>Security Toolbox</a>
@@ -367,7 +369,7 @@ for (const page of pages) {
     <main id="main" tabindex="-1">
       <nav class="breadcrumb" aria-label="Breadcrumb"><ol>${crumbs.join('')}</ol></nav>
       ${toc.length ? `<details class="guide-jump"><summary>On this page</summary><ul>${tocList}</ul></details>` : ''}
-      <article class="guide-content">${content}${referenceList}</article>
+      <article class="guide-content" data-reveal>${content}${referenceList}</article>
       ${footer}
       ${pager}
     </main>
