@@ -52,8 +52,17 @@
   background: var(--inset);
   white-space: pre-wrap;
 }
-.guide-content table { display: block; overflow-x: auto; border-collapse: collapse; }
-.guide-content th, .guide-content td { border: 1px solid var(--line); padding: var(--space-2); text-align: left; }
+.guide-content .table-scroll { max-width: 100%; margin-top: var(--space-3); overflow-x: auto; }
+.guide-content table { width: 100%; margin-top: 0; border-collapse: collapse; }
+.guide-content th, .guide-content td {
+  min-width: 8rem;
+  border: 1px solid var(--line);
+  padding: var(--space-2);
+  text-align: left;
+  vertical-align: top;
+}
+.guide-content th, .guide-content td:first-child { overflow-wrap: normal; }
+.guide-content td code { overflow-wrap: anywhere; }
 .guide-content blockquote { margin-inline: 0; border-inline-start: 3px solid var(--accent); padding-inline-start: var(--space-3); color: var(--muted); }
 
 .search-page { min-height: 65vh; padding-block: var(--space-6) 5rem; max-width: 48rem; }

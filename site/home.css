@@ -51,7 +51,7 @@ html[data-theme="light"] {
 html { background: var(--bg); color: var(--ink); }
 body { margin: 0; font: 1rem/1.6 var(--sans); }
 a { color: inherit; text-underline-offset: .23em; }
-:where(a, button, input, summary, pre):focus-visible {
+:where(a, button, input, summary, pre, .table-scroll):focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
@@ -132,20 +132,21 @@ a { color: inherit; text-underline-offset: .23em; }
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   align-items: stretch;
-  gap: clamp(2rem, 5vw, 5rem);
-  padding-block: clamp(3.5rem, 8vw, 7rem);
+  position: relative;
+  gap: clamp(2rem, 6vw, 6rem);
+  padding-block: clamp(4rem, 8vw, 7.5rem);
   border-bottom: 1px solid var(--line);
 }
 .hero-copy { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; }
 .hero h1 {
-  font-size: clamp(3.4rem, 6.1vw, 6rem);
+  font-size: clamp(3.5rem, 6.4vw, 6.4rem);
   line-height: .98;
   letter-spacing: -.075em;
   font-weight: 700;
 }
 .hero h1 em { display: block; color: var(--accent); font-style: normal; }
 .hero-copy p {
-  max-width: 36ch;
+  max-width: 34ch;
   margin-block: 1.75rem;
   color: var(--muted);
   font-size: clamp(1.1rem, 1.6vw, 1.25rem);
@@ -171,7 +172,8 @@ a { color: inherit; text-underline-offset: .23em; }
   border-top: .35rem solid var(--accent);
   border-radius: var(--radius);
   background: var(--panel);
-  box-shadow: .55rem .55rem 0 var(--line);
+  align-self: center;
+  box-shadow: .65rem .65rem 0 color-mix(in srgb, var(--accent) 20%, transparent);
 }
 .quickstart-top, .command-bar {
   display: flex;
@@ -293,3 +295,38 @@ a { color: inherit; text-underline-offset: .23em; }
   .guide span { grid-column: 2; grid-row: 1 / span 2; }
 }
 
+
+/* Homepage: a compact field manual for platform security. */
+body:has(.hero) {
+  background-image: radial-gradient(ellipse at 85% 4%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 35rem);
+}
+.hero::after { content: ""; position: absolute; bottom: -1px; left: 0; width: 5rem; height: 3px; background: var(--accent); }
+.hero-actions { margin-top: .5rem; }
+.quickstart-top { text-transform: uppercase; letter-spacing: .08em; font-size: .7rem; }
+.quickstart-body { padding: clamp(1.25rem, 3vw, 2.4rem); }
+.quickstart h2 { max-width: 12ch; }
+.quickstart .command-requirements { font-size: .85rem; }
+.section-heading .text-link { margin-top: 1.5rem; }
+.guide { grid-template-columns: minmax(0, 10.5rem) minmax(0, 1fr) auto; padding-inline: .5rem 1rem; }
+.guide h3 { font-size: 1.15rem; }
+.section-title-row { display: flex; align-items: end; justify-content: space-between; gap: 2rem; }
+.tool-grid { gap: 1rem; margin-top: 2rem; }
+
+.tool-panel h3 { padding: 1.5rem; border-bottom: 1px solid var(--line); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; }
+.tool-panel a { min-height: 6.5rem; padding: 1.25rem 1.5rem; border-top: 0; }
+.tool-panel li + li a { border-top: 1px solid var(--line); }
+.tool-panel a strong { font-size: 1.05rem; }
+.tool-panel a span:not([aria-hidden]) { font-size: .9rem; }
+#skills { align-items: start; }
+#skills > div + div { padding: 2rem; border: 1px solid var(--line); border-left: .3rem solid var(--accent); background: var(--panel); }
+#skills p { font-size: 1.1rem; }
+#skills .text-link { margin-top: 1rem; }
+@media (max-width: 37rem) {
+  .guide { grid-template-columns: minmax(0, 1fr) auto; padding: 1rem .25rem; }
+  .guide p { grid-column: 1; }
+  .guide span { grid-column: 2; }
+  .section-title-row { display: block; }
+  .tool-panel h3 { padding: 1.2rem; }
+  .tool-panel a { padding: 1.1rem 1.2rem; }
+  #skills > div + div { padding: 1.4rem; }
+}
