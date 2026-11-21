@@ -7,6 +7,14 @@ annotated Git tag in the form `vX.Y.Z`. See [releasing a version](docs/ci.md#rel
 
 ### Added
 
+- `checks/gcp/iam-report.sh`, a read-only project IAM baseline report: public
+  members, standing basic roles, the default compute account holding Editor,
+  project-wide impersonation and security admin, individual user bindings and
+  members from outside a given domain. Good and bad fixtures, wired into
+  `checks/test.sh` with an asserted failure count.
+- Expand the Kubernetes, Google Cloud, Terraform, GitHub Actions and secrets
+  guides with the controls behind each item, worked examples, the commands that
+  verify them, and the mistakes that make them fail.
 - Publish the full security skill procedures at `/skills/`, including each
   `references/*.md` file, instead of eleven-line summaries. `docs/skills/` is
   removed; `plugins/security/skills/` is now the only source.

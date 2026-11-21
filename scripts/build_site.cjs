@@ -59,6 +59,7 @@ add('guides', 'Secrets', 'docs/secrets/index.md', '/secrets/');
 add('checks', 'Checks', 'checks/README.md', '/checks/');
 add('checks', 'GKE hardening check', 'checks/gke/README.md', '/checks/gke/');
 add('checks', 'Kubernetes workload check', 'checks/kubernetes/README.md', '/checks/kubernetes/');
+add('checks', 'GCP IAM baseline check', 'checks/gcp/README.md', '/checks/gcp/');
 add('checks', 'GitHub Actions checklist', 'checks/github/actions-hardening.md', '/checks/github-actions/');
 
 add('policies', 'Policies', 'policies/README.md', '/policies/');
@@ -134,8 +135,10 @@ const GROUP_LABELS = {
 // Existing Markdown links that point at repository paths keep working.
 const aliases = {
   'checks/gke/': '/checks/gke/', 'checks/kubernetes/': '/checks/kubernetes/',
+  'checks/gcp/': '/checks/gcp/',
   'checks/github/': '/checks/github-actions/', 'policies/': '/policies/',
   'checks/gke/gke-report.sh': '/checks/gke/',
+  'checks/gcp/iam-report.sh': '/checks/gcp/',
   'checks/kubernetes/cis-workload-report.sh': '/checks/kubernetes/',
   'policies/opa/terraform/gcp.rego': '/policies/terraform/',
   'policies/opa/kubernetes/pod_security.rego': '/policies/kubernetes/',
