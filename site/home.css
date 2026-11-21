@@ -134,7 +134,7 @@ a { color: inherit; text-underline-offset: .23em; }
   align-items: stretch;
   position: relative;
   gap: clamp(2rem, 6vw, 6rem);
-  padding-block: clamp(4rem, 8vw, 7.5rem);
+  padding-block: clamp(2.5rem, 5vw, 4.5rem);
   border-bottom: 1px solid var(--line);
 }
 .hero-copy { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; }
@@ -215,8 +215,8 @@ a { color: inherit; text-underline-offset: .23em; }
   margin: 0;
   padding: var(--space-3);
   color: var(--accent);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+  white-space: pre;
+  overflow-x: auto;
   font: .875rem/1.75 var(--mono);
 }
 .quickstart .copy-status:empty { margin: 0; }

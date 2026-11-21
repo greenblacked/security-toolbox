@@ -1,0 +1,63 @@
+---
+# A tag-triggered release is the only path to production, so a release that never
+# ran, or a Worker rolled back by hand, leaves the site serving an older revision
+# than the newest tag with nothing else to notice it. This job compares the two.
+# Schedules only run from the default branch, so it is inert until it reaches main.
+name: Production drift
+
+on:
+  schedule:
+    - cron: '23 6 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  drift:
+    name: production revision
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Compare production with the newest release tag
+        run: |
+          set -Eeuo pipefail
+          production_url=https://security.szolotov.com
+          tag=$(git tag -l 'v*' --sort=-v:refname | head -n1)
+          if [ -z "$tag" ]; then
+            echo "::error::no release tag found"
+            exit 1
+          fi
+          expected=$(git rev-parse "$tag^{commit}")
+          echo "newest tag ${tag} is ${expected}"
+          marker="$RUNNER_TEMP/version.txt"
+          status=$(curl --silent --show-error --location --max-time 20 \
+            --output "$marker" --write-out '%{http_code}' "${production_url}/version.txt" || true)
+          echo "GET ${production_url}/version.txt answered HTTP ${status:-none}"
+          case "$status" in
+            200) ;;
+            403)
+              # Bot Fight Mode on the zone can challenge a GitHub runner. The
+              # release workflow smokes workers.dev for the same reason; there is
+              # no per-Worker address known here, so report rather than fail.
+              echo "::notice::the zone challenged this runner, so drift could not be read"
+              echo "::notice::run this workflow from a network that is not challenged"
+              exit 0
+              ;;
+            *)
+              echo "::error::could not read the production revision (HTTP ${status:-none})"
+              exit 1
+              ;;
+          esac
+          served=$(tr -d '\r\n' < "$marker")
+          if [ "$served" != "$expected" ]; then
+            echo "::error::production serves ${served:-nothing} but the newest tag ${tag} is ${expected}"
+            echo "::error::cut a release, or roll production forward to the tagged revision"
+            exit 1
+          fi
+          echo "production serves the newest release tag"

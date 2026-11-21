@@ -1,0 +1,19 @@
+# Static asset headers. prepare_stage_site.py merges X-Robots-Tag into this block
+# for previews; production deploys it unchanged.
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+  Content-Security-Policy: default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self'; form-action 'self'; upgrade-insecure-requests
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.css
+  Cache-Control: public, max-age=600, must-revalidate
+
+/*.js
+  Cache-Control: public, max-age=600, must-revalidate

@@ -5,9 +5,26 @@
   align-items: start;
   padding-block: var(--space-6) 5rem;
 }
-.guide-sidebar, .guide-toc { position: sticky; top: var(--space-3); }
+.guide-sidebar, .guide-toc {
+  position: sticky;
+  top: var(--space-3);
+  /* The navigation lists every page, so it can be taller than the viewport. */
+  max-height: calc(100vh - 2 * var(--space-3));
+  overflow-y: auto;
+}
 .guide-sidebar nav, .guide-toc nav { border-top: 1px solid var(--line); }
 .guide-sidebar li, .guide-toc li, .guide-menu li { border-bottom: 1px solid var(--line); }
+/* Group wrappers hold links, so only the links carry the rule. */
+.nav-groups > li { border-bottom: 0; }
+.nav-group + .nav-group { margin-top: var(--space-2); }
+.nav-group-label {
+  display: block;
+  padding: var(--space-1) var(--space-2) .15rem;
+  color: var(--muted);
+  font: 600 .6875rem/1.4 var(--mono);
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
 .guide-sidebar a, .guide-toc a, .guide-jump a, .guide-menu a {
   display: flex;
   align-items: center;
@@ -50,7 +67,10 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--inset);
-  white-space: pre-wrap;
+  /* Code scrolls rather than breaking a URL or an identifier across lines. */
+  white-space: pre;
+  overflow-x: auto;
+  overflow-wrap: normal;
 }
 .guide-content .table-scroll { max-width: 100%; margin-top: var(--space-3); overflow-x: auto; }
 .guide-content table { width: 100%; margin-top: 0; border-collapse: collapse; }
@@ -81,14 +101,98 @@
 .search-controls button:hover { background: var(--accent-hover); }
 #search-status { margin-block: var(--space-4); color: var(--muted); }
 #search-results a {
+  display: block;
+  min-height: var(--target);
+  padding: var(--space-2);
+  border-top: 1px solid var(--line);
+  text-decoration: none;
+}
+#search-results strong { display: block; color: var(--accent); font-size: 1.05rem; }
+.search-section {
+  display: block;
+  margin-top: .2rem;
+  color: var(--muted);
+  font: 600 .6875rem/1.4 var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.search-snippet { display: block; margin-top: .35rem; color: var(--ink); font-size: .9375rem; }
+#search-results mark { background: color-mix(in srgb, var(--accent) 32%, transparent); color: inherit; }
+#search-results a:hover { background: var(--panel-hover); }
+
+/* Breadcrumb, in-page footer and previous/next, shared by every guide page. */
+.breadcrumb { margin-bottom: var(--space-3); }
+.breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 .5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: .875rem;
+}
+.breadcrumb li + li::before { content: "/"; margin-right: .5rem; color: var(--line); }
+.breadcrumb a { color: var(--muted); }
+.breadcrumb a:hover { color: var(--accent); }
+
+.guide-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-4);
+  margin-top: var(--space-5);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+  font-size: .875rem;
+}
+.guide-footer a { color: var(--accent); }
+.guide-footer .updated { color: var(--muted); }
+
+.page-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+.page-nav-link {
   display: flex;
   align-items: center;
+  gap: var(--space-2);
   min-height: var(--target);
-  padding: var(--space-1) var(--space-2);
-  border-top: 1px solid var(--line);
   color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
 }
-#search-results a:hover { background: var(--panel-hover); }
+.page-nav-link.next { margin-left: auto; text-align: right; }
+.page-nav-link small {
+  display: block;
+  color: var(--muted);
+  font: 600 .6875rem/1.4 var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.page-nav-link:hover { color: var(--accent-hover); text-decoration: underline; }
+
+.reference-list {
+  margin-top: var(--space-5);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-left: .3rem solid var(--accent);
+  background: var(--panel);
+}
+.reference-list h2 {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--accent);
+  font: 600 .75rem/1.4 var(--mono);
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+.reference-list ul { margin: var(--space-1) 0 0; padding: 0; list-style: none; }
+.reference-list li + li { margin-top: 0; }
+.reference-list a { display: inline-flex; align-items: center; min-height: var(--target); color: var(--accent); }
 
 @media (max-width: 70rem) {
   .guide-layout { grid-template-columns: 11rem minmax(0, 1fr); gap: var(--space-5); }
@@ -111,5 +215,5 @@
 
 /* Let the document scroll long navigation lists on short screens. */
 @media (max-height: 30rem) {
-  .guide-sidebar, .guide-toc { position: static; }
+  .guide-sidebar, .guide-toc { position: static; max-height: none; overflow-y: visible; }
 }

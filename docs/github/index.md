@@ -2,6 +2,40 @@
 
 The full workflow guidance is in [`checks/github/actions-hardening.md`](https://github.com/greenblacked/security-toolbox/blob/main/checks/github/actions-hardening.md): SHA pinning, minimal `GITHUB_TOKEN` permissions, `pull_request_target` risks, `persist-credentials: false`, env indirection for `${{ }}` in `run:`, and OIDC instead of long-lived cloud secrets.
 
+## Workflow hardening patterns
+
+A workflow that can be edited by a contributor can reach a deployment credential. Set the token's reach first, then the permissions of each job:
+
+```yaml
+name: deploy
+on:
+  push:
+    branches: [main]
+permissions: {}                    # nothing at the top level
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write              # an OIDC token, not a stored cloud key
+    steps:
+      - uses: actions/checkout@<commit-sha>  # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: google-github-actions/auth@<commit-sha>  # v2.1.8
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SA }}
+```
+
+- **Pin to a commit SHA, record the tag in a comment.** A tag can be moved; the comment is what makes the pin reviewable. Dependabot can keep both current.
+- **Never put `${{ }}` inside `run:`.** The expression is substituted into the script before bash parses it, so a pull request title or branch name can become shell syntax. Pass the value through `env:` and quote it.
+- **`pull_request_target` runs with the base repository's token and secrets.** If you use it, do not check out the pull request head, and never execute code from it.
+- **`persist-credentials: false`** keeps the checkout token out of `.git/config`, where a later step in the same job could read it.
+- **Prefer OIDC over stored cloud secrets** for AWS, GCP and Azure: the trust policy pins the repository, branch or environment, so a fork or a different workflow cannot assume the role.
+- **Environment secrets with required reviewers** are the control for anything that must remain a static secret.
+
 ## Repository baseline
 
 - Default branch protected by a ruleset or branch protection: pull request required, required status checks (the security gate), no force pushes or deletion, linear history if you squash.
