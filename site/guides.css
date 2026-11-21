@@ -108,3 +108,8 @@
   .search-controls input { flex: auto; width: 100%; }
   .search-controls button { width: 100%; }
 }
+
+/* Let the document scroll long navigation lists on short screens. */
+@media (max-height: 30rem) {
+  .guide-sidebar, .guide-toc { position: static; }
+}
