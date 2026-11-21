@@ -17,7 +17,7 @@
       }
       const words = query.split(/\s+/);
       const matches = index.filter(doc => words.every(word => (doc.title + ' ' + doc.text).toLowerCase().includes(word)));
-      status.textContent = `${matches.length} ${matches.length === 1 ? 'guide' : 'guides'} found.`;
+      status.textContent = `${matches.length} ${matches.length === 1 ? 'resource' : 'resources'} found.`;
       for (const doc of matches) {
         const item = document.createElement('li');
         const link = document.createElement('a');
