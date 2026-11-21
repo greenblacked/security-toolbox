@@ -15,7 +15,6 @@ site/version.txt
 # The Markdown stays the source of truth, so a local build leaves a clean tree.
 site/about/
 site/checks/
-site/ci/
 site/contributing/
 site/gcp/
 site/github/

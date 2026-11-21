@@ -58,4 +58,4 @@ jobs:
 
 The `Security` workflow runs gitleaks over the tree and history, zizmor, ruff, CodeQL, and bash audits that fail on unpinned actions, missing top-level `permissions: {}`, missing `timeout-minutes`, and checkouts without `persist-credentials: false`.
 
-How this repository is previewed on `stage` and released to [security.szolotov.com](https://security.szolotov.com) is in [CI & deploy](../ci.md).
+How this repository is previewed on `stage` and released to [security.szolotov.com](https://security.szolotov.com).

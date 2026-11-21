@@ -28,6 +28,10 @@ annotated Git tag in the form `vX.Y.Z`. See [releasing a version](docs/ci.md#rel
 
 ### Changed
 
+- Remove the CI and deploy page from the published site. It documents deployment
+  credentials, environments and branch protection, so it stays in the repository
+  as an internal runbook rather than being served publicly.
+
 - `Cut release` moves a tag that is still unpublished to the current `main` head
   instead of failing. A tag cut before the last promotion merged left production
   on the previous release with no way to catch up.

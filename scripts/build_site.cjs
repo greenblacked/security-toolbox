@@ -66,7 +66,6 @@ add('policies', 'Terraform GCP policy', 'docs/policies/terraform.md', '/policies
 add('policies', 'Kubernetes pod security policy', 'docs/policies/kubernetes.md', '/policies/kubernetes/');
 add('policies', 'Checkov GCP checks', 'docs/policies/checkov.md', '/policies/checkov/');
 
-add('project', 'CI and deploy', 'docs/ci.md', '/ci/');
 add('project', 'Contributing', 'docs/contributing.md', '/contributing/');
 add('project', 'About this project', 'docs/index.md', '/about/');
 
