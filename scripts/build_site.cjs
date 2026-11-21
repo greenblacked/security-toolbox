@@ -69,6 +69,7 @@ for (const [label, source, url] of pages) {
   </div></header>
   <div class="wrap guide-layout">
     <aside class="guide-sidebar"><nav aria-label="Guide navigation"><ul>${links}</ul></nav></aside>
+    <details class="guide-menu"><summary>Guide navigation</summary><nav aria-label="Guide navigation"><ul>${links}</ul></nav></details>
     <main id="main" tabindex="-1">
       ${sections ? `<details class="guide-jump"><summary>On this page</summary><ul>${sections}</ul></details>` : ''}
       <article class="guide-content">${content}</article>
