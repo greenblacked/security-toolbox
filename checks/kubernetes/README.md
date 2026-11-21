@@ -4,7 +4,7 @@
 
 | Benchmark section | Control topic | What is flagged |
 | --- | --- | --- |
-| 5.1 RBAC and Service Accounts | Limit use of the `cluster-admin` role | Non-`system:` ClusterRoleBindings to `cluster-admin`, with their subjects |
+| 5.1 RBAC and Service Accounts | Limit use of the `cluster-admin` role | Subjects granted `cluster-admin` by any ClusterRoleBinding, except the built-in `system:masters` group |
 | 5.2 Pod Security Standards | Minimise privileged containers | `securityContext.privileged: true` |
 | 5.2 | Minimise sharing of host PID / IPC / network namespaces | `hostPID`, `hostIPC`, `hostNetwork` |
 | 5.2 | Minimise HostPath volumes | any `hostPath` volume |

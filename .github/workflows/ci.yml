@@ -24,7 +24,6 @@ env:
   SHELLCHECK_VERSION: '0.11.0'
   # sha256 of the release tarball, recorded when the pin was set.
   SHELLCHECK_SHA256: '8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198'
-  YAMLLINT_VERSION: '1.38.0'
   OPA_VERSION: '1.22.4'
   # From opa_linux_amd64_static.sha256 on the release.
   OPA_SHA256: '35e3b352e715e80624ead6c89930d8585f6f7d94cdc409eb2a9fe36620dcccba'
@@ -88,7 +87,7 @@ jobs:
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ~/.cache/pip
-          key: pip-yamllint-${{ runner.os }}-${{ hashFiles('.github/workflows/ci.yml') }}
+          key: pip-yamllint-${{ runner.os }}-${{ hashFiles('.github/requirements/yamllint.txt') }}
       - name: Install shellcheck, actionlint and yamllint
         run: |
           set -Eeuo pipefail
@@ -108,7 +107,8 @@ jobs:
           tar -xzf "$al" -C "$bin" actionlint
           rm -f "$sc" "$al"
           echo "$bin" >> "$GITHUB_PATH"
-          python -m pip install --quiet "yamllint==${YAMLLINT_VERSION}"
+          python -m pip install --quiet --require-hashes --only-binary=:all: \
+            -r .github/requirements/yamllint.txt
       - name: actionlint
         # actionlint also runs shellcheck over every run: block, since it is on PATH.
         run: |
