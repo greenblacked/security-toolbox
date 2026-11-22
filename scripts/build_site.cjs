@@ -51,6 +51,7 @@ const add = (group, label, source, url, extra = {}) => {
 };
 
 add('overview', 'Start here', 'docs/start.md', '/start/');
+add('overview', 'Glossary', 'docs/glossary.md', '/glossary/');
 add('overview', 'About this project', 'docs/index.md', '/about/');
 add('overview', 'Contributing', 'docs/contributing.md', '/contributing/');
 

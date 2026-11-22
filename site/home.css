@@ -516,3 +516,35 @@ body:has(.hero) {
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------------------------------------------------------------- print
+   The guides are reference material, so they are printed. Navigation, the
+   progress bar and the controls go; the dark palette goes, because it is a
+   page of ink; and an external link prints its destination. */
+@media print {
+  :root { color-scheme: light; }
+  html, body { background: #fff; color: #111; }
+  .site-header, .site-footer, .guide-sidebar, .guide-toc, .guide-menu, .guide-jump,
+  .breadcrumb, .page-nav, .scroll-progress, .to-top, .copy-code, .skip,
+  .search-controls, #search-form { display: none !important; }
+  .wrap { width: auto; margin: 0; }
+  .guide-layout { display: block; padding-block: 0; }
+  .guide-content { max-width: none; }
+  .section, .hero { padding-block: 0; border: 0; }
+  a { color: inherit; text-decoration: underline; }
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: .85em;
+    word-break: break-all;
+  }
+  pre {
+    border: 1px solid #bbb;
+    background: #f6f6f6;
+    color: #111;
+    padding-right: 1rem;
+    white-space: pre-wrap;
+  }
+  .code-block pre { padding-right: 1rem; }
+  pre, table, blockquote, .reference-list { break-inside: avoid; }
+  h1, h2, h3 { break-after: avoid; }
+}
