@@ -17,5 +17,5 @@ Site published at [security.szolotov.com](https://security.szolotov.com).
 ## What is in the repository
 
 - **Policies** (`policies/`): OPA/Conftest rules for GCP Terraform plans (service-account keys, public GCS IAM, ACLs and predefined ACLs, bucket hardening, admin ports open to the internet) and Kubernetes pod security, plus Checkov custom checks `CKV_STB_GCP_1` to `5`, each with good/bad fixtures.
-- **Checks** (`checks/`): read-only GKE hardening report, Kubernetes CIS 5.1/5.2 workload report, and a GitHub Actions hardening note. `stb`, a Rust port in the same directory, runs the GKE report offline with text, JSON or SARIF 2.1.0 output.
+- **Checks** (`checks/`): read-only GKE hardening report, Kubernetes CIS 5.1/5.2 workload report, and a GitHub Actions hardening note.
 - **Skills** (`plugins/security/skills/`): written procedures for IaC review, image hardening, secret rotation, access review, host hardening, security review, threat modelling, dependency triage, certificate automation, detection engineering and compromise evidence preservation.

@@ -1,15 +1,7 @@
+// theme-init.js has already applied the stored choice before first paint; read it
+// back so this file and the toggle agree without touching storage twice.
 const toggle = document.getElementById('theme-toggle');
-let current = 'dark';
-
-try {
-  const saved = localStorage.getItem('theme');
-  if (saved === 'light' || saved === '') current = 'light';
-  if (saved === 'night' || saved === 'reactor' || saved === '') {
-    localStorage.setItem('theme', current);
-  }
-} catch {
-  // Theme switching still works when storage is unavailable.
-}
+let current = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
 
 function renderTheme() {
   document.documentElement.dataset.theme = current;
