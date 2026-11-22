@@ -3,14 +3,17 @@
 set -Eeuo pipefail
 cd "$(dirname "$0")"
 
+output=$(mktemp)
+trap 'rm -f -- "$output"' EXIT
+
 fail=0
 expect() { # expect <exit code> <description> <command...>
   local want=$1 what=$2 got=0; shift 2
-  "$@" >/tmp/check-test.out 2>&1 || got=$?
+  "$@" >"$output" 2>&1 || got=$?
   if [ "$got" -eq "$want" ]; then
     echo "ok   - $what (exit $got)"
   else
-    echo "FAIL - $what (wanted exit $want, got $got)"; cat /tmp/check-test.out; fail=1
+    echo "FAIL - $what (wanted exit $want, got $got)"; cat "$output"; fail=1
   fi
 }
 
