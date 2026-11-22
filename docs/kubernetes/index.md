@@ -2,10 +2,10 @@
 
 **Who this is for:** platform engineers who run GKE clusters and the teams deploying to them. You should be comfortable with `kubectl`, RBAC objects and a pod spec.
 
-Report first. Everything here is checkable read-only before you change anything:
-[`checks/gke/gke-report.sh`](https://github.com/greenblacked/security-toolbox/blob/main/checks/gke/gke-report.sh) covers the cluster and
+Everything on this page can be checked read-only before you change anything.
+[`checks/gke/gke-report.sh`](https://github.com/greenblacked/security-toolbox/blob/main/checks/gke/gke-report.sh) reports the cluster controls and
 [`checks/kubernetes/cis-workload-report.sh`](https://github.com/greenblacked/security-toolbox/blob/main/checks/kubernetes/cis-workload-report.sh)
-covers workloads. Both run against live state or a saved export.
+reports the workloads. Both run against live state or a saved export, so you can see the current posture before deciding what to change.
 
 ## Cluster (GKE)
 

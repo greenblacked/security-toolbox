@@ -2,6 +2,8 @@
 
 **Who this is for:** engineers who own a credential and the systems that consume it, and the reviewers who approve changes to either.
 
+Secrets fail in three places: where they are stored, how they reach the process that needs them, and who can still read a copy after the fact. This page covers all three, and the rotation that proves a change is finished rather than started.
+
 ## Principles
 
 - **Prefer no secret.** Workload identity (GKE Workload Identity, attached service accounts, GitHub OIDC to Workload Identity Federation) removes the key entirely.

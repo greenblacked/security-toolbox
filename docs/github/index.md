@@ -2,7 +2,7 @@
 
 **Who this is for:** maintainers who own workflows that can deploy, publish or reach a cloud credential. You should be comfortable editing YAML workflows.
 
-The full workflow guidance is in [`checks/github/actions-hardening.md`](https://github.com/greenblacked/security-toolbox/blob/main/checks/github/actions-hardening.md): SHA pinning, minimal `GITHUB_TOKEN` permissions, `pull_request_target` risks, `persist-credentials: false`, env indirection for `${{ }}` in `run:`, and OIDC instead of long-lived cloud secrets.
+The controls here are about scope rather than intent: what the token can do, which code actually runs, and what evidence is left behind. The shorter checklist is in [`checks/github/actions-hardening.md`](https://github.com/greenblacked/security-toolbox/blob/main/checks/github/actions-hardening.md).
 
 ## Workflow hardening patterns
 

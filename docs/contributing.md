@@ -1,5 +1,7 @@
 # Contributing
 
+Everything in this repository reports before it changes anything. A contribution follows the same order: the check or policy first, the fixtures that prove it, then the page that says what it does and does not do.
+
 - Prefer report / dry-run first.
 - Keep checks modular.
 - Document what a check does and does not do.

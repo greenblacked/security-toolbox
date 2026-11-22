@@ -80,7 +80,7 @@
 /* Code blocks carry a copy button, positioned over the block so the code keeps
    its full width and the button never shifts layout. */
 .code-block { position: relative; margin-top: var(--space-3); }
-.code-block pre { margin-top: 0; padding-right: 4.5rem; }
+.code-block pre { margin-top: 0; padding-right: 3.75rem; }
 .copy-code {
   position: absolute;
   top: .45rem;

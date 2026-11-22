@@ -55,11 +55,13 @@
     if (!button || !code) continue;
 
     button.hidden = false;
+    const label = button.getAttribute('aria-label') || 'Copy code';
     let reset;
 
     button.addEventListener('click', async () => {
       const copied = await copy(code);
       button.textContent = copied ? 'Copied' : 'Copy failed';
+      button.setAttribute('aria-label', copied ? label.replace(/^Copy/, 'Copied') : label);
       if (copied) button.dataset.state = 'copied';
       else delete button.dataset.state;
       status.textContent = copied
@@ -68,6 +70,7 @@
       clearTimeout(reset);
       reset = setTimeout(() => {
         button.textContent = 'Copy';
+        button.setAttribute('aria-label', label);
         delete button.dataset.state;
       }, 2000);
     });

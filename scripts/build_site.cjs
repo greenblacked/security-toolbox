@@ -190,9 +190,15 @@ md.renderer.rules.table_close = () => '</table>\n</div>\n';
 
 // Every code block gets a copy button. The markup is built here because the CSP
 // allows no inline script; the button stays hidden until code-copy.js runs, so a
-// reader without JavaScript sees the code and no dead control.
-const wrapCode = (render, tokens, idx, options, env, self) =>
-  `<div class="code-block"><button class="copy-code" type="button" hidden>Copy</button>${render(tokens, idx, options, env, self)}</div>\n`;
+// reader without JavaScript sees the code and no dead control. Each button names
+// its own block, because a page of six buttons all called "Copy" is a tab order
+// nobody can navigate.
+const wrapCode = (render, tokens, idx, options, env, self) => {
+  const language = (tokens[idx].info || '').trim().split(/\s+/)[0];
+  env.codeBlocks = (env.codeBlocks || 0) + 1;
+  const what = `${language ? language + ' ' : ''}code block ${env.codeBlocks}`;
+  return `<div class="code-block"><button class="copy-code" type="button" aria-label="Copy ${escape(what)}" hidden>Copy</button>${render(tokens, idx, options, env, self)}</div>\n`;
+};
 for (const rule of ['fence', 'code_block']) {
   const render = md.renderer.rules[rule] ||
     ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
@@ -214,7 +220,11 @@ function leadParagraph(tokens) {
     const inline = tokens[i + 1];
     if (inline && inline.type === 'inline') {
       const text = inlineText(inline);
-      if (text) return text;
+      if (!text) continue;
+      // The audience line states who the page is for, not what it covers, so it
+      // is never the summary a search result or social card shows.
+      if (/^who this is for\b/i.test(text)) continue;
+      return text;
     }
   }
   return '';
