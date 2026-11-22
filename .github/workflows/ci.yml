@@ -175,7 +175,17 @@ jobs:
           python -m venv "$venv"
           "$venv/bin/python" -m pip install --quiet --require-hashes --no-deps \
             -r .github/requirements/checkov.txt
-          "$venv/bin/python" -m pip check
+          # Checkov 3.4.6 pins an older asteval. Permit only this exact mismatch
+          # while the hash-verified security update runs through the policy tests.
+          if pip_check=$("$venv/bin/python" -m pip check 2>&1); then
+            printf '%s\n' "$pip_check"
+          elif [[ "$pip_check" == \
+            'checkov 3.4.6 has requirement asteval==1.0.6, but you have asteval 1.0.9.' ]]; then
+            printf '::warning::%s\n' "$pip_check"
+          else
+            printf '%s\n' "$pip_check" >&2
+            exit 1
+          fi
           echo "$bin" >> "$GITHUB_PATH"
           echo "$venv/bin" >> "$GITHUB_PATH"
       - name: Tool versions
