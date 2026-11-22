@@ -1,5 +1,7 @@
 # GCP
 
+**Who this is for:** cloud platform engineers responsible for a Google Cloud organisation. You should be able to read an IAM policy and run `gcloud` against a project.
+
 Baseline for production Google Cloud projects. Report first: every item below can be checked read-only before anything is changed.
 
 ## Organisation structure
@@ -10,7 +12,21 @@ Most GCP security failures are organisational, not per-project. Three decisions 
 - **A separate project for logging and one for the security tooling.** Audit logs written to the project they describe can be deleted by whoever compromises that project.
 - **A break-glass folder with the only `roles/owner` grants**, its members in a group that pages when used.
 
-Nothing sensitive should be reachable by a project created from the console in five minutes. If a new project is insecure by default, the default is the vulnerability.
+Nothing sensitive should be reachable by a project created from the console in five minutes. A project that is insecure by default is the vulnerability, because most projects are created that way.
+
+### The baseline is already enforced
+
+Organisations created on or after 3 May 2024 arrive with seven constraints already enforced, under the **managed** names: `iam.managed.disableServiceAccountKeyCreation`, `iam.managed.disableServiceAccountKeyUpload`, `iam.automaticIamGrantsForDefaultServiceAccounts`, `iam.allowedPolicyMemberDomains`, `essentialcontacts.managed.allowedContactDomains`, `compute.managed.restrictProtocolForwardingCreationForTypes` and `storage.uniformBucketLevelAccess`.
+
+That changes what the work is. On a new organisation the task is not to add these but to find out what is already inherited, because domain-restricted sharing blocks a project that legitimately needs an outside identity, and a blocked key creation surfaces as a confusing API error rather than a policy denial.
+
+```bash
+gcloud resource-manager org-policies list --organization=ORG_ID
+```
+
+There is a second and larger consequence. A growing set of constraints is **automatically enforced** by Google with a restrictive default even where nobody wrote a policy — the `iam.managed.*`, `container.managed.*` and `compute.managed.*` families. For those, the assumption that "no policy means allowed" is wrong, and an audit that reads only the policies you wrote will miss them. Read the *effective* policy rather than the configured one.
+
+The managed families are also the ones that support **dry-run and Policy Simulator**, which makes them the only way to test an enforcement change before it breaks a workload. The legacy names (`iam.disableServiceAccountKeyCreation`) do not.
 
 ## Identity and access
 

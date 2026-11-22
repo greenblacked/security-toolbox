@@ -1,5 +1,7 @@
 # Secrets
 
+**Who this is for:** engineers who own a credential and the systems that consume it, and the reviewers who approve changes to either.
+
 ## Principles
 
 - **Prefer no secret.** Workload identity (GKE Workload Identity, attached service accounts, GitHub OIDC to Workload Identity Federation) removes the key entirely.
@@ -26,6 +28,7 @@ The first two are the ones people mean by "secret". The fourth is the one that l
 - **A managed secret store, not a file.** Secret Manager (or Vault) gives versioning, access audit, IAM per secret and rotation hooks. An encrypted file in a repository gives none of those.
 - **Envelope encryption where the store is not enough.** A data key encrypts the payload; a KMS key encrypts the data key. The ciphertext can live anywhere, and access is decided by `roles/cloudkms.cryptoKeyEncrypterDecrypter` on the key — which is revocable in one place.
 - **CMEK on the secret store itself** for regulated data, so revoking the key makes the ciphertext unreadable.
+- **Cloud KMS Autokey** creates key rings and keys on demand, with a fixed rotation period and separation of duties: a developer can request a key for a resource without holding the permissions to use or manage keys. It removes the usual reason CMEK adoption stalls.
 - **Version, do not overwrite.** Secret Manager keeps versions; consumers pin a version or read `latest` deliberately. An overwritten value has no rollback and no record of what it was.
 - **Name secrets for the consumer**, not the technology: `payments-api/stripe-key`, so an access review can answer "who can read the payments secret" without reading code.
 
@@ -91,6 +94,8 @@ A rotation is finished when every consumer is provably on the new credential and
 5. Keep the alert you used to prove adoption: it catches the consumer you missed next time.
 
 In an incident, revoke first and investigate second. Removing the secret from git history revokes nothing.
+
+Three platform features make the last two steps safer than they used to be. Secret Manager supports a **delayed destruction** window per secret, so a destroyed version is disabled at once but stays recoverable while the window is open. **Custom organisation constraints** for Secret Manager can require a rotation schedule and an expiry on every secret, which turns a wiki rule into an admission-time block. The **GKE Secret Manager add-on** can push a new version into running pods, which removes the restart that used to be part of the rotation.
 
 ## Never
 

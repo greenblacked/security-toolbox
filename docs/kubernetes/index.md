@@ -1,5 +1,7 @@
 # Kubernetes / GKE
 
+**Who this is for:** platform engineers who run GKE clusters and the teams deploying to them. You should be comfortable with `kubectl`, RBAC objects and a pod spec.
+
 Report first. Everything here is checkable read-only before you change anything:
 [`checks/gke/gke-report.sh`](https://github.com/greenblacked/security-toolbox/blob/main/checks/gke/gke-report.sh) covers the cluster and
 [`checks/kubernetes/cis-workload-report.sh`](https://github.com/greenblacked/security-toolbox/blob/main/checks/kubernetes/cis-workload-report.sh)
@@ -16,6 +18,17 @@ covers workloads. Both run against live state or a saved export.
 - **Release channel and auto-upgrade** with maintenance windows.
 - **Binary Authorization** in dry-run, then enforce, once images are signed in CI.
 - **NetworkPolicy enforcement** via GKE Dataplane V2, then default-deny per namespace.
+
+### Enforce the list at the organisation
+
+Most of the bullets above can be a constraint instead of a review. The `container.managed.*` organisation policy family covers the cluster controls directly — `enablePrivateNodes`, `enableShieldedNodes`, `enableNetworkPolicy`, `enableWorkloadIdentityFederation`, `enableBinaryAuthorization`, `enableSecretsEncryption`, `disableABAC`, `disableLegacyClientCertificateIssuance`, `disallowDefaultComputeServiceAccount`, `denyServiceExternalIPs`, `enableGoogleGroupsRBAC`.
+
+A cluster created without them then fails to create, rather than appearing in a report next quarter. A constraint keeps working when the team that created the cluster has moved on.
+
+### Upgrade blockers worth knowing now
+
+- **Identity Service for GKE is removed in 1.37.** A cluster that still has it enabled cannot be created or upgraded. Migrate OIDC to Workforce Identity Federation before that upgrade window arrives, not during it.
+- **GKE Sandbox (gVisor)** puts a user-space kernel between the container and the host for untrusted or multi-tenant workloads; **Confidential GKE Nodes** encrypt memory in use. Neither replaces pod hardening — they bound the blast radius when it fails.
 
 ### Control plane exposure
 

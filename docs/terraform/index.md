@@ -1,5 +1,7 @@
 # Terraform / IaC
 
+**Who this is for:** engineers who review or apply Terraform against production. You should know what a plan contains and how remote state works.
+
 ## Review the plan, not the diff
 
 The plan JSON is what will be applied. Produce it in a trusted pipeline and run policy against it:
@@ -62,7 +64,14 @@ gcloud storage buckets get-iam-policy gs://STATE_BUCKET --format=json
 gcloud storage ls --recursive gs://STATE_BUCKET
 ```
 
-`sensitive = true` hides a value from CLI output. It does not encrypt it, does not remove it from the state, and does not stop `terraform show` from printing it. Where a provider supports write-only arguments, prefer them; otherwise assume the value is in state and protect the state.
+`sensitive = true` hides a value from CLI output. It does not encrypt it, remove it from state, or stop `terraform show` from printing it.
+
+Terraform 1.10 and later offer two ways to keep a value out of state entirely:
+
+- **Ephemeral resources** (`ephemeral "..."`) exist for the length of an operation and are never written to state or to plan files.
+- **Write-only arguments** (`password_wo`, `secret_string_wo`) accept a value that reaches the provider and is then discarded. Updating one requires bumping a companion `*_wo_version` integer, which turns a rotation into a visible line in the plan instead of an invisible change in a secret store.
+
+Encrypting and locking the backend is still necessary for everything else in state. It is no longer the only answer for a secret the configuration has to pass through.
 
 ## Apply pipeline
 

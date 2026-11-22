@@ -83,4 +83,43 @@
     addEventListener('scroll', sync, {passive: true});
     sync();
   }
+
+  // Back to top. Hidden with visibility rather than opacity alone, so it is not
+  // in the tab order until it is on screen, and it returns focus to the main
+  // landmark instead of leaving it on a button that has just disappeared.
+  const toTop = document.createElement('button');
+  toTop.type = 'button';
+  toTop.className = 'to-top';
+  toTop.setAttribute('aria-label', 'Back to top');
+  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  icon.setAttribute('viewBox', '0 0 24 24');
+  icon.setAttribute('aria-hidden', 'true');
+  icon.setAttribute('focusable', 'false');
+  const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  arrow.setAttribute('d', 'M12 19V5M5 12l7-7 7 7');
+  arrow.setAttribute('fill', 'none');
+  arrow.setAttribute('stroke', 'currentColor');
+  arrow.setAttribute('stroke-width', '2');
+  arrow.setAttribute('stroke-linecap', 'round');
+  arrow.setAttribute('stroke-linejoin', 'round');
+  icon.append(arrow);
+  toTop.append(icon);
+  document.body.append(toTop);
+
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const showToTop = () => toTop.classList.toggle('is-shown', window.scrollY > 600);
+  addEventListener('scroll', showToTop, {passive: true});
+  showToTop();
+  toTop.addEventListener('click', () => {
+    const from = window.scrollY;
+    const smooth = !reducedMotion.matches;
+    window.scrollTo({top: 0, behavior: smooth ? 'smooth' : 'auto'});
+    // A renderer that is throttled never advances the smooth animation, so the
+    // page would stay where it is. If nothing has moved shortly after, jump.
+    if (smooth) {
+      setTimeout(() => { if (window.scrollY >= from) window.scrollTo(0, 0); }, 250);
+    }
+    const main = document.getElementById('main');
+    if (main) main.focus({preventScroll: true});
+  });
 })();

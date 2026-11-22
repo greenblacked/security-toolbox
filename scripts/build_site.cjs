@@ -50,6 +50,10 @@ const add = (group, label, source, url, extra = {}) => {
   pages.push({group, label, source, url, ...extra});
 };
 
+add('overview', 'Start here', 'docs/start.md', '/start/');
+add('overview', 'About this project', 'docs/index.md', '/about/');
+add('overview', 'Contributing', 'docs/contributing.md', '/contributing/');
+
 add('guides', 'Kubernetes / GKE', 'docs/kubernetes/index.md', '/kubernetes/');
 add('guides', 'Google Cloud', 'docs/gcp/index.md', '/gcp/');
 add('guides', 'Terraform', 'docs/terraform/index.md', '/terraform/');
@@ -66,9 +70,6 @@ add('policies', 'Policies', 'policies/README.md', '/policies/');
 add('policies', 'Terraform GCP policy', 'docs/policies/terraform.md', '/policies/terraform/');
 add('policies', 'Kubernetes pod security policy', 'docs/policies/kubernetes.md', '/policies/kubernetes/');
 add('policies', 'Checkov GCP checks', 'docs/policies/checkov.md', '/policies/checkov/');
-
-add('project', 'Contributing', 'docs/contributing.md', '/contributing/');
-add('project', 'About this project', 'docs/index.md', '/about/');
 
 // Skills are published from the plugin that ships them: SKILL.md is the page and
 // each references/*.md is a sub-page, so the procedure a reader gets here is the
@@ -129,7 +130,7 @@ for (const skill of skills) {
 }
 
 const GROUP_LABELS = {
-  guides: 'Guides', checks: 'Checks', policies: 'Policies', skills: 'Skills', project: 'Project',
+  overview: 'Overview', guides: 'Guides', checks: 'Checks', policies: 'Policies', skills: 'Skills',
 };
 
 // Existing Markdown links that point at repository paths keep working.
@@ -186,6 +187,18 @@ md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
 // Keep the table's native layout and semantics inside a locally scrollable container.
 md.renderer.rules.table_open = () => '<div class="table-scroll" role="region" aria-label="Scrollable table" tabindex="0">\n<table>\n';
 md.renderer.rules.table_close = () => '</table>\n</div>\n';
+
+// Every code block gets a copy button. The markup is built here because the CSP
+// allows no inline script; the button stays hidden until code-copy.js runs, so a
+// reader without JavaScript sees the code and no dead control.
+const wrapCode = (render, tokens, idx, options, env, self) =>
+  `<div class="code-block"><button class="copy-code" type="button" hidden>Copy</button>${render(tokens, idx, options, env, self)}</div>\n`;
+for (const rule of ['fence', 'code_block']) {
+  const render = md.renderer.rules[rule] ||
+    ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
+  md.renderer.rules[rule] = (tokens, idx, options, env, self) =>
+    wrapCode(render, tokens, idx, options, env, self);
+}
 
 const plainText = content => content.replace(/\s+/g, ' ').trim();
 
@@ -352,6 +365,7 @@ for (const page of pages) {
   <link rel="stylesheet" href="/guides.css">
   <script src="/theme.js" defer></script>
   <script src="/motion.js" defer></script>
+  <script src="/code-copy.js" defer></script>
   <script type="application/ld+json">${structuredData}</script>
 </head>
 <body>
@@ -380,6 +394,7 @@ for (const page of pages) {
   <footer class="site-footer"><div class="wrap footer-inner">
     <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><rect x="1" y="1" width="30" height="30" rx="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 10.5 15 16 9.5 21.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="17.5" y="20.4" width="6.6" height="3" rx="1.5" fill="currentColor"/></svg></span>Security Toolbox</a>
     <div class="footer-links">
+      <a href="/start/">Start here</a>
       <a href="${repoUrl}">View on GitHub <span aria-hidden="true">↗</span></a>
       <a href="/contributing/">Contribute a guide</a>
       <a href="/about/">About</a>
