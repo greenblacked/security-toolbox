@@ -16,6 +16,7 @@
   <script src="/boot.js"></script>
   <link rel="stylesheet" href="/home.css">
   <script src="/theme.js" defer></script>
+  <script src="/search.js" defer></script>
   <script src="/motion.js" defer></script>
   <script src="/quickstart.js" defer></script>
 </head>
@@ -26,7 +27,7 @@
     <div class="wrap header-inner">
       <a class="brand" href="/" aria-current="page"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><rect x="1" y="1" width="30" height="30" rx="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 10.5 15 16 9.5 21.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="17.5" y="20.4" width="6.6" height="3" rx="1.5" fill="currentColor"/></svg></span>Security Toolbox</a>
       <div class="header-actions">
-        <a class="repo-link" href="/search/">Search</a>
+        <button type="button" class="repo-link search-trigger" data-search-open aria-haspopup="dialog" hidden>Search</button>
         <button type="button" id="theme-toggle" hidden>Theme</button>
       </div>
       <nav class="site-nav" aria-label="Main navigation">
@@ -70,7 +71,7 @@ cd security-toolbox &amp;&amp;
     <section id="guides" class="section section-layout" aria-labelledby="guides-title">
       <div class="section-heading" data-reveal>
         <h2 id="guides-title">Platform hardening index</h2>
-        <a class="text-link" href="/search/">Search guides <span aria-hidden="true">→</span></a>
+        <button type="button" class="text-link search-trigger" data-search-open aria-haspopup="dialog" hidden>Search guides</button>
       </div>
       <ul class="guide-list">
         <li data-reveal><a class="guide" href="/kubernetes/"><h3>Kubernetes / GKE</h3><p>Pod security, RBAC, network policy, and cluster controls.</p><span aria-hidden="true">→</span></a></li>

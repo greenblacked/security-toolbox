@@ -46,7 +46,7 @@
 .guide-toc { font-size: .9375rem; }
 .guide-toc strong { display: block; padding: var(--space-2); color: var(--ink); }
 .guide-content { min-width: 0; max-width: 72ch; overflow-wrap: anywhere; }
-.guide-content h1, .search-page h1 {
+.guide-content h1, .missing-page h1 {
   font-size: clamp(2.25rem, 5vw, 3.75rem);
   line-height: 1.05;
   letter-spacing: -.055em;
@@ -127,41 +127,8 @@
 .guide-content td code { overflow-wrap: anywhere; }
 .guide-content blockquote { margin-inline: 0; border-inline-start: 3px solid var(--accent); padding-inline-start: var(--space-3); color: var(--muted); }
 
-.search-page { min-height: 65vh; padding-block: var(--space-6) 5rem; max-width: 48rem; }
-.search-page h1 { margin-block: var(--space-2) var(--space-5); }
-.search-page label { display: block; margin-bottom: var(--space-1); font-weight: 650; }
-.search-controls { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.search-controls input, .search-controls button {
-  min-height: var(--target);
-  border: 1px solid var(--control-line);
-  border-radius: var(--radius);
-  padding: var(--space-1) var(--space-2);
-  font: inherit;
-}
-.search-controls input { flex: 1 1 15rem; min-width: 0; background: var(--inset); color: var(--ink); }
-.search-controls button { border-color: transparent; background: var(--accent); color: var(--on-accent); font-weight: 700; cursor: pointer; }
-.search-controls button:hover { background: var(--accent-hover); }
-#search-status { margin-block: var(--space-4); color: var(--muted); }
-#search-results a {
-  display: block;
-  min-height: var(--target);
-  padding: var(--space-2);
-  border-top: 1px solid var(--line);
-  text-decoration: none;
-  transition: background-color var(--motion-fast) var(--ease-out);
-}
-#search-results strong { display: block; color: var(--accent); font-size: 1.05rem; }
-.search-section {
-  display: block;
-  margin-top: .2rem;
-  color: var(--muted);
-  font: 600 .6875rem/1.4 var(--mono);
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-.search-snippet { display: block; margin-top: .35rem; color: var(--ink); font-size: .9375rem; }
-#search-results mark { background: color-mix(in srgb, var(--accent) 32%, transparent); color: inherit; }
-#search-results a:hover { background: var(--panel-hover); }
+.missing-page { min-height: 65vh; padding-block: var(--space-6) 5rem; max-width: 48rem; }
+.missing-page h1 { margin-block: var(--space-2) var(--space-5); }
 
 /* Breadcrumb, in-page footer and previous/next, shared by every guide page. */
 .breadcrumb { margin-bottom: var(--space-3); }
@@ -248,12 +215,6 @@
   .guide-sidebar { display: none; }
   .guide-menu { display: block; margin-bottom: var(--space-3); border-block: 1px solid var(--line); }
 
-}
-
-@media (max-width: 37rem) {
-  .search-controls { flex-direction: column; }
-  .search-controls input { flex: auto; width: 100%; }
-  .search-controls button { width: 100%; }
 }
 
 /* Let the document scroll long navigation lists on short screens. */

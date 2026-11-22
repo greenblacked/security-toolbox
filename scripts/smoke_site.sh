@@ -78,7 +78,9 @@ check_route /about/ 'What is in the repository'
 check_route /sitemap.xml '<urlset'
 check_route /favicon.svg '<svg'
 check_route /guides.css '.guide-layout'
-check_route /search/ 'Search guides'
+check_route / 'data-search-open'
+check_route /kubernetes/ 'data-search-open'
+check_route /search.js 'showModal'
 check_route /search/search_index.json 'Kubernetes / GKE'
 
 if [ "${3:-}" = noindex ]; then

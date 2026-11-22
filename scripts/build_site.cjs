@@ -376,6 +376,7 @@ for (const page of pages) {
   <link rel="stylesheet" href="/home.css">
   <link rel="stylesheet" href="/guides.css">
   <script src="/theme.js" defer></script>
+  <script src="/search.js" defer></script>
   <script src="/motion.js" defer></script>
   <script src="/code-copy.js" defer></script>
   <script type="application/ld+json">${structuredData}</script>
@@ -386,7 +387,7 @@ for (const page of pages) {
   <header class="site-header"><div class="wrap header-inner">
     <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><rect x="1" y="1" width="30" height="30" rx="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 10.5 15 16 9.5 21.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="17.5" y="20.4" width="6.6" height="3" rx="1.5" fill="currentColor"/></svg></span>Security Toolbox</a>
     <div class="header-actions">
-      <a class="repo-link" href="/search/">Search</a>
+      <button type="button" class="repo-link search-trigger" data-search-open aria-haspopup="dialog" hidden>Search</button>
       <a class="repo-link" href="${repoUrl}">GitHub <span aria-hidden="true">↗</span></a>
       <button type="button" id="theme-toggle" hidden>Theme</button>
     </div>
