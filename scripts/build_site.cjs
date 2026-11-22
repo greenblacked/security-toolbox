@@ -59,6 +59,7 @@ add('guides', 'Kubernetes / GKE', 'docs/kubernetes/index.md', '/kubernetes/');
 add('guides', 'Google Cloud', 'docs/gcp/index.md', '/gcp/');
 add('guides', 'Terraform', 'docs/terraform/index.md', '/terraform/');
 add('guides', 'GitHub Actions', 'docs/github/index.md', '/github/');
+add('guides', 'Supply chain', 'docs/supply-chain/index.md', '/supply-chain/');
 add('guides', 'Secrets', 'docs/secrets/index.md', '/secrets/');
 
 add('checks', 'Checks', 'checks/README.md', '/checks/');

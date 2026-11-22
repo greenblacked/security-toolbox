@@ -7,6 +7,14 @@ annotated Git tag in the form `vX.Y.Z`. See [releasing a version](docs/ci.md#rel
 
 ### Added
 
+- Add a Supply chain guide: digest pinning, what the SLSA build and source
+  tracks actually guarantee, keyless signing as an identity rather than a key,
+  GitHub attestations and immutable releases, the install path where most
+  incidents land, and what an SBOM cannot tell you.
+- Add `/glossary/`: thirty terms in the sense these guides use them, each
+  linked to the page that explains it, plus the pairs most often confused.
+- Add a print stylesheet, so a guide prints as black on white without the
+  navigation, progress bar or copy buttons.
 - `checks/gcp/iam-report.sh`, a read-only project IAM baseline report: public
   members, standing basic roles, the default compute account holding Editor,
   project-wide impersonation and security admin, individual user bindings and
