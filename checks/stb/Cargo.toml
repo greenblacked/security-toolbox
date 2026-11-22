@@ -1,0 +1,22 @@
+[package]
+name = "stb"
+description = "Read-only security checks against exported cloud and Kubernetes JSON"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+anyhow = "1.0.104"
+clap = { version = "4.6.9", default-features = false, features = ["std", "derive", "help", "usage", "error-context", "suggestions"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+
+[dev-dependencies]
+assert_cmd = "2.2.2"
+jsonschema = { version = "0.61.2", default-features = false }
+
+[lints]
+workspace = true

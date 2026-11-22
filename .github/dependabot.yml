@@ -16,3 +16,19 @@ updates:
         update-types:
           - minor
           - patch
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /deploy
+    schedule:
+      interval: weekly
+  - package-ecosystem: cargo
+    directory: /checks
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci
