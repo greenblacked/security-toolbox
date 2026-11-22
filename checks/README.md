@@ -4,31 +4,36 @@ Read-only report scripts and checklists. Nothing here changes a cluster, project
 
 | Path | What it covers | Run |
 | --- | --- | --- |
-| [`gke/`](gke/) | GKE cluster hardening checklist and report: Workload Identity, Shielded Nodes, Binary Authorization, NetworkPolicy, private nodes, node service accounts, upgrades | `checks/gke/gke-report.sh --cluster prod --location europe-west1`, or offline `stb gke --file prod.json` |
+| [`gke/`](gke/) | GKE cluster hardening checklist and report: Workload Identity, Shielded Nodes, Binary Authorization, NetworkPolicy, private nodes, node service accounts, upgrades | `checks/gke/gke-report.sh --cluster prod --location europe-west1` |
 | [`kubernetes/`](kubernetes/) | CIS Kubernetes Benchmark 5.1 / 5.2 workload controls: privileged, host namespaces, hostPath, root and privilege escalation across init, regular and ephemeral containers of Pods and workload templates, plus `cluster-admin` bindings | `checks/kubernetes/cis-workload-report.sh` |
+| [`gcp/`](gcp/) | Project IAM baseline: public members, standing basic roles, the default compute service account holding Editor, project-wide impersonation and security admin, individual user bindings, and members from outside a given domain | `checks/gcp/iam-report.sh --project prod --domain example.com` |
 | [`github/`](github/) | GitHub Actions hardening note: SHA pinning, permissions, `pull_request_target`, `persist-credentials`, expression injection, OIDC | read [`actions-hardening.md`](github/actions-hardening.md) |
 
 Exit codes: `0` clean (warnings allowed), `1` at least one failure, `2` usage error. Dependencies: `bash`, `jq`, plus `gcloud` or `kubectl` for live mode.
 
-## `stb`: Rust port
-
-`stb` is a single binary that runs the checks offline against JSON you already exported. It never runs `gcloud` or `kubectl`, calls a cloud API or opens a network connection. It lives in the Cargo workspace in this directory ([`Cargo.toml`](Cargo.toml), crate [`stb/`](stb/)); the toolchain is pinned in [`rust-toolchain.toml`](rust-toolchain.toml), so `rustup` installs the right version on first use.
-
-```bash
-cd checks
-cargo build --release --locked
-cargo test
-
-# GKE: same controls, levels and messages as gke/gke-report.sh
-gcloud container clusters describe prod --location europe-west1 --format=json > prod.json
-target/release/stb gke --file prod.json                   # text, same lines as the shell report
-target/release/stb gke --file prod.json --format json     # summary plus one result per control
-target/release/stb gke --file prod.json --format sarif    # SARIF 2.1.0, one result per FAIL or WARN
-gcloud container clusters describe prod --location europe-west1 --format=json | target/release/stb gke
-```
-
-`--file -` or no `--file` reads stdin. Exit codes match the scripts: `0` clean (warnings allowed), `1` at least one failure, `2` usage or input error, including unreadable files, malformed JSON and input that is not a JSON object. In SARIF, FAIL controls are `error` results and WARN controls are `warning` results.
-
-Only `gke` is ported so far. The shell scripts stay the reference until the port is complete; `./checks/test.sh` still runs them.
-
 For Terraform and manifest policies evaluated before deploy, see [`../policies/`](../policies/).
+
+## How a check is meant to be used
+
+1. **Run it read-only first.** Every script is a report: it prints `PASS`, `FAIL` or `WARN` per control and exits non-zero on a failure. Nothing is remediated for you, and nothing needs write access.
+2. **Export and attach the output.** A check that ran against a saved export is reproducible by the person reviewing the ticket, which a live run against a cluster that has since changed is not.
+3. **Read `WARN` as a decision, not noise.** A `WARN` is a control that is sometimes legitimately off. Leaving it off is fine if the reason is written down; leaving it off silently is how it stays off for two years.
+4. **Re-run after the fix.** The output is the evidence, and a fix nobody re-checked is a claim.
+
+## Why a failure count is asserted in tests
+
+Each bad fixture must trip an exact number of controls (`checks/test.sh` greps for `failures: N`). Without that, a control that stops working — a renamed JSON field, a `jq` path that returns null — passes silently, because a report that finds nothing still exits 0. The count is the cheapest way to notice that a check has gone blind.
+
+## What a check is not
+
+- **Not a compliance certificate.** It reads one API surface at one moment. Control-plane and node items that need host access (CIS sections 1 to 4) are out of scope and need `kube-bench` on a self-managed cluster.
+- **Not enforcement.** A report can be ignored. The enforcement counterparts are Pod Security Admission and the admission policy engine for workloads, organisation policy and IAM deny policies for GCP, and the policies in [`../policies/`](../policies/) for the pull request.
+- **Not a replacement for the telemetry.** A clean report says the configuration is right, not that nothing happened. Use logs and runtime detection for what a static read cannot see.
+
+## Adding a check
+
+1. One directory per target, with a script that accepts `--file` (or `--pods`, `--bindings`) for offline use and a live mode that needs the narrowest read permission available.
+2. A `README.md` in the same directory: what it checks, what it does not, and the exact command.
+3. `fixtures/<name>-good.json` and `fixtures/<name>-bad.json`. The good one must exit 0; the bad one must exit 1 and trip an asserted number of controls.
+4. Wire both into `checks/test.sh` and add the row above.
+5. Keep the script POSIX-ish bash with `set -Eeuo pipefail`, quote every expansion, and fail with exit `2` on a usage error so a pipeline can tell a mistake from a finding.

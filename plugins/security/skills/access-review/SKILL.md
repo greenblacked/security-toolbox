@@ -33,7 +33,7 @@ Only Read, Grep and Glob are pre-approved, so `jq`, every other command and ever
 
 The two jobs share a method and differ in where they start and what done means. Decide out loud before beginning.
 
-| | Estate review | Targeted reduction |
+| Dimension | Estate review | Targeted reduction |
 | --- | --- | --- |
 | Trigger | Cadence, an audit, an incident, a reorganisation | One over-broad role, one service account, one finding |
 | Starts from | The full identity inventory, breadth first | The identity's own policy and usage, depth first |
