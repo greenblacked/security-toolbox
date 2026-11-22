@@ -9,5 +9,22 @@ __pycache__/
 
 # Written on the runner for a stage Preview or a release; not committed
 site/robots.txt
-site/_headers
 site/version.txt
+
+# Written by scripts/build_site.cjs from docs/, checks/, policies/ and plugins/.
+# The Markdown stays the source of truth, so a local build leaves a clean tree.
+site/about/
+site/checks/
+site/contributing/
+site/gcp/
+site/github/
+site/kubernetes/
+site/policies/
+site/secrets/
+site/skills/
+site/terraform/
+site/search/search_index.json
+site/sitemap.xml
+site/start/
+site/glossary/
+site/supply-chain/

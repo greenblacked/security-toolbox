@@ -1,0 +1,39 @@
+{
+  "bindings": [
+    {
+      "role": "roles/storage.objectViewer",
+      "members": ["allUsers"]
+    },
+    {
+      "role": "roles/owner",
+      "members": ["user:alice@example.com"]
+    },
+    {
+      "role": "roles/editor",
+      "members": ["serviceAccount:123456789012-compute@developer.gserviceaccount.com"]
+    },
+    {
+      "role": "roles/iam.serviceAccountTokenCreator",
+      "members": ["group:platform-admins@example.com"]
+    },
+    {
+      "role": "roles/iam.securityAdmin",
+      "members": ["user:bob@partner.example"]
+    },
+    {
+      "role": "roles/viewer",
+      "members": ["group:contractors@example.com"]
+    },
+    {
+      "role": "roles/owner",
+      "members": ["user:carol@example.com"],
+      "condition": {
+        "title": "elevation",
+        "description": "time-bound elevation",
+        "expression": "request.time < timestamp(\"2026-12-01T00:00:00Z\")"
+      }
+    }
+  ],
+  "etag": "BwXbadFixture=",
+  "version": 3
+}

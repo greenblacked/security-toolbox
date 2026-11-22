@@ -19,6 +19,9 @@ terraform show -json tfplan > plan.json
 conftest test --policy policies/opa/terraform --namespace terraform.gcp plan.json
 # Self-tests against fixtures
 ./checks/test.sh && ./policies/test.sh
+# Rebuild the documentation site into site/, then check it
+npm ci --ignore-scripts && node scripts/build_site.cjs
+python scripts/check_site.py site
 ```
 
 ## What's here
@@ -30,7 +33,7 @@ conftest test --policy policies/opa/terraform --namespace terraform.gcp plan.jso
 | Terraform / IaC | OPA/Conftest on plan JSON, Checkov custom checks | `policies/opa/terraform/`, `policies/checkov/` |
 | GitHub / CI | Actions hardening, repo and org baseline | `checks/github/actions-hardening.md`, `docs/github/` |
 | Secrets | Handling, delivery and rotation patterns | `docs/secrets/`, `secret-rotation` skill |
-| Skills | Written procedures for IaC review, image hardening, secret rotation, access review, host hardening, security review, threat modelling, dependency triage, certificate automation, detection engineering, compromise evidence preservation | `plugins/security/skills/` |
+| Skills | Written procedures for IaC review, image hardening, secret rotation, access review, host hardening, security review, threat modelling, dependency triage, certificate automation, detection engineering, compromise evidence preservation. Each one is published in full, with its reference files, at `/skills/` | `plugins/security/skills/` |
 
 ## Principles
 
@@ -44,9 +47,12 @@ conftest test --policy policies/opa/terraform --namespace terraform.gcp plan.jso
 ```text
 checks/     # read-only report scripts and checklists, with fixtures
 policies/   # OPA/Conftest and Checkov policies, with fixtures
-plugins/    # security skills (SKILL.md procedures)
+plugins/    # security skills (SKILL.md procedures, published at /skills/)
 docs/       # Markdown guide source
-site/       # homepage and shared styles for security.szolotov.com
+scripts/    # site build, deployment helpers and their tests
+site/       # hand-written homepage, styles and headers; generated routes are gitignored
 ```
+
+`scripts/build_site.cjs` renders `docs/`, `checks/`, `policies/` and `plugins/` into `site/`. The Markdown stays the source of truth, and the generated routes are ignored by Git so a local build leaves a clean tree.
 
 See [docs/](docs/) and the live site when published.

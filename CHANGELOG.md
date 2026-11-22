@@ -5,6 +5,87 @@ annotated Git tag in the form `vX.Y.Z`. See [releasing a version](docs/ci.md#rel
 
 ## [Unreleased]
 
+### Added
+
+- Add a Supply chain guide: digest pinning, what the SLSA build and source
+  tracks actually guarantee, keyless signing as an identity rather than a key,
+  GitHub attestations and immutable releases, the install path where most
+  incidents land, and what an SBOM cannot tell you.
+- Add `/glossary/`: thirty terms in the sense these guides use them, each
+  linked to the page that explains it, plus the pairs most often confused.
+- Add a print stylesheet, so a guide prints as black on white without the
+  navigation, progress bar or copy buttons.
+- `checks/gcp/iam-report.sh`, a read-only project IAM baseline report: public
+  members, standing basic roles, the default compute account holding Editor,
+  project-wide impersonation and security admin, individual user bindings and
+  members from outside a given domain. Good and bad fixtures, wired into
+  `checks/test.sh` with an asserted failure count.
+- Expand the Kubernetes, Google Cloud, Terraform, GitHub Actions and secrets
+  guides with the controls behind each item, worked examples, the commands that
+  verify them, and the mistakes that make them fail.
+- Publish the full security skill procedures at `/skills/`, including each
+  `references/*.md` file, instead of eleven-line summaries. `docs/skills/` is
+  removed; `plugins/security/skills/` is now the only source.
+- Group the guide navigation by section, mark the current page, and add a
+  breadcrumb, previous/next links, an "Edit this page" link and a last-updated
+  date to every guide page.
+- Ranked search with section deep links, snippets, match highlighting, an empty
+  state and a `/` shortcut.
+- `sitemap.xml`, a favicon, canonical URLs, Open Graph and Twitter metadata, and
+  per-page descriptions taken from each page's own opening paragraph.
+- `site/_headers` for production: a same-origin Content Security Policy plus
+  `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
+  `Permissions-Policy`, `Cross-Origin-Opener-Policy` and font caching.
+- `scripts/check_site.py`, which verifies every local file and anchor plus the
+  head and landmark structure of each page, and runs in CI.
+- `Production drift`, a daily job that compares the production `version.txt`
+  against the newest release tag.
+- An About page and an `about/` route for the repository overview.
+
+### Changed
+
+- Soften the design: a 0.45rem corner radius, soft elevation on panels and code
+  blocks in place of the hard offset shadow, an expo-out curve for reveals at
+  620ms, and thin scrollbars on code and tables.
+
+- Remove the CI and deploy page from the published site. It documents deployment
+  credentials, environments and branch protection, so it stays in the repository
+  as an internal runbook rather than being served publicly.
+
+- `Cut release` moves a tag that is still unpublished to the current `main` head
+  instead of failing. A tag cut before the last promotion merged left production
+  on the previous release with no way to catch up.
+- Bring the release pipeline on `dev` back in line with `main`: the tag-triggered
+  release, `Cut release`, `scripts/release_notes.py` and its tests, and the
+  `0.1.1` changelog entry. Promoting `dev` would otherwise have reverted them.
+- Rewrite `docs/ci.md` for the tag-triggered release and correct the documented
+  `WRANGLER_VERSION`, which did not match `deploy/package.json`.
+- Replace the placeholder "site HTML is valid enough" CI job and the separate
+  docs job with one job that builds the site and checks it.
+
+### Fixed
+
+- Restore the brand mark. The `›_` prompt glyph had been double-encoded and
+  rendered as `вЂє_`; `check_site.py` now fails on mojibake or invalid UTF-8 in
+  any text asset, so the same damage cannot ship again.
+- Code blocks no longer break a URL or identifier across two lines; they scroll
+  instead.
+- The stored light theme is applied before the first paint, so it no longer
+  flashes the dark palette.
+- Reduce the empty band above the homepage headline.
+- Give the access-review comparison table a header for its first column.
+
+## [0.1.1] - 2026-11-20
+
+### Changed
+
+- Refresh the documentation site with platform guide navigation, a copyable
+  read-only Kubernetes quickstart, warm Light and Dark themes, and responsive layouts.
+- Add a self-hosted Instrument Sans font and license, stronger control borders,
+  and underlined links in guides.
+- Promote tested changes from development through staging to production on main,
+  with exact promotion and release tree verification.
+
 ## [0.1.0] - 2026-11-20
 
 ### Added

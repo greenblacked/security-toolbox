@@ -1,0 +1,27 @@
+{
+  "bindings": [
+    {
+      "role": "roles/container.admin",
+      "members": ["group:platform-admins@example.com"]
+    },
+    {
+      "role": "roles/iam.securityReviewer",
+      "members": ["group:security@example.com"]
+    },
+    {
+      "role": "roles/storage.objectViewer",
+      "members": ["serviceAccount:app@example-project.iam.gserviceaccount.com"]
+    },
+    {
+      "role": "roles/owner",
+      "members": ["group:break-glass@example.com"],
+      "condition": {
+        "title": "break glass",
+        "description": "time-bound elevation",
+        "expression": "request.time < timestamp(\"2026-12-31T00:00:00Z\")"
+      }
+    }
+  ],
+  "etag": "BwXgoodFixture=",
+  "version": 3
+}
