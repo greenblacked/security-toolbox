@@ -105,7 +105,7 @@ a { color: inherit; text-underline-offset: .23em; }
   border-radius: var(--radius);
   color: var(--accent);
 }
-.brand-mark::after { content: "вЂє_"; font: 700 .8rem var(--mono); }
+.brand-mark::after { content: "›_"; font: 700 .8rem var(--mono); }
 .site-nav, .header-actions, .footer-links {
   display: flex;
   flex-wrap: wrap;

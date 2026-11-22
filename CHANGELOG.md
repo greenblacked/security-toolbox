@@ -53,6 +53,9 @@ annotated Git tag in the form `vX.Y.Z`. See [releasing a version](docs/ci.md#rel
 
 ### Fixed
 
+- Restore the brand mark. The `›_` prompt glyph had been double-encoded and
+  rendered as `вЂє_`; `check_site.py` now fails on mojibake or invalid UTF-8 in
+  any text asset, so the same damage cannot ship again.
 - Code blocks no longer break a URL or identifier across two lines; they scroll
   instead.
 - The stored light theme is applied before the first paint, so it no longer

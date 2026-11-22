@@ -19,6 +19,11 @@ from urllib.parse import urlsplit
 
 SKIP_SCHEMES = ("mailto:", "tel:", "data:")
 ASSET_TAGS = {"script", "img", "source"}
+TEXT_SUFFIXES = {".css", ".js", ".html", ".svg", ".json", ".xml"}
+# What UTF-8 looks like when it was decoded as Windows-1252 or Windows-1251 and
+# written back. A glyph damaged this way is valid UTF-8, so only the sequence
+# gives it away.
+MOJIBAKE = ("\ufffd", "â€", "Ã¢", "Ã©", "Â«", "Â»", "вЂ")
 
 
 class Page(HTMLParser):
@@ -104,6 +109,27 @@ def resolve(root: Path, page: Path, href: str) -> Path | None:
     return target / "index.html"
 
 
+def check_encoding(root: Path) -> list[str]:
+    """Every text asset must be UTF-8 and must not carry double-encoded glyphs."""
+    problems: list[str] = []
+    for path in sorted(root.rglob("*")):
+        if not path.is_file() or path.suffix not in TEXT_SUFFIXES:
+            continue
+        name = path.relative_to(root).as_posix()
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError as error:
+            problems.append(f"{name}: not valid UTF-8 ({error.reason} at byte {error.start})")
+            continue
+        for marker in MOJIBAKE:
+            if marker not in text:
+                continue
+            line = text.count("\n", 0, text.index(marker)) + 1
+            problems.append(f"{name}:{line}: mojibake {marker!r}; re-encode the file as UTF-8")
+            break
+    return problems
+
+
 def check(root: Path) -> list[str]:
     problems: list[str] = []
     pages = sorted(root.rglob("*.html"))
@@ -154,6 +180,7 @@ def check(root: Path) -> list[str]:
             if fragment and target in parsed and fragment not in parsed[target].ids:
                 problems.append(f"{name}: link {href} points at a missing anchor")
 
+    problems.extend(check_encoding(root))
     return problems
 
 
