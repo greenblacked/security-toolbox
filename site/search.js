@@ -1,9 +1,34 @@
 (() => {
-  const form = document.getElementById('search-form');
-  const input = document.getElementById('search-query');
-  const status = document.getElementById('search-status');
-  const results = document.getElementById('search-results');
-  let index;
+  if (/^\/search\/?$/.test(location.pathname)) {
+    const home = new URL('/', location.origin);
+    const query = new URLSearchParams(location.search).get('q');
+    if (query) home.searchParams.set('q', query);
+    location.replace(home);
+    return;
+  }
+
+  const dialog = document.createElement('dialog');
+  dialog.id = 'site-search';
+  dialog.setAttribute('aria-labelledby', 'search-title');
+  dialog.innerHTML = `
+    <div class="search-heading">
+      <h2 id="search-title">Search guides</h2>
+      <button type="button" class="search-close" aria-label="Close search">×</button>
+    </div>
+    <form role="search">
+      <label for="search-query">Search terms</label>
+      <input id="search-query" name="q" type="search" autocomplete="off" autofocus>
+    </form>
+    <p id="search-status" role="status"></p>
+    <ul id="search-results"></ul>`;
+  document.body.append(dialog);
+
+  const form = dialog.querySelector('form');
+  const input = dialog.querySelector('input');
+  const status = dialog.querySelector('#search-status');
+  const results = dialog.querySelector('#search-results');
+  let indexRequest;
+  let returnFocus;
 
   const words = text => text.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
   const count = (haystack, needle) => haystack.split(needle).length - 1;
@@ -101,48 +126,122 @@
     }
   }
 
+  function loadIndex() {
+    indexRequest ||= fetch('/search/search_index.json')
+      .then(response => {
+        if (!response.ok) throw new Error('Search index unavailable');
+        return response.json();
+      })
+      .then(data => data.docs)
+      .catch(error => {
+        indexRequest = undefined;
+        throw error;
+      });
+    return indexRequest;
+  }
+
   async function search() {
     const query = input.value.trim();
-    if (!query) return;
-    status.textContent = 'Searching…';
+    const terms = words(query);
     results.replaceChildren();
+    if (!terms.length) {
+      status.textContent = 'Enter a word or phrase to search.';
+      return;
+    }
+    status.textContent = 'Searching…';
     try {
-      if (!index) {
-        const response = await fetch('/search/search_index.json');
-        if (!response.ok) throw new Error('Search index unavailable');
-        index = (await response.json()).docs;
-      }
-      const terms = words(query);
-      if (!terms.length) {
-        status.textContent = 'Enter a word or phrase to search.';
-        return;
-      }
+      const index = await loadIndex();
+      if (!dialog.open || input.value.trim() !== query) return;
       const entries = index
         .map(doc => ({doc, score: score(doc, terms)}))
         .filter(entry => entry.score > 0)
         .sort((a, b) => b.score - a.score || a.doc.title.localeCompare(b.doc.title));
       render(entries, terms, query);
-      const url = new URL(location.href);
-      url.searchParams.set('q', query);
-      history.replaceState(null, '', url);
     } catch {
-      status.textContent = 'Search is unavailable. Please try again.';
+      if (dialog.open && input.value.trim() === query) {
+        status.textContent = 'Search is unavailable. Please try again.';
+      }
     }
   }
 
-  form.addEventListener('submit', event => { event.preventDefault(); search(); });
-  form.hidden = false;
-  status.hidden = false;
-
-  // "/" jumps to the search box, unless the reader is already typing somewhere.
-  document.addEventListener('keydown', event => {
-    if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) return;
-    const target = event.target;
-    if (target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
-    event.preventDefault();
+  function openSearch(trigger) {
+    if (dialog.open) return;
+    returnFocus = trigger;
+    dialog.showModal();
     input.focus();
+    input.select();
+    search();
+  }
+
+  function enableTrigger(button) {
+    button.hidden = false;
+    button.addEventListener('click', () => openSearch(button));
+  }
+
+  const headerTrigger = document.querySelector('.site-header [data-search-open]');
+  document.querySelectorAll('[data-search-open]').forEach(enableTrigger);
+  if (headerTrigger && 'IntersectionObserver' in window) {
+    const floating = document.createElement('button');
+    floating.type = 'button';
+    floating.className = 'search-floating';
+    floating.setAttribute('aria-label', 'Search guides');
+    floating.setAttribute('aria-haspopup', 'dialog');
+    floating.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>';
+    enableTrigger(floating);
+    floating.hidden = true;
+    document.body.append(floating);
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!dialog.open) floating.hidden = entry.isIntersecting;
+    });
+    observer.observe(headerTrigger);
+  }
+  dialog.querySelector('.search-close').addEventListener('click', () => dialog.close());
+  dialog.addEventListener('click', event => {
+    if (event.target !== dialog) return;
+    const bounds = dialog.getBoundingClientRect();
+    if (event.clientX < bounds.left || event.clientX > bounds.right ||
+        event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
+  });
+  dialog.addEventListener('close', () => returnFocus?.focus({preventScroll: true}));
+  input.addEventListener('input', search);
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    const first = results.querySelector('a');
+    if (first) first.click();
+    else search();
+  });
+  results.addEventListener('click', event => {
+    if (event.target.closest('a') && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
+      dialog.close();
+    }
+  });
+  dialog.addEventListener('keydown', event => {
+    if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
+    const links = [...results.querySelectorAll('a')];
+    const position = links.indexOf(document.activeElement);
+    if (position < 0 && document.activeElement !== input) return;
+    const next = event.key === 'ArrowDown' ? links[position + 1] : links[position - 1] || input;
+    if (!next) return;
+    event.preventDefault();
+    next.focus();
   });
 
-  const initial = new URLSearchParams(location.search).get('q');
-  if (initial) { input.value = initial; search(); }
+  document.addEventListener('keydown', event => {
+    if (event.defaultPrevented || event.altKey || dialog.open || document.querySelector('dialog[open]')) return;
+    const shortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k';
+    const target = event.target;
+    if (!shortcut && (event.key !== '/' || event.ctrlKey || event.metaKey ||
+      (target instanceof HTMLElement && (target.isContentEditable || target.matches('input, textarea, select'))))) return;
+    event.preventDefault();
+    openSearch(document.activeElement);
+  });
+
+  const url = new URL(location.href);
+  const initial = url.pathname === '/' && url.searchParams.get('q');
+  if (initial) {
+    input.value = initial;
+    url.searchParams.delete('q');
+    history.replaceState(history.state, '', url);
+    openSearch(document.querySelector('[data-search-open]'));
+  }
 })();
