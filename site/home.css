@@ -770,6 +770,14 @@ body:has(.hero) { background-image: none; }
   .tool-grid { grid-template-columns: 1fr; }
 }
 
+@media (max-width: 23rem) {
+  .header-inner > .brand { font-size: .9375rem; }
+  .header-inner .brand-mark { width: 1.5rem; }
+  .header-actions { column-gap: .25rem; }
+  .header-actions #theme-toggle { padding-inline: .45rem; font-size: .875rem; }
+  .home-header .site-nav { justify-content: space-between; column-gap: .35rem; }
+}
+
 @media print {
   :root, html[data-theme="light"], html[data-theme="dark"] { color-scheme: light; }
   html, body { background: var(--print-paper); color: var(--print-ink); }
