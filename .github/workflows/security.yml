@@ -118,7 +118,9 @@ jobs:
         with:
           persist-credentials: false
       # CodeQL exits 32 for a language with no source, so only languages the tree
-      # actually has are scanned: actions always, python once a .py file is tracked.
+      # actually has are scanned: actions always, python once a .py file is
+      # tracked, rust once checks/Cargo.toml or a .rs file is. No build-mode is
+      # set: it is for single-language jobs, and all three are read from source.
       - id: detect
         name: Pick the CodeQL languages from the tracked files
         run: |
@@ -126,6 +128,9 @@ jobs:
           languages=actions
           if [ -n "$(git ls-files -- '*.py')" ]; then
             languages="${languages},python"
+          fi
+          if [ -n "$(git ls-files -- checks/Cargo.toml '*.rs')" ]; then
+            languages="${languages},rust"
           fi
           echo "CodeQL languages: ${languages}"
           echo "languages=${languages}" >> "$GITHUB_OUTPUT"

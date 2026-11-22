@@ -1,0 +1,57 @@
+# cargo-deny policy for the checks/ workspace, run by the rust supply chain job in
+# .github/workflows/ci.yml as `cargo deny --locked check`.
+# Schema: https://embarkstudios.github.io/cargo-deny/
+
+[graph]
+all-features = true
+
+[advisories]
+# RustSec advisories. Vulnerabilities always fail; so do yanked versions and
+# unmaintained or unsound crates anywhere in the tree. Ignore an advisory only
+# with its ID and a reason.
+yanked = "deny"
+unmaintained = "all"
+unsound = "all"
+ignore = []
+
+[licenses]
+# Permissive licences only. Adding one here is a deliberate decision.
+allow = [
+  "MIT",
+  "MIT-0",
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "Unicode-3.0",
+  "Zlib",
+  "0BSD",
+  "CC0-1.0",
+]
+confidence-threshold = 0.9
+# The allow-list is a policy, not an inventory: not every entry has to be in use.
+unused-allowed-license = "allow"
+exceptions = []
+
+[licenses.private]
+# The workspace's own unpublished crates (publish = false) are not dependencies.
+ignore = true
+
+[bans]
+multiple-versions = "warn"
+# Version requirements must be explicit; path dependencies inside the
+# workspace are fine.
+wildcards = "deny"
+allow-wildcard-paths = true
+highlight = "all"
+deny = []
+skip = []
+skip-tree = []
+
+[sources]
+# crates.io only: no other registry and no git dependencies.
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []
