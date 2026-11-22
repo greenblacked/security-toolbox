@@ -5,14 +5,17 @@
 set -Eeuo pipefail
 cd "$(dirname "$0")"
 
+output=$(mktemp)
+trap 'rm -f -- "$output"' EXIT
+
 fail=0
 expect() { # expect <pass|fail> <description> <command...>
   local want=$1 what=$2; shift 2
-  if "$@" >/tmp/policy-test.out 2>&1; then got=pass; else got=fail; fi
+  if "$@" >"$output" 2>&1; then got=pass; else got=fail; fi
   if [ "$got" = "$want" ]; then
     echo "ok   - $what ($got as expected)"
   else
-    echo "FAIL - $what (wanted $want, got $got)"; cat /tmp/policy-test.out; fail=1
+    echo "FAIL - $what (wanted $want, got $got)"; cat "$output"; fail=1
   fi
 }
 

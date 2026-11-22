@@ -64,9 +64,9 @@ findings=$(jq -r --arg sys "$system_ns_re" '
 admin=$(jq -r '
   .items[]
   | select(.roleRef.kind == "ClusterRole" and .roleRef.name == "cluster-admin")
-  | select(.metadata.name | test("^system:") | not)
   | .metadata.name as $b
   | (.subjects // [])[]
+  | select(.kind != "Group" or .name != "system:masters")
   | "5.1 cluster-admin use\tclusterrolebinding/\($b)\t\(.kind) \(.namespace // "" | if . == "" then "" else . + "/" end)\(.name)"
 ' <<<"$crb")
 
