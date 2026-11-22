@@ -44,6 +44,10 @@ annotated Git tag in the form `vX.Y.Z`. See [releasing a version](docs/ci.md#rel
 
 ### Changed
 
+- Soften the design: a 0.45rem corner radius, soft elevation on panels and code
+  blocks in place of the hard offset shadow, an expo-out curve for reveals at
+  620ms, and thin scrollbars on code and tables.
+
 - Remove the CI and deploy page from the published site. It documents deployment
   credentials, environments and branch protection, so it stays in the repository
   as an internal runbook rather than being served publicly.

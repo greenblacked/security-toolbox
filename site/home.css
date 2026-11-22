@@ -21,14 +21,19 @@
   --panel-hover: #382a22;
   --mono: ui-monospace, SFMono-Regular, Consolas, monospace;
   --sans: "Instrument Sans", system-ui, sans-serif;
-  --radius: .15rem;
+  --radius: .45rem;
   --target: 2.75rem;
   /* One timing system: every effect below names one of these. */
   --motion-fast: 160ms;
   --motion-base: 320ms;
-  --motion-slow: 520ms;
+  --motion-slow: 620ms;
   --ease-out: cubic-bezier(.22, .61, .36, 1);
+  --ease-smooth: cubic-bezier(.16, 1, .3, 1);
   --ease-in-out: cubic-bezier(.4, 0, .2, 1);
+  /* Elevation is soft and short: the design stays flat, it just stops being
+     hard-edged where a panel sits above the page. */
+  --shadow-1: 0 1px 2px rgb(0 0 0 / .18), 0 2px 8px rgb(0 0 0 / .12);
+  --shadow-2: 0 2px 4px rgb(0 0 0 / .2), 0 10px 28px rgb(0 0 0 / .22);
   --space-1: .5rem;
   --space-2: .75rem;
   --space-3: 1rem;
@@ -189,7 +194,7 @@ a { color: inherit; text-underline-offset: .23em; }
   border-radius: var(--radius);
   background: var(--panel);
   align-self: center;
-  box-shadow: .65rem .65rem 0 color-mix(in srgb, var(--accent) 20%, transparent);
+  box-shadow: var(--shadow-2);
 }
 .quickstart-top, .command-bar {
   display: flex;
@@ -234,6 +239,8 @@ a { color: inherit; text-underline-offset: .23em; }
   white-space: pre;
   overflow-x: auto;
   font: .875rem/1.75 var(--mono);
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
 }
 .quickstart .copy-status:empty { margin: 0; }
 .text-link { color: var(--accent); font-weight: 600; }
@@ -274,7 +281,11 @@ a { color: inherit; text-underline-offset: .23em; }
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--panel);
+  box-shadow: var(--shadow-1);
+  transition: box-shadow var(--motion-base) var(--ease-smooth),
+    border-color var(--motion-base) var(--ease-smooth);
 }
+.tool-panel:hover { border-color: var(--control-line); box-shadow: var(--shadow-2); }
 .tool-panel h3 {
   padding: var(--space-3);
   color: var(--accent);
@@ -464,8 +475,8 @@ body:has(.hero) {
     opacity: 1;
     transform: none;
     transition:
-      opacity var(--motion-slow) var(--ease-out) var(--reveal-delay, 0ms),
-      transform var(--motion-slow) var(--ease-out) var(--reveal-delay, 0ms);
+      opacity var(--motion-slow) var(--ease-smooth) var(--reveal-delay, 0ms),
+      transform var(--motion-slow) var(--ease-smooth) var(--reveal-delay, 0ms);
   }
 
   /* Stagger, set by the markup where the order matters. */
