@@ -26,6 +26,16 @@ conftest test --policy policies/opa/terraform --namespace terraform.gcp \
 
 The GKE report exits `1` if any control reports `FAIL`. A `WARN` alone leaves the exit code at `0`. The Kubernetes workload report exits `1` when it reports findings. It covers selected CIS controls in sections 5.1 and 5.2.
 
+### Rust reporting
+
+Build the Rust `stb` CLI and generate a SARIF report from the same checked-in GKE fixture. For more output formats and commands, see the [Rust checks guide](checks/README.md#stb-rust-port).
+
+```bash
+(cd checks && cargo build --release --locked)
+checks/target/release/stb gke --file checks/gke/fixtures/cluster-good.json \
+  --format sarif > gke.sarif
+```
+
 ## Run against your infrastructure
 
 ### GKE cluster

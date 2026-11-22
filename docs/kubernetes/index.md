@@ -2,7 +2,12 @@
 
 ## Cluster (GKE)
 
-[`checks/gke/gke-report.sh`](https://github.com/greenblacked/security-toolbox/blob/main/checks/gke/gke-report.sh) reports the cluster-level controls from `gcloud container clusters describe`; the [checklist](https://github.com/greenblacked/security-toolbox/blob/main/checks/gke/README.md) explains each one.
+[`checks/gke/gke-report.sh`](https://github.com/greenblacked/security-toolbox/blob/main/checks/gke/gke-report.sh) reports the cluster-level controls from `gcloud container clusters describe`; the [checklist](https://github.com/greenblacked/security-toolbox/blob/main/checks/gke/README.md) explains each one. The Rust `stb gke` command reports the same controls offline from saved JSON or stdin, as text, JSON or SARIF 2.1.0:
+
+```bash
+cd checks && cargo build --release --locked
+target/release/stb gke --file prod.json --format sarif > gke.sarif
+```
 
 - **Workload Identity Federation for GKE** on the cluster and `GKE_METADATA` on every node pool, so pods never see the node service account.
 - **Shielded GKE Nodes** with integrity monitoring (and Secure Boot where drivers allow).
