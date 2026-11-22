@@ -199,7 +199,7 @@ const wrapCode = (render, tokens, idx, options, env, self) => {
   const language = (tokens[idx].info || '').trim().split(/\s+/)[0];
   env.codeBlocks = (env.codeBlocks || 0) + 1;
   const what = `${language ? language + ' ' : ''}code block ${env.codeBlocks}`;
-  return `<div class="code-block"><button class="copy-code" type="button" aria-label="Copy ${escape(what)}" hidden>Copy</button>${render(tokens, idx, options, env, self)}</div>\n`;
+  return `<div class="code-block"><button class="copy-code" type="button" aria-label="Copy ${escape(what)}" hidden>Copy</button>${render(tokens, idx, options, env, self).replace('<pre>', '<pre tabindex="0">')}</div>\n`;
 };
 for (const rule of ['fence', 'code_block']) {
   const render = md.renderer.rules[rule] ||
@@ -386,6 +386,7 @@ for (const page of pages) {
   <a class="skip" href="#main">Skip to content</a>
   <header class="site-header"><div class="wrap header-inner">
     <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><rect x="1" y="1" width="30" height="30" rx="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 10.5 15 16 9.5 21.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="17.5" y="20.4" width="6.6" height="3" rx="1.5" fill="currentColor"/></svg></span>Security Toolbox</a>
+    <nav class="guide-header-nav" aria-label="Main navigation"><a href="/start/">Start here</a><a href="/#guides">Guides</a><a href="/#checks">Checks &amp; policies</a></nav>
     <div class="header-actions">
       <button type="button" class="repo-link search-trigger" data-search-open aria-haspopup="dialog" hidden>Search</button>
       <a class="repo-link" href="${repoUrl}">GitHub <span aria-hidden="true">↗</span></a>
