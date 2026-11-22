@@ -8,6 +8,7 @@
   }
 
   const dialog = document.createElement('dialog');
+  const searchIcon = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>';
   dialog.id = 'site-search';
   dialog.setAttribute('aria-labelledby', 'search-title');
   dialog.innerHTML = `
@@ -17,7 +18,10 @@
     </div>
     <form role="search">
       <label for="search-query">Search terms</label>
-      <input id="search-query" name="q" type="search" autocomplete="off" autofocus>
+      <div class="search-input-wrap">
+        ${searchIcon}
+        <input id="search-query" name="q" type="search" autocomplete="off" autofocus>
+      </div>
     </form>
     <p id="search-status" role="status"></p>
     <ul id="search-results"></ul>`;
@@ -121,6 +125,11 @@
       snippet.className = 'search-snippet';
       snippet.append(highlight(text, terms));
       link.append(snippet);
+      const arrow = document.createElement('span');
+      arrow.className = 'search-result-arrow';
+      arrow.setAttribute('aria-hidden', 'true');
+      arrow.textContent = '→';
+      link.append(arrow);
       item.append(link);
       results.append(item);
     }
@@ -186,12 +195,13 @@
     floating.className = 'search-floating';
     floating.setAttribute('aria-label', 'Search guides');
     floating.setAttribute('aria-haspopup', 'dialog');
-    floating.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>';
+    floating.innerHTML = searchIcon;
     enableTrigger(floating);
-    floating.hidden = true;
+    floating.inert = true;
     document.body.append(floating);
     const observer = new IntersectionObserver(([entry]) => {
-      if (!dialog.open) floating.hidden = entry.isIntersecting;
+      floating.inert = entry.isIntersecting;
+      floating.classList.toggle('is-visible', !entry.isIntersecting);
     });
     observer.observe(headerTrigger);
   }
@@ -202,7 +212,9 @@
     if (event.clientX < bounds.left || event.clientX > bounds.right ||
         event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
   });
-  dialog.addEventListener('close', () => returnFocus?.focus({preventScroll: true}));
+  dialog.addEventListener('close', () => {
+    if (!dialog.open) returnFocus?.focus({preventScroll: true});
+  });
   input.addEventListener('input', search);
   form.addEventListener('submit', event => {
     event.preventDefault();
@@ -216,6 +228,11 @@
     }
   });
   dialog.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      dialog.close();
+      return;
+    }
     if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
     const links = [...results.querySelectorAll('a')];
     const position = links.indexOf(document.activeElement);
