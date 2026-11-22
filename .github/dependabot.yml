@@ -24,3 +24,11 @@ updates:
     directory: /deploy
     schedule:
       interval: weekly
+  - package-ecosystem: cargo
+    directory: /checks
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci
