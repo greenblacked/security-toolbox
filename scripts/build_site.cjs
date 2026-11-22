@@ -199,7 +199,7 @@ const wrapCode = (render, tokens, idx, options, env, self) => {
   const language = (tokens[idx].info || '').trim().split(/\s+/)[0];
   env.codeBlocks = (env.codeBlocks || 0) + 1;
   const what = `${language ? language + ' ' : ''}code block ${env.codeBlocks}`;
-  return `<div class="code-block"><button class="copy-code" type="button" aria-label="Copy ${escape(what)}" hidden>Copy</button>${render(tokens, idx, options, env, self).replace('<pre>', '<pre tabindex="0">')}</div>\n`;
+  return `<div class="code-block"><div class="code-toolbar"><span>${escape(language || 'Code')}</span><button class="copy-code" type="button" aria-label="Copy ${escape(what)}" hidden>Copy</button></div>${render(tokens, idx, options, env, self).replace('<pre>', '<pre tabindex="0">')}</div>\n`;
 };
 for (const rule of ['fence', 'code_block']) {
   const render = md.renderer.rules[rule] ||
@@ -301,10 +301,12 @@ for (const page of pages) {
   const navCurrent = page.parent || page.url;
 
   const nav = Object.entries(GROUP_LABELS).map(([group, groupLabel]) => {
+    const current = group === page.group;
+    const currentValue = page.reference ? 'location' : 'page';
     const links = pages.filter(item => item.group === group && !item.reference)
-      .map(item => `<li><a href="${item.url}"${item.url === navCurrent ? ' aria-current="page"' : ''}>${escape(item.label)}</a></li>`)
+      .map(item => `<li><a href="${item.url}"${item.url === navCurrent ? ` aria-current="${currentValue}"` : ''}>${escape(item.label)}</a></li>`)
       .join('');
-    return `<li class="nav-group"><span class="nav-group-label">${escape(groupLabel)}</span><ul>${links}</ul></li>`;
+    return `<li class="nav-group"><details${current ? ' open' : ''}><summary class="nav-group-label">${escape(groupLabel)}</summary><ul>${links}</ul></details></li>`;
   }).join('');
 
   const crumbs = [`<li><a href="/">Home</a></li>`];
@@ -389,7 +391,6 @@ for (const page of pages) {
     <nav class="guide-header-nav" aria-label="Main navigation"><a href="/start/">Start here</a><a href="/#guides">Guides</a><a href="/#checks">Checks &amp; policies</a></nav>
     <div class="header-actions">
       <button type="button" class="repo-link search-trigger" data-search-open aria-haspopup="dialog" hidden>Search</button>
-      <a class="repo-link" href="${repoUrl}">GitHub <span aria-hidden="true">↗</span></a>
       <button type="button" id="theme-toggle" hidden>Theme</button>
     </div>
   </div></header>
