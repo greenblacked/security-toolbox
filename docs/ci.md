@@ -48,22 +48,30 @@ After deployment, verify the Worker revision and status in Cloudflare, and check
 
 ## Accepted dependency risks
 
-`ecdsa==0.19.2`, pinned by `.github/requirements/checkov.txt`, carries an open
-advisory: a timing side channel on P-256 (Minerva). There is no patched release.
+Two advisories against `.github/requirements/checkov.txt` are accepted rather
+than fixed. Both are recorded here because a dismissed alert with no reasoning
+is indistinguishable from one nobody read.
 
-It is accepted rather than fixed, for three reasons:
+**`ecdsa==0.19.2`** — a timing side channel on P-256 (Minerva). There is no
+patched release, and the project considers side channels out of scope.
 
-- It is reachable only through checkov's own dependency tree, in the policy-tests
-  job, which runs against first-party code and pinned fixtures rather than
-  untrusted input.
+- It is reachable only through checkov's own dependency tree, in the
+  policy-tests job, which runs against first-party code and pinned fixtures
+  rather than untrusted input.
 - The attack needs many timing measurements of ECDSA signing operations. Nothing
   in that job exposes the measurement.
-- Removing it breaks the dependency that pulls it in, which is a larger change
-  than the risk justifies today.
 
-The alert is dismissed in Dependabot as `tolerable_risk`. Revisit when checkov
-drops the dependency, or when `ecdsa` ships a constant-time implementation — its
-own maintainers recommend the `cryptography` package for exactly that reason.
+**`asteval==1.0.6`** — two sandbox escapes (a `BaseException` subclass, and
+native memory access through numpy ctypes).
+
+- checkov 3.4.6 pins `asteval==1.0.6` exactly, and it is the latest release. A
+  bump to 1.0.9 fails `pip check` in this job, which is how this was found.
+- The sandbox matters when untrusted expressions are evaluated. Here the input is
+  first-party policy code in a job that already has read access to the repository.
+
+Both alerts are dismissed in Dependabot as `tolerable_risk`. Revisit when
+checkov lifts either pin, or when `ecdsa` ships a constant-time implementation —
+its own maintainers recommend the `cryptography` package for exactly that reason.
 
 ## Local checks
 
