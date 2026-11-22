@@ -46,6 +46,25 @@ Review and promote changes through controlled PRs and protections. GitHub evalua
 
 After deployment, verify the Worker revision and status in Cloudflare, and check each domain from a client not blocked by Bot Fight Mode. If a production release fails, inspect the workflow rollback result and active version. If automatic rollback fails, use the Cloudflare dashboard or `wrangler rollback VERSION_ID --config deploy/wrangler.json --yes` with an authorised token, then verify the active version and site. Development and staging can be restored by a reviewed revert and a new branch push. Treat any restoration of the retired `prod`-branch deployment path as a separate reviewed change; do not enable two production deployment paths simultaneously.
 
+## Accepted dependency risks
+
+`ecdsa==0.19.2`, pinned by `.github/requirements/checkov.txt`, carries an open
+advisory: a timing side channel on P-256 (Minerva). There is no patched release.
+
+It is accepted rather than fixed, for three reasons:
+
+- It is reachable only through checkov's own dependency tree, in the policy-tests
+  job, which runs against first-party code and pinned fixtures rather than
+  untrusted input.
+- The attack needs many timing measurements of ECDSA signing operations. Nothing
+  in that job exposes the measurement.
+- Removing it breaks the dependency that pulls it in, which is a larger change
+  than the risk justifies today.
+
+The alert is dismissed in Dependabot as `tolerable_risk`. Revisit when checkov
+drops the dependency, or when `ecdsa` ships a constant-time implementation — its
+own maintainers recommend the `cryptography` package for exactly that reason.
+
 ## Local checks
 
 ```bash
