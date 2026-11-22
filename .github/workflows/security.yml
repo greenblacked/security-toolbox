@@ -20,8 +20,6 @@ concurrency:
 env:
   GITLEAKS_VERSION: '8.30.1'
   GITLEAKS_SHA256: '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb'
-  ZIZMOR_VERSION: '1.30.1'
-  RUFF_VERSION: '0.16.10'
 
 jobs:
   secrets:
@@ -67,11 +65,12 @@ jobs:
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ~/.cache/pip
-          key: pip-zizmor-${{ runner.os }}-${{ hashFiles('.github/workflows/security.yml') }}
+          key: pip-zizmor-${{ runner.os }}-${{ hashFiles('.github/requirements/zizmor.txt') }}
       - name: Audit workflows with zizmor
         run: |
           set -Eeuo pipefail
-          python -m pip install --quiet "zizmor==${ZIZMOR_VERSION}"
+          python -m pip install --quiet --require-hashes --only-binary=:all: \
+            -r .github/requirements/zizmor.txt
           zizmor --persona=regular --min-severity=medium .
         env:
           GH_TOKEN: ${{ github.token }}
@@ -92,11 +91,12 @@ jobs:
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ~/.cache/pip
-          key: pip-ruff-${{ runner.os }}-${{ hashFiles('.github/workflows/security.yml') }}
+          key: pip-ruff-${{ runner.os }}-${{ hashFiles('.github/requirements/ruff.txt') }}
       - name: Install ruff
         run: |
           set -Eeuo pipefail
-          python -m pip install "ruff==${RUFF_VERSION}"
+          python -m pip install --quiet --require-hashes --only-binary=:all: \
+            -r .github/requirements/ruff.txt
       - name: Lint, including the bandit security rules
         # Rules come from ruff.toml. Any finding or unformatted file fails the job;
         # nothing here is allowed to fail open.

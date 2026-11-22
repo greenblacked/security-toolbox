@@ -5,6 +5,13 @@ annotated Git tag in the form `vX.Y.Z`. See [releasing a version](docs/ci.md#rel
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-23
+
+### Changed
+
+- Audit Kubernetes cluster-admin bindings by subject, including system-prefixed bindings.
+- Isolate test output and verify CI lint tool packages against pinned hashes.
+
 ## [0.1.1] - 2026-11-20
 
 ### Changed
