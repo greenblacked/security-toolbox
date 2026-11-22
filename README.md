@@ -4,7 +4,7 @@
 
 Security checks, best practices, automated guardrails and policy-as-code for cloud platforms (GCP primary), Kubernetes, Terraform, GitHub Actions / CI, secrets and supply chain.
 
-Practical, report / dry-run first. Complements [ops-toolbox](https://github.com/greenblacked/ops-toolbox). Documentation site: [security.szolotov.com](https://security.szolotov.com) (coming soon).
+Practical, report / dry-run first. Complements [ops-toolbox](https://github.com/greenblacked/ops-toolbox). Documentation site: [security.szolotov.com](https://security.szolotov.com).
 
 ## Quick start
 
@@ -48,8 +48,8 @@ checks/target/release/stb gke --file prod.json --format sarif > gke.sarif
 checks/     # read-only report scripts and checklists, with fixtures; stb/ is the Rust port
 policies/   # OPA/Conftest and Checkov policies, with fixtures
 plugins/    # security skills (SKILL.md procedures)
-docs/       # MkDocs source
-site/       # hand-written homepage for security.szolotov.com
+docs/       # Markdown guide source
+site/       # homepage and shared styles for security.szolotov.com
 ```
 
-See [docs/](docs/) and the live site when published.
+See [docs/](docs/) and the [live site](https://security.szolotov.com). Deployment and rollout instructions are in [docs/ci.md](docs/ci.md).

@@ -1,0 +1,144 @@
+---
+name: Deploy
+
+on:
+  pull_request:
+  push:
+    branches: [dev, stage]
+
+permissions: {}
+
+concurrency:
+  group: deploy-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  WRANGLER_VERSION: '4.166.0'
+  WRANGLER_SEND_METRICS: 'false'
+
+jobs:
+  dry-run:
+    name: dry-run deploy
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version: '22.23.3'
+          package-manager-cache: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Build and check deployment configuration
+        run: |
+          set -Eeuo pipefail
+          npm ci --ignore-scripts
+          node scripts/build_site.cjs
+          python scripts/check_wrangler_pin.py
+          cd deploy
+          npm ci --ignore-scripts
+          test "$(./node_modules/.bin/wrangler --version)" = "$WRANGLER_VERSION"
+          ./node_modules/.bin/wrangler deploy --dry-run --config wrangler.json \
+            --no-autoconfig --no-install-skills
+
+  deploy:
+    name: deploy ${{ github.ref_name }}
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/stage')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    environment:
+      name: ${{ github.ref_name == 'dev' && 'development' || 'staging' }}
+      url: ${{ steps.smoke.outputs.url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version: '22.23.3'
+          package-manager-cache: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Build and mark non-production assets
+        run: |
+          set -Eeuo pipefail
+          npm ci --ignore-scripts
+          node scripts/build_site.cjs
+          python scripts/prepare_stage_site.py
+          printf '%s\n' "$GITHUB_SHA" > site/version.txt
+          python scripts/check_wrangler_pin.py
+          cd deploy
+          npm ci --ignore-scripts
+          test "$(./node_modules/.bin/wrangler --version)" = "$WRANGLER_VERSION"
+      - name: Upload the branch preview
+        id: deploy
+        working-directory: deploy
+        env:
+          DEV_TOKEN: ${{ secrets.CLOUDFLARE_DEV_API_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
+          STAGE_TOKEN: ${{ secrets.CLOUDFLARE_STAGE_API_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.jsonl
+        run: |
+          set -Eeuo pipefail
+          case "$GITHUB_REF" in
+            refs/heads/dev) export CLOUDFLARE_API_TOKEN="$DEV_TOKEN" ;;
+            refs/heads/stage) export CLOUDFLARE_API_TOKEN="$STAGE_TOKEN" ;;
+            *) echo '::error::unexpected deployment branch'; exit 1 ;;
+          esac
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo '::error::Cloudflare token missing (set the branch-specific token or CLOUDFLARE_API_TOKEN) or CLOUDFLARE_ACCOUNT_ID missing'
+            exit 1
+          fi
+          ./node_modules/.bin/wrangler preview --name "$GITHUB_REF_NAME" --config wrangler.json \
+            --no-install-skills --message "${GITHUB_REF_NAME} ${GITHUB_SHA:0:7}" --tag "$GITHUB_SHA"
+          python "$GITHUB_WORKSPACE/scripts/read_wrangler_deploy.py" --preview "$WRANGLER_OUTPUT_FILE_PATH" >> "$GITHUB_OUTPUT"
+      - name: Verify preview revision and reported custom domain
+        id: smoke
+        env:
+          WORKERS_DEV_URL: ${{ steps.deploy.outputs.url }}
+          CUSTOM_URL: ${{ steps.deploy.outputs.custom_url }}
+        run: |
+          set -Eeuo pipefail
+          case "$GITHUB_REF" in
+            refs/heads/dev) expected_domain=https://dev.security.szolotov.com ;;
+            refs/heads/stage) expected_domain=https://stage.security.szolotov.com ;;
+            *) exit 1 ;;
+          esac
+          case "$WORKERS_DEV_URL" in
+            "https://${GITHUB_REF_NAME}-security."*.workers.dev) ;;
+            *) echo "::error::unexpected named preview URL: $WORKERS_DEV_URL"; exit 1 ;;
+          esac
+          scripts/smoke_site.sh "$WORKERS_DEV_URL" "$GITHUB_SHA" noindex
+          if [ "$CUSTOM_URL" != "$expected_domain" ]; then
+            echo "::error::expected Wrangler to report custom preview domain $expected_domain, got ${CUSTOM_URL:-<none>}"
+            exit 1
+          fi
+          verified=false
+          expected_marker="$(mktemp)"
+          response_body="$(mktemp)"
+          trap 'rm -f "$expected_marker" "$response_body"' EXIT
+          printf '%s\n' "$GITHUB_SHA" > "$expected_marker"
+          for attempt in 1 2 3 4; do
+            if status=$(curl --silent --show-error --max-time 15 --output "$response_body" \
+              --write-out '%{http_code}' "$expected_domain/version.txt") &&
+              [ "$status" = 200 ] && cmp -s "$expected_marker" "$response_body"; then
+              verified=true
+              break
+            fi
+            echo "::warning::custom preview domain revision unavailable or stale (attempt $attempt/4)"
+            if [ "$attempt" -lt 4 ]; then sleep 3; fi
+          done
+          if [ "$verified" != true ]; then
+            echo "::error::could not verify expected revision at $expected_domain/version.txt; check DNS, preview routing, and runner access"
+            exit 1
+          fi
+          printf 'url=%s\n' "$expected_domain" >> "$GITHUB_OUTPUT"
