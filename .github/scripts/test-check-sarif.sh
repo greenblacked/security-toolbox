@@ -47,5 +47,8 @@ case_ missing-file fail actions,python "actions=${clean}"
 case_ results-present fail actions "actions=${finding}"
 case_ results-in-second-language fail actions,python "actions=${clean}" "python=${finding}"
 case_ empty-language-list fail "" "actions=${clean}"
+case_ clean-three-languages pass actions,python,rust "actions=${clean}" "python=${clean}" "rust=${clean}"
+case_ missing-rust fail actions,python,rust "actions=${clean}" "python=${clean}"
+case_ results-in-rust fail actions,python,rust "actions=${clean}" "python=${clean}" "rust=${finding}"
 
 exit "$fail"
