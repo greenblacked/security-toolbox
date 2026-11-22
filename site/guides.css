@@ -221,3 +221,21 @@
 @media (max-height: 30rem) {
   .guide-sidebar, .guide-toc { position: static; max-height: none; overflow-y: visible; }
 }
+
+/* Reading pages share the manual's typography and rules. */
+.guide-layout { grid-template-columns: 13rem minmax(0, 1fr) 12rem; gap: clamp(2rem, 4vw, 4rem); padding-top: 3.5rem; }
+.guide-content { max-width: 72ch; }
+.guide-content h1, .missing-page h1 { font-family: var(--serif); font-weight: 400; letter-spacing: -.045em; font-size: clamp(3rem, 5vw, 4.75rem); }
+.guide-content h2 { font-family: var(--serif); font-weight: 400; font-size: 2rem; letter-spacing: -.035em; }
+.guide-content h3 { font-size: 1.15rem; }
+.guide-content > p:first-of-type { font-size: 1.13rem; }
+.guide-content pre { border-radius: 0; }
+.nav-group-label, .guide-toc strong { color: var(--accent); text-transform: uppercase; letter-spacing: .1em; font: 700 .7rem/1.4 var(--mono); }
+.guide-sidebar a, .guide-toc a, .guide-menu a { font-size: .88rem; }
+@media (max-width: 70rem) { .guide-layout { grid-template-columns: 11rem minmax(0,1fr); gap: 2rem; } }
+@media (max-width: 48rem) { .guide-layout { display: block; padding-top: 2rem; } .guide-content h1 { font-size: clamp(2.6rem, 10vw, 3.5rem); } }
+
+@media print {
+  .guide-layout { display: block; padding-block: 0; }
+  .guide-content { max-width: none; }
+}

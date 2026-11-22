@@ -14,7 +14,7 @@
   dialog.innerHTML = `
     <div class="search-heading">
       <h2 id="search-title">Search guides</h2>
-      <button type="button" class="search-close" aria-label="Close search">×</button>
+      <button type="button" class="search-close" aria-label="Close search">&#215;</button>
     </div>
     <form role="search">
       <label for="search-query">Search terms</label>
