@@ -1,6 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Security Toolbox">
-  <rect width="32" height="32" rx="4" fill="#1b1816"/>
-  <rect x="3.5" y="3.5" width="25" height="25" rx="2.5" fill="none" stroke="#f1bd70" stroke-width="1.6"/>
-  <path d="M10 10.5l3.6 5.5-3.6 5.5" fill="none" stroke="#f1bd70" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="17" y="19" width="6" height="2.2" rx="1.1" fill="#f1bd70"/>
+  <!-- Same geometry as the header mark in home.css: one frame, a chevron and a
+       cursor. The tile is filled so it holds up in a tab bar; the strokes are
+       sized to stay a whole pixel at 16px, where a tab icon is actually shown. -->
+  <rect x="1" y="1" width="30" height="30" rx="6" fill="#1b1816" stroke="#f1bd70" stroke-width="2"/>
+  <path d="M9.5 10.5 15 16 9.5 21.5" fill="none" stroke="#f1bd70" stroke-width="2.6"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="17.5" y="20.4" width="6.6" height="3" rx="1.5" fill="#f1bd70"/>
 </svg>

@@ -358,7 +358,7 @@ for (const page of pages) {
   <div class="scroll-progress" aria-hidden="true"><span></span></div>
   <a class="skip" href="#main">Skip to content</a>
   <header class="site-header"><div class="wrap header-inner">
-    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>Security Toolbox</a>
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><rect x="1" y="1" width="30" height="30" rx="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 10.5 15 16 9.5 21.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="17.5" y="20.4" width="6.6" height="3" rx="1.5" fill="currentColor"/></svg></span>Security Toolbox</a>
     <div class="header-actions">
       <a class="repo-link" href="/search/">Search</a>
       <a class="repo-link" href="${repoUrl}">GitHub <span aria-hidden="true">↗</span></a>
@@ -378,7 +378,7 @@ for (const page of pages) {
     ${toc.length ? `<aside class="guide-toc"><nav aria-label="On this page"><strong>On this page</strong><ul>${tocList}</ul></nav></aside>` : ''}
   </div>
   <footer class="site-footer"><div class="wrap footer-inner">
-    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>Security Toolbox</a>
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><rect x="1" y="1" width="30" height="30" rx="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 10.5 15 16 9.5 21.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="17.5" y="20.4" width="6.6" height="3" rx="1.5" fill="currentColor"/></svg></span>Security Toolbox</a>
     <div class="footer-links">
       <a href="${repoUrl}">View on GitHub <span aria-hidden="true">↗</span></a>
       <a href="/contributing/">Contribute a guide</a>
