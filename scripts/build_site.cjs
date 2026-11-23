@@ -85,6 +85,7 @@ add('labs', 'CI identity claims', 'docs/labs/ci-identity.md', '/labs/ci-identity
 add('labs', 'Artifact provenance gate', 'docs/labs/artifact-provenance.md', '/labs/artifact-provenance/');
 add('labs', 'Dependency remediation queue', 'docs/labs/dependency-triage.md', '/labs/dependency-triage/');
 add('labs', 'Detection rule regression', 'docs/labs/detection-regression.md', '/labs/detection-regression/');
+add('labs', 'API authorization and tenant isolation', 'docs/labs/api-authorization.md', '/labs/api-authorization/');
 add('labs', 'Telemetry health and incident timeline', 'docs/labs/response-timeline.md', '/labs/response-timeline/');
 add('labs', 'Incident triage and evidence custody', 'docs/labs/evidence-custody.md', '/labs/evidence-custody/');
 add('labs', 'Service restore and recovery objectives', 'docs/labs/service-restore.md', '/labs/service-restore/');
@@ -474,6 +475,7 @@ const labKitPaths = [
   'labs/fixtures/ci-identity.json',
   'labs/fixtures/detection-complete.json',
   'labs/fixtures/detection-missing-audit.json',
+  'labs/api-authorization.py',
   'labs/response-timeline.py',
   'labs/evidence-custody.py',
   'labs/service-restore.py',

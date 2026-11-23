@@ -11,6 +11,7 @@ Practice a security control, capture evidence, and verify the result. All exerci
 | [CI identity claims](ci-identity.md) | Intermediate | 40 min | Node.js |
 | [Artifact provenance gate](artifact-provenance.md) | Intermediate | 55 min | Bash, jq, npm, OpenSSL |
 | [Dependency remediation queue](dependency-triage.md) | Introductory | 40 min | Text editor |
+| [API authorization and tenant isolation](api-authorization.md) | Intermediate | 30 min | Python |
 | [Detection rule regression](detection-regression.md) | Intermediate | 45 min | Node.js |
 
 Start with the threat model to practice deciding what evidence to collect. Continue with a configuration or policy check, then use the detection exercise to practice validation on synthetic telemetry. The [security operations flow](/start/) connects the exercises to incident and control ownership.
