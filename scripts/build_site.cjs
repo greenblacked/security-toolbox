@@ -293,10 +293,17 @@ for (const page of pages) {
     entry.text = plainText(entry.text);
   }
   const bodyText = plainText(tokens.filter(token => token.type === 'inline').map(inlineText).join(' '));
-  searchItems.push({title: page.label, location: page.url, text: bodyText, sections});
+  const description = truncate(leadParagraph(tokens) || page.label);
+  searchItems.push({
+    title: page.label,
+    category: page.reference ? 'Skill reference' : GROUP_LABELS[page.group],
+    location: page.url,
+    summary: description,
+    text: bodyText,
+    sections,
+  });
   sitemap.push(page.url);
 
-  const description = truncate(leadParagraph(tokens) || page.label);
   const canonical = siteUrl + page.url;
   const navCurrent = page.parent || page.url;
 
