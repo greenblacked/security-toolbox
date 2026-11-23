@@ -25,7 +25,7 @@
       "members": ["group:contractors@example.com"]
     },
     {
-      "role": "roles/owner",
+      "role": "roles/storage.objectViewer",
       "members": ["user:carol@example.com"],
       "condition": {
         "title": "elevation",
