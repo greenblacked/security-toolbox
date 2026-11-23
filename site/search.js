@@ -34,29 +34,38 @@
   const browse = dialog.querySelector('.search-browse');
   const results = dialog.querySelector('#search-results');
   let indexRequest;
+  let searchVersion = 0;
   let returnFocus;
 
   const words = text => text.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
-  const count = (haystack, needle) => haystack.split(needle).length - 1;
+
+  function countHits(text, term) {
+    let hits = 0;
+    let from = 0;
+    while (hits < 5) {
+      const found = text.indexOf(term, from);
+      if (found === -1) break;
+      hits++;
+      from = found + term.length;
+    }
+    return hits;
+  }
 
   // Title hits outrank heading hits, which outrank body hits. Every term must
   // match somewhere, so adding a word narrows rather than widens the result set.
-  function score(doc, terms) {
-    const title = doc.title.toLowerCase();
-    const body = doc.text.toLowerCase();
-    const sections = doc.sections || [];
+  function score({title, body, headings}, terms) {
     let total = 0;
     for (const term of terms) {
       let best = 0;
       if (title === term) best = 60;
       else if (title.startsWith(term)) best = 40;
       else if (title.includes(term)) best = 30;
-      for (const section of sections) {
-        if (section.title.toLowerCase().includes(term)) best = Math.max(best, 20);
+      else if (headings.some(heading => heading.includes(term))) best = 20;
+      else {
+        const hits = countHits(body, term);
+        if (!hits) return 0;
+        best = 10 + hits;
       }
-      const hits = count(body, term);
-      if (hits) best = Math.max(best, 10 + Math.min(hits, 5));
-      if (!best) return 0;
       total += best;
     }
     return total;
@@ -70,16 +79,20 @@
       return {text: doc.summary, section: null};
     }
     const sections = doc.sections || [];
-    const matches = terms.map(term => term.toLowerCase());
-    const ranked = sections
-      .map(section => ({section, hits: matches.filter(term => (section.title + ' ' + section.text).toLowerCase().includes(term)).length}))
-      .filter(entry => entry.hits > 0)
-      .sort((a, b) => b.hits - a.hits);
-    const best = ranked[0];
-    const text = best ? best.section.text : doc.text;
+    let best = null;
+    let bestHits = 0;
+    for (const section of sections) {
+      const content = (section.title + ' ' + section.text).toLowerCase();
+      const hits = terms.filter(term => content.includes(term)).length;
+      if (hits <= bestHits) continue;
+      best = section;
+      bestHits = hits;
+      if (hits === terms.length) break;
+    }
+    const text = best ? best.text : doc.text;
     const lower = text.toLowerCase();
     let at = -1;
-    for (const term of matches) {
+    for (const term of terms) {
       const found = lower.indexOf(term);
       if (found >= 0 && (at < 0 || found < at)) at = found;
     }
@@ -87,13 +100,12 @@
     const slice = text.slice(start, start + 200).trim();
     return {
       text: (start > 0 ? '…' : '') + slice + (start + 200 < text.length ? '…' : ''),
-      section: best ? best.section : null,
+      section: best,
     };
   }
 
-  function highlight(text, terms) {
+  function highlight(text, pattern) {
     const fragment = document.createDocumentFragment();
-    const pattern = new RegExp(`(${terms.map(term => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi');
     let last = 0;
     for (const match of text.matchAll(pattern)) {
       if (match.index > last) fragment.append(text.slice(last, match.index));
@@ -107,13 +119,15 @@
   }
 
   function render(entries, terms, query) {
-    results.replaceChildren();
     if (!entries.length) {
       status.textContent = `No resources match "${query}". Try fewer words.`;
       browse.hidden = false;
       return;
     }
     status.textContent = `${entries.length} ${entries.length === 1 ? 'resource' : 'resources'} found for “${query}”.`;
+    const fragment = document.createDocumentFragment();
+    // words() only yields letters and numbers, which are literal regex matches.
+    const pattern = new RegExp(`(${terms.join('|')})`, 'gi');
     for (const entry of entries) {
       const item = document.createElement('li');
       const link = document.createElement('a');
@@ -136,7 +150,7 @@
       }
       const snippet = document.createElement('span');
       snippet.className = 'search-snippet';
-      snippet.append(highlight(text, terms));
+      snippet.append(highlight(text, pattern));
       link.append(snippet);
       const arrow = document.createElement('span');
       arrow.className = 'search-result-arrow';
@@ -144,8 +158,9 @@
       arrow.textContent = '→';
       link.append(arrow);
       item.append(link);
-      results.append(item);
+      fragment.append(item);
     }
+    results.append(fragment);
   }
 
   function loadIndex() {
@@ -154,7 +169,12 @@
         if (!response.ok) throw new Error('Search index unavailable');
         return response.json();
       })
-      .then(data => data.docs)
+      .then(data => data.docs.map(doc => ({
+        doc,
+        title: doc.title.toLowerCase(),
+        body: doc.text.toLowerCase(),
+        headings: (doc.sections || []).map(section => section.title.toLowerCase()),
+      })))
       .catch(error => {
         indexRequest = undefined;
         throw error;
@@ -163,6 +183,7 @@
   }
 
   async function search() {
+    const version = ++searchVersion;
     const query = input.value.trim();
     const terms = words(query);
     results.replaceChildren();
@@ -175,14 +196,14 @@
     status.textContent = 'Searching…';
     try {
       const index = await loadIndex();
-      if (!dialog.open || input.value.trim() !== query) return;
+      if (!dialog.open || version !== searchVersion || input.value.trim() !== query) return;
       const entries = index
-        .map(doc => ({doc, score: score(doc, terms)}))
+        .map(entry => ({doc: entry.doc, score: score(entry, terms)}))
         .filter(entry => entry.score > 0)
         .sort((a, b) => b.score - a.score || a.doc.title.localeCompare(b.doc.title));
       render(entries, terms, query);
     } catch {
-      if (dialog.open && input.value.trim() === query) {
+      if (dialog.open && version === searchVersion && input.value.trim() === query) {
         status.textContent = 'Search is unavailable. Please try again.';
         browse.hidden = false;
       }
