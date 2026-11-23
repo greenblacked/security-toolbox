@@ -27,6 +27,7 @@ Follow one fictional incident from telemetry through triage and recovery.
 | [Telemetry health and incident timeline](response-timeline.md) | Intermediate | 30 min | Python |
 | [Incident triage and evidence custody](evidence-custody.md) | Intermediate | 35 min | Bash, Python |
 | [Service restore and recovery objectives](service-restore.md) | Intermediate | 30 min | Python with SQLite |
+| [Choose a trusted restore point](trusted-restore-point.md) | Intermediate | 30 min | Python with SQLite |
 
 ## Get the lab kit
 

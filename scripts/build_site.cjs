@@ -90,6 +90,7 @@ add('labs', 'Detection rule regression', 'docs/labs/detection-regression.md', '/
 add('labs', 'API authorization and tenant isolation', 'docs/labs/api-authorization.md', '/labs/api-authorization/');
 add('labs', 'Telemetry health and incident timeline', 'docs/labs/response-timeline.md', '/labs/response-timeline/');
 add('labs', 'Incident triage and evidence custody', 'docs/labs/evidence-custody.md', '/labs/evidence-custody/');
+add('labs', 'Choose a trusted restore point', 'docs/labs/trusted-restore-point.md', '/labs/trusted-restore-point/');
 add('labs', 'Service restore and recovery objectives', 'docs/labs/service-restore.md', '/labs/service-restore/');
 
 // Skills are published from the plugin that ships them: SKILL.md is the page and
@@ -484,6 +485,7 @@ const labKitPaths = [
   'labs/response-timeline.py',
   'labs/evidence-custody.py',
   'labs/service-restore.py',
+  'labs/trusted-restore-point.py',
   'labs/tls-rotation.py',
   'labs/fixtures/response/complete.json',
   'labs/fixtures/response/degraded.json',
