@@ -9,6 +9,7 @@ Practice a security control, capture evidence, and verify the result. All exerci
 | [Terraform policy gate](terraform-policy.md) | Intermediate | 45 min | Conftest |
 | [Kubernetes workload review](kubernetes-workload.md) | Intermediate | 40 min | Bash, jq |
 | [Verify Kubernetes Pod Security Admission](pod-security-admission.md) | Intermediate | 25 min | Bash, kubectl, disposable local cluster |
+| [Verify TLS certificate rotation](tls-rotation.md) | Intermediate | 30 min | Python, OpenSSL |
 | [CI identity claims](ci-identity.md) | Intermediate | 40 min | Node.js |
 | [Artifact provenance gate](artifact-provenance.md) | Intermediate | 55 min | Bash, jq, npm, OpenSSL |
 | [Dependency remediation queue](dependency-triage.md) | Introductory | 40 min | Text editor |

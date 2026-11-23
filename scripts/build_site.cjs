@@ -82,6 +82,7 @@ add('labs', 'GKE configuration review', 'docs/labs/gke-configuration.md', '/labs
 add('labs', 'Terraform policy gate', 'docs/labs/terraform-policy.md', '/labs/terraform-policy/');
 add('labs', 'Kubernetes workload review', 'docs/labs/kubernetes-workload.md', '/labs/kubernetes-workload/');
 add('labs', 'Verify Kubernetes Pod Security Admission', 'docs/labs/pod-security-admission.md', '/labs/pod-security-admission/');
+add('labs', 'Verify TLS certificate rotation', 'docs/labs/tls-rotation.md', '/labs/tls-rotation/');
 add('labs', 'CI identity claims', 'docs/labs/ci-identity.md', '/labs/ci-identity/');
 add('labs', 'Artifact provenance gate', 'docs/labs/artifact-provenance.md', '/labs/artifact-provenance/');
 add('labs', 'Dependency remediation queue', 'docs/labs/dependency-triage.md', '/labs/dependency-triage/');
@@ -483,6 +484,7 @@ const labKitPaths = [
   'labs/response-timeline.py',
   'labs/evidence-custody.py',
   'labs/service-restore.py',
+  'labs/tls-rotation.py',
   'labs/fixtures/response/complete.json',
   'labs/fixtures/response/degraded.json',
   'labs/fixtures/response/degraded.sha256',
