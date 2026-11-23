@@ -878,3 +878,25 @@ body:has(.hero) { background-image: none; }
   pre, table, blockquote, .reference-list { break-inside: avoid; }
   h1, h2, h3 { break-after: avoid; }
 }
+
+.security-steps {
+  margin: var(--space-3) 0 0;
+  padding-inline-start: 1.6rem;
+}
+.security-steps li + li {
+  border-block-start: 1px solid var(--line);
+}
+.security-steps li::marker {
+  color: var(--accent);
+  font-family: var(--mono);
+}
+.security-steps a {
+  display: flex;
+  align-items: center;
+  min-height: var(--target);
+  padding-inline: var(--space-1);
+  color: var(--ink);
+}
+.security-steps a:hover {
+  color: var(--accent);
+}

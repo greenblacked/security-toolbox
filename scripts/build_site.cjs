@@ -50,9 +50,10 @@ const add = (group, label, source, url, extra = {}) => {
   pages.push({group, label, source, url, ...extra});
 };
 
-add('overview', 'Start here', 'docs/start.md', '/start/');
+add('overview', 'Security operations flow', 'docs/start.md', '/start/');
+add('overview', 'Red, blue, and purple teams', 'docs/teams.md', '/teams/');
 add('overview', 'Glossary', 'docs/glossary.md', '/glossary/');
-add('overview', 'About this project', 'docs/index.md', '/about/');
+add('overview', 'Security domains', 'docs/index.md', '/about/');
 add('overview', 'Contributing', 'docs/contributing.md', '/contributing/');
 
 add('guides', 'Kubernetes / GKE', 'docs/kubernetes/index.md', '/kubernetes/');
@@ -428,7 +429,7 @@ for (const page of pages) {
       <a href="/start/">Start here</a>
       <a href="${repoUrl}">View on GitHub <span aria-hidden="true">↗</span></a>
       <a href="/contributing/">Contribute a guide</a>
-      <a href="/about/">About</a>
+      <a href="/about/">Security domains</a>
     </div>
   </div></footer>
 </body></html>`;

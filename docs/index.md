@@ -1,21 +1,23 @@
-# Security Toolbox
+# Security domains
 
-Practical security checks, best practices and automated guardrails for cloud platforms, Kubernetes, CI/CD and infrastructure.
+Start with the business service or security outcome you need to protect. Most investigations and exercises cross several domains, so identify dependencies and owners as you go.
 
-Report / dry-run first. Complements [ops-toolbox](https://ops.szolotov.com).
+## Identity, endpoints, and networks
 
-## Areas
+- **Identity:** review privileged access, joiner and leaver processes, service identities, strong authentication, and emergency access. Use [access review](/skills/access-review/) and [secret rotation](/skills/secret-rotation/).
+- **Endpoints and servers:** verify managed inventory, patch coverage, disk protection, endpoint telemetry, and recovery from a trusted baseline. Use [host hardening](/skills/host-hardening/).
+- **Networks:** inventory internet exposure, verify segmentation and administrative access, and confirm that logs cover critical boundaries. Record temporary exceptions and escalation contacts.
 
-- **Kubernetes / GKE** — CIS benchmarks, Pod Security Standards, RBAC, NetworkPolicy
-- **GCP** — Cloud Custodian policies, IAM, logging and organisation baselines
-- **Terraform / IaC** — Checkov, OPA/Conftest, secure module patterns
-- **GitHub & CI** — Org and repository hardening, Actions permissions, supply-chain pinning
-- **Secrets** — Handling patterns and validation
+## Applications, delivery, and data
 
-Site published at [security.szolotov.com](https://security.szolotov.com).
+- **Applications and APIs:** map trust boundaries, test access control under authorization, and review sensitive inputs, dependencies, and logging. Start with [threat modeling](/skills/threat-model/) and [security review](/skills/security-review/).
+- **Build and delivery:** isolate build identities, scope credentials, and validate artifact integrity. See [supply chain security](/supply-chain/), [GitHub Actions](/github/), and [GitLab runner isolation](/gitlab/).
+- **Data and recovery:** classify sensitive data, limit collection and access, review retention, and test backup restoration with service owners.
 
-## What is in the repository
+## Infrastructure and cloud
 
-- **Policies** (`policies/`): OPA/Conftest rules for GCP Terraform plans (service-account keys, public GCS IAM, ACLs and predefined ACLs, bucket hardening, admin ports open to the internet) and Kubernetes pod security, plus Checkov custom checks `CKV_STB_GCP_1` to `5`, each with good/bad fixtures.
-- **Checks** (`checks/`): read-only GKE hardening report, Kubernetes CIS 5.1/5.2 workload report, and a GitHub Actions hardening note.
-- **Skills** (`plugins/security/skills/`): written procedures for IaC review, image hardening, secret rotation, access review, host hardening, security review, threat modelling, dependency triage, certificate automation, detection engineering and compromise evidence preservation.
+Review configuration, change controls, segmentation, and secrets across on-premises systems, SaaS, and cloud services. For platform-specific checks, see [Kubernetes](/kubernetes/), [Google Cloud](/gcp/), [Terraform](/terraform/), and [Cloudflare Workers](/cloudflare/).
+
+## Security operations and assurance
+
+Use the [security operations flow](/start/) to connect prevention and detection to incident response and recovery. For authorized assessments, exercises, and retests, clarify [red, blue, and purple team responsibilities](/teams/) before work begins.
