@@ -19,13 +19,13 @@ Use Pod Security Admission for in-cluster enforcement. Review the [policy overvi
 | Control | Level | Why | What satisfies it |
 | --- | --- | --- | --- |
 | `securityContext.privileged: true` | deny | Full access to the host's devices and kernel; it also cancels most of the other controls on this page | Remove it. There is no production workload that needs it; a node agent that does belongs in a privileged namespace with its own review |
-| `hostPID`, `hostIPC`, `hostNetwork` | deny | The pod sees the host's processes, IPC or network namespace, which bypasses NetworkPolicy and per-pod isolation | Remove them. A CNI or metrics agent that needs `hostNetwork` runs in its own namespace, excluded deliberately |
+| `hostPID`, `hostIPC`, `hostNetwork` | deny | The pod sees the host's processes, IPC or network namespace, which reduces per-Pod isolation. NetworkPolicy behavior for host networking depends on the implementation | Remove them. A CNI or metrics agent that needs `hostNetwork` runs in its own namespace, excluded deliberately |
 | `hostPath` volume | deny | Mounts the node filesystem, including other pods' projected tokens and the kubelet directory | Use a `configMap`, `secret`, `emptyDir` or a CSI volume. A `hostPath` with `type: DirectoryOrCreate` is still a host mount |
 | `allowPrivilegeEscalation` not `false` | deny | `setuid` binaries and file capabilities can raise privileges inside the container | `securityContext.allowPrivilegeEscalation: false` on every container |
 | `runAsNonRoot` not `true` | deny | A root process inside the container is a root process on the host for most escape paths | `securityContext.runAsNonRoot: true`, and a numeric `runAsUser` so an image without a `USER` still passes |
 | `runAsUser: 0` | deny | Explicit root, regardless of `runAsNonRoot` | Set a numeric non-zero UID; a container that must write needs `fsGroup` or an `emptyDir`, not root |
 | Added capabilities | deny | `NET_ADMIN`, `SYS_ADMIN`, `SYS_PTRACE` and friends are the capabilities container escapes are built from | `capabilities: {drop: [ALL]}`, then add back only what is proven necessary |
-| `hostPort` | warn | Binds a port on the node, bypassing Service-level access and NetworkPolicy, and limits scheduling to one pod per node per port | Use a Service, or an ingress controller that owns the port |
+| `hostPort` | warn | Binds a port on the node, exposing a node port without a Service, and limits scheduling to one pod per node per port | Use a Service, or an ingress controller that owns the port |
 | No memory limit | warn | An unbounded pod can take the node down and evict its neighbours | `resources.limits.memory`; set requests too, or the scheduler cannot place it |
 
 The container controls apply to `initContainers`, `containers` and `ephemeralContainers`. The pod-level `securityContext` is read for `runAsNonRoot` and `runAsUser` when the container does not set them, so a compliant pod can set them once.
@@ -59,7 +59,7 @@ spec:
             limits: {cpu: 500m, memory: 256Mi}
 ```
 
-The policy does not check `seccompProfile` or `readOnlyRootFilesystem`; the `restricted` Pod Security Standard does, and this manifest satisfies both.
+The policy does not check `seccompProfile` or `readOnlyRootFilesystem`; the Restricted Pod Security Standard requires an appropriate seccomp profile for Linux workloads. A read-only root filesystem is an additional hardening control.
 
 ## What it does not do
 

@@ -91,7 +91,7 @@ The caller needs `roles/iam.serviceAccountTokenCreator` on the service account, 
 - `compute.disableSerialPortAccess` and `compute.disableSerialPortLogging` — the serial console bypasses the guest's own access controls.
 - `compute.disableNestedVirtualization` — a nested hypervisor inside a VM defeats most host-level assumptions.
 - `compute.vmCanIpForward` and `compute.vmExternalIpAccess` — restrict who can route traffic and who can hold a public address.
-- Guest attributes and the metadata server: the metadata server is reachable at `169.254.169.254` from any workload that can make an HTTP request. Workload Identity removes the node credential from it; do not put secrets in instance metadata.
+- Guest attributes and the metadata server: keep secrets out of instance metadata. Eligible Pods on GKE_METADATA node pools use the GKE metadata server for workload credentials. Review host-network workloads and node permissions separately, and preserve required metadata egress when rolling out NetworkPolicy.
 - Patch through the OS Config / VM Manager path you can report on, not by hand.
 
 ## Storage and data
