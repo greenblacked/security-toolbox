@@ -1,0 +1,5 @@
+[
+  {"source":"identity","timestamp":"2026-01-01T12:00:00Z","action":"session.created","actor":"release-bot","role":"deploy-reader"},
+  {"source":"audit","timestamp":"2026-01-01T12:01:00Z","action":"role.granted","actor":"release-bot","role":"deploy-reader"},
+  {"source":"audit","timestamp":"2026-01-01T12:02:00Z","action":"role.granted","actor":"temporary-user","role":"admin"}
+]

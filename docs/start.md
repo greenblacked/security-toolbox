@@ -2,6 +2,9 @@
 
 Use this flow to turn security risks into controls, test whether those controls work, and carry the lessons from exercises and incidents back into everyday operations. Start at the stage that fits the situation. If there are signs of an active compromise, escalate to the incident lead before scheduling any exercise.
 
+
+Use the [hands-on labs](/labs/) to practice these stages with local fixtures.
+
 ## 1. Govern and identify
 
 Identify critical services, their owners, sensitive data, dependencies, and the harm that follows if they fail. Inventory identities, applications, endpoints, network paths and third parties across on-premises, SaaS, and cloud environments. Use a [threat model](/skills/threat-model/) and [access review](/skills/access-review/) to prioritize plausible scenarios. Record the risk owner, acceptable exposure, and the controls you expect to work.

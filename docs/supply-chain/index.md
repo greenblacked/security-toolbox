@@ -128,3 +128,7 @@ Verification that only runs in CI is a report. The gate is the admission path:
 - [GitHub Actions](/github/) — the workflow that does the building.
 - [Dependency Triage](/skills/dependency-triage/) — working the alert queue an SBOM and a scanner produce.
 - [Glossary](/glossary/) — provenance, SBOM, SLSA, digest.
+
+## Hands-on lab
+
+Practice locally in the [Artifact provenance gate](/labs/artifact-provenance/) lab.

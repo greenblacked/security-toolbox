@@ -187,3 +187,7 @@ checkov -d infra/ --external-checks-dir policies/checkov/checks
 - [GCP](https://github.com/greenblacked/security-toolbox/blob/main/docs/gcp/index.md) — the controls these resources should satisfy.
 - [Secrets](https://github.com/greenblacked/security-toolbox/blob/main/docs/secrets/index.md) — why state needs the same protection as a credential store.
 - [IaC Review](https://github.com/greenblacked/security-toolbox/blob/main/plugins/security/skills/iac-review/SKILL.md) — the review procedure for a plan.
+
+## Hands-on lab
+
+Practice with offline fixtures in the [Terraform policy gate](/labs/terraform-policy/) lab.

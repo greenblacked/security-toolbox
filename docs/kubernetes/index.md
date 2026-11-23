@@ -234,3 +234,7 @@ Configuration stops the known-bad deployments; runtime detection catches the one
 - [Checks](https://github.com/greenblacked/security-toolbox/blob/main/checks/README.md) — the report scripts and their fixtures.
 - [Policies](https://github.com/greenblacked/security-toolbox/blob/main/policies/README.md) — the pod security policy evaluated in CI.
 - [Access Review](https://github.com/greenblacked/security-toolbox/blob/main/plugins/security/skills/access-review/SKILL.md) — reviewing the RBAC and cloud IAM grants against usage.
+
+## Hands-on lab
+
+Practice with offline fixtures in the [Kubernetes workload review](/labs/kubernetes-workload/) lab.
