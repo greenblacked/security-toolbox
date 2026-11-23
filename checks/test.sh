@@ -53,6 +53,62 @@ for invalid_policy in "${invalid_policies[@]}"; do
   fi
 done
 
+# A partial offline invocation must never attempt to read the current cluster.
+(
+  stub=$(mktemp -d)
+  trap 'rm -rf -- "$stub"' EXIT
+  cat >"$stub/kubectl" <<'SH'
+#!/usr/bin/env bash
+touch "${STUB_CALLS:?}"
+printf '{"items":[]}\n'
+exit "${STUB_EXIT:-0}"
+SH
+  chmod +x "$stub/kubectl"
+  export PATH="$stub:$PATH" STUB_CALLS="$stub/calls"
+  report=kubernetes/cis-workload-report.sh
+  expect 2 "kubernetes requires bindings in offline mode" "$report" --pods /dev/null
+  expect 2 "kubernetes requires workloads in offline mode" "$report" --bindings /dev/null
+  expect 2 "kubernetes requires a file argument" "$report" --pods
+  expect 0 "kubernetes rejects offline inputs before live lookup" test ! -e "$STUB_CALLS"
+  expect 0 "kubernetes accepts valid empty live lists" "$report"
+  expect 2 "kubernetes rejects a failed live read" env STUB_EXIT=1 "$report"
+
+  printf '{"kind":"ClusterRoleBindingList","items":[]}\n' >"$stub/empty-bindings"
+  expect 0 "kubernetes accepts valid empty offline lists" "$report" \
+    --pods /dev/stdin --bindings "$stub/empty-bindings" <<< '{"kind":"PodList","items":[]}'
+  invalid_workloads=(
+    ''
+    '{'
+    '{"kind":"Status","status":"Failure"}'
+    '{"kind":"ServiceList","items":[]}'
+    '{"kind":"PodList","items":[],"metadata":{"continue":"next"}}'
+    '{"items":[],"metadata":{"remainingItemCount":1}}'
+    '{"items":[]} {"items":[]}'
+    '{"items":[{"kind":"Pod","spec":{}}]}'
+    '{"items":[{"kind":"Service"}]}'
+    '{"spec":{"containers":[{"name":"app","securityContext":{"allowPrivilegeEscalation":"false"}}]}}'
+  )
+  for invalid_workload in "${invalid_workloads[@]}"; do
+    expect 2 "kubernetes rejects invalid or incomplete workloads" "$report" \
+      --pods /dev/stdin --bindings "$stub/empty-bindings" <<< "$invalid_workload"
+    if [ "$(wc -l <"$output")" -ne 1 ] || ! grep -q '^Kubernetes report input error:' "$output"; then
+      echo "FAIL - invalid workloads emitted unexpected output"; fail=1
+    fi
+  done
+  expect 2 "kubernetes rejects incomplete bindings" "$report" \
+    --pods kubernetes/fixtures/pods-good.json --bindings /dev/stdin \
+    <<< '{"items":[],"metadata":{"remainingItemCount":1}}'
+  expect 2 "kubernetes rejects missing roleRef" "$report" \
+    --pods kubernetes/fixtures/pods-bad.json --bindings /dev/stdin \
+    <<< '{"items":[{"metadata":{"name":"admin"}}]}'
+  if [ "$(wc -l <"$output")" -ne 1 ] || ! grep -q '^Kubernetes report input error:' "$output"; then
+    echo "FAIL - invalid bindings emitted unexpected output"; fail=1
+  fi
+  expect 2 "kubernetes rejects an invalid namespace regex with empty input" env SYSTEM_NAMESPACES='[' \
+    "$report" --pods /dev/stdin --bindings "$stub/empty-bindings" <<< '{"items":[]}'
+  exit "$fail"
+) || fail=1
+
 # The bad fixtures must trip every control they were written for.
 expect 0 "gke bad trips 9 failures" bash -c \
   'gke/gke-report.sh --file gke/fixtures/cluster-bad.json | grep -qx "failures: 9"'
