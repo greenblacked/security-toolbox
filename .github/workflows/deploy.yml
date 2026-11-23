@@ -152,6 +152,8 @@ jobs:
       - name: Verify the dev lab routes and exact published archive
         if: github.ref == 'refs/heads/dev'
         env:
-          DEV_URL: ${{ steps.smoke.outputs.url }}
+          # Use the same named preview as the primary smoke. The custom
+          # domain can challenge CI requests to HTML and download routes.
+          DEV_URL: ${{ steps.deploy.outputs.url }}
           LAB_ARCHIVE_SHA256: ${{ steps.build.outputs.lab_archive_sha256 }}
         run: scripts/smoke_dev_labs.sh "$DEV_URL" "$LAB_ARCHIVE_SHA256"
