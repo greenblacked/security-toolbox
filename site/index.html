@@ -44,14 +44,14 @@
       <div class="hero-copy">
         <h1 id="hero-title" data-reveal>Platform security <em>in practice.</em></h1>
         <p data-reveal class="d1">Harden Kubernetes, Google Cloud, and your delivery pipelines with guides, read-only checks, and policy as code.</p>
-        <div class="hero-actions d2" data-reveal><button type="button" class="button primary search-trigger hero-search" data-search-open aria-haspopup="dialog" hidden>Search guides</button><a class="text-link" href="#guides">Browse topics <span aria-hidden="true">&#8595;</span></a></div>
+        <div class="hero-actions d2" data-reveal><button type="button" class="button primary search-trigger hero-search" data-search-open aria-haspopup="dialog" hidden>Search toolbox</button><a class="text-link" href="#guides">Browse topics <span aria-hidden="true">&#8595;</span></a></div>
       </div>
 
       <aside class="quickstart d2" aria-labelledby="quickstart-title" data-reveal>
         <div class="quickstart-top"><span class="quickstart-kind">Read-only check</span><span>Kubernetes</span></div>
         <div class="quickstart-body">
-          <h2 id="quickstart-title">Audit your workloads</h2>
-          <p>Inspect running pods and cluster-admin bindings with your current Kubernetes context.</p>
+          <h2 id="quickstart-title">Kubernetes workload report</h2>
+          <p>Inspect running pods and cluster-admin bindings using the active <code>kubectl</code> context.</p>
           <div class="command">
             <div class="command-bar">
               <span aria-hidden="true">Shell</span>
@@ -68,7 +68,7 @@ cd security-toolbox &amp;&amp;
       </aside>
     </section>
 
-    <section id="guides" class="section section-layout" aria-labelledby="guides-title">
+    <section id="guides" class="section section-layout" aria-labelledby="guides-title" tabindex="-1">
       <div class="section-heading" data-reveal>
         <h2 id="guides-title">Hardening guides</h2>
       </div>
@@ -77,6 +77,8 @@ cd security-toolbox &amp;&amp;
         <li data-reveal><a class="guide" href="/gcp/"><h3>Google Cloud</h3><p>IAM, organisation policies, logging, and storage exposure.</p><span aria-hidden="true">→</span></a></li>
         <li data-reveal><a class="guide" href="/terraform/"><h3>Terraform</h3><p>Plan review with Checkov and OPA/Conftest.</p><span aria-hidden="true">→</span></a></li>
         <li data-reveal><a class="guide" href="/github/"><h3>GitHub Actions</h3><p>Workflow permissions, SHA pinning, OIDC, and supply-chain controls.</p><span aria-hidden="true">→</span></a></li>
+        <li data-reveal><a class="guide" href="/gitlab/"><h3>GitLab CI</h3><p>Runner isolation, protected refs, and CI job token access.</p><span aria-hidden="true">→</span></a></li>
+        <li data-reveal><a class="guide" href="/cloudflare/"><h3>Cloudflare Workers</h3><p>Deployment credentials, public routes, and release recovery.</p><span aria-hidden="true">→</span></a></li>
         <li data-reveal><a class="guide" href="/supply-chain/"><h3>Supply chain</h3><p>Build provenance, dependencies, and artifact integrity.</p><span aria-hidden="true">→</span></a></li>
         <li data-reveal><a class="guide" href="/secrets/"><h3>Secrets</h3><p>Secret storage, delivery, and rotation.</p><span aria-hidden="true">→</span></a></li>
       </ul>
@@ -86,7 +88,10 @@ cd security-toolbox &amp;&amp;
       <div class="section-title-row" data-reveal><h2 id="checks-title">Checks and policies</h2></div>
       <div class="tool-grid">
         <div class="tool-panel" data-reveal>
-          <h3>Reports and checklists</h3>
+          <header class="tool-panel-heading">
+            <h3>Check existing systems</h3>
+            <a class="text-link" href="/checks/">View all checks</a>
+          </header>
           <ul>
             <li><a href="/checks/gke/"><strong>GKE cluster report</strong><span>Workload Identity, private nodes, and cluster settings</span><span aria-hidden="true">→</span></a></li>
             <li><a href="/checks/kubernetes/"><strong>Kubernetes CIS workload report</strong><span>Pod security and cluster-admin bindings</span><span aria-hidden="true">→</span></a></li>
@@ -94,7 +99,10 @@ cd security-toolbox &amp;&amp;
           </ul>
         </div>
         <div class="tool-panel" data-reveal>
-          <h3>Policy as code</h3>
+          <header class="tool-panel-heading">
+            <h3>Gate changes</h3>
+            <a class="text-link" href="/policies/">View all policies</a>
+          </header>
           <ul>
             <li><a href="/policies/terraform/"><strong>Terraform plan policies</strong><span>Conftest rules for Google Cloud plans</span><span aria-hidden="true">→</span></a></li>
             <li><a href="/policies/kubernetes/"><strong>Kubernetes manifest policies</strong><span>Conftest rules for pods and workload templates</span><span aria-hidden="true">→</span></a></li>

@@ -6,82 +6,57 @@
 // with a timer behind it, and a single safety net drops the hiding rule entirely
 // if the page never renders a frame or the observer never reports.
 (() => {
-  // Cancels the no-JS failsafe in the stylesheet before it can fire.
   const root = document.documentElement;
-  root.classList.add('js-ready');
-
-  const revealable = [...document.querySelectorAll('[data-reveal]')];
-  const reveal = element => element.classList.add('is-visible');
-  const onScreen = element => {
-    const rect = element.getBoundingClientRect();
-    return rect.top < window.innerHeight && rect.bottom > 0;
-  };
-
-  const visibleNow = revealable.filter(onScreen);
-  const later = revealable.filter(element => !visibleNow.includes(element));
-
-  // Next frame, so the transition runs from the painted hidden state; the timer
-  // covers a renderer that never delivers one.
-  requestAnimationFrame(() => visibleNow.forEach(reveal));
-  setTimeout(() => visibleNow.forEach(reveal), 250);
-
-  let reported = false;
-  if (later.length) {
-    if ('IntersectionObserver' in window) {
-      const observer = new IntersectionObserver(entries => {
-        reported = true;
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          reveal(entry.target);
-          observer.unobserve(entry.target);
-        }
-      }, {rootMargin: '0px 0px -6% 0px', threshold: 0.08});
-      for (const element of later) observer.observe(element);
-    } else {
-      for (const element of later) reveal(element);
-    }
-  }
-
-  // One safety net for both failure modes: a renderer that never advances the
-  // transitions (no frames), and an observer that never reports. Either way the
-  // page gets the finished still rather than an entrance it cannot animate.
-  // Cancelling the transitions matters: a stuck transition keeps applying its
-  // start value even after the rule that started it is gone.
-  setTimeout(() => {
-    const stuck = visibleNow.some(element => Number(getComputedStyle(element).opacity) < 0.99);
-    if (!stuck && !(later.length && !reported)) return;
-    root.classList.remove('js');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  if (root.classList.contains('js') && !reducedMotion.matches) {
+    const revealable = [...document.querySelectorAll('[data-reveal]')];
+    const visibleNow = [];
+    const later = [];
     for (const element of revealable) {
-      for (const animation of element.getAnimations()) animation.cancel();
+      const rect = element.getBoundingClientRect();
+      (rect.top < window.innerHeight && rect.bottom > 0 ? visibleNow : later).push(element);
     }
-  }, 1600);
 
-  // Reading progress: one passive listener, written once per frame.
-  const progress = document.querySelector('.scroll-progress > span');
-  if (progress) {
-    let queued = false;
-    const update = () => {
-      queued = false;
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      const ratio = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
-      progress.style.transform = `scaleX(${ratio})`;
-    };
-    const queue = () => {
-      if (queued) return;
-      queued = true;
-      requestAnimationFrame(update);
-    };
-    addEventListener('scroll', queue, {passive: true});
-    addEventListener('resize', queue, {passive: true});
-    update();
-  }
+    const reveal = element => element.classList.add('is-visible');
+    let reported = false;
+    const observer = later.length ? new IntersectionObserver(entries => {
+      reported = true;
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        reveal(entry.target);
+        observer.unobserve(entry.target);
+      }
+    }, {rootMargin: '0px 0px -6% 0px', threshold: 0.08}) : null;
+    for (const element of later) observer.observe(element);
 
-  // The header lifts off the page once it has scrolled.
-  const header = document.querySelector('.site-header');
-  if (header) {
-    const sync = () => header.classList.toggle('is-stuck', window.scrollY > 8);
-    addEventListener('scroll', sync, {passive: true});
-    sync();
+    const revealVisible = () => visibleNow.forEach(reveal);
+    const fallback = setTimeout(revealVisible, 250);
+    const frame = requestAnimationFrame(() => {
+      clearTimeout(fallback);
+      revealVisible();
+    });
+    const finish = () => {
+      root.classList.remove('js');
+      observer?.disconnect();
+      cancelAnimationFrame(frame);
+      clearTimeout(fallback);
+      clearTimeout(safety);
+      reducedMotion.removeEventListener?.('change', finish);
+      // A stuck transition can keep applying its start value after .js is gone.
+      for (const element of revealable) {
+        element.getAnimations?.().forEach(animation => animation.cancel());
+      }
+    };
+    const safety = setTimeout(() => {
+      const stuck = visibleNow.some(element => Number(getComputedStyle(element).opacity) < 0.99);
+      if (stuck || (observer && !reported)) finish();
+    }, 1600);
+    reducedMotion.addEventListener?.('change', finish);
+
+    // The observer and the timer are ready, so cancel the stylesheet failsafe.
+    root.classList.add('js-ready');
+  } else {
+    root.classList.remove('js');
   }
 
   // Back to top. Hidden with visibility rather than opacity alone, so it is not
@@ -106,10 +81,32 @@
   toTop.append(icon);
   document.body.append(toTop);
 
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const showToTop = () => toTop.classList.toggle('is-shown', window.scrollY > 600);
-  addEventListener('scroll', showToTop, {passive: true});
-  showToTop();
+  const header = document.querySelector('.site-header');
+  const progress = document.querySelector('.scroll-progress > span');
+  let queued = false;
+  let lastRatio;
+  const update = () => {
+    queued = false;
+    const scrollY = window.scrollY;
+    if (progress) {
+      const max = root.scrollHeight - window.innerHeight;
+      const ratio = max > 0 ? Math.min(1, Math.max(0, scrollY / max)) : 0;
+      if (ratio !== lastRatio) {
+        progress.style.transform = `scaleX(${ratio})`;
+        lastRatio = ratio;
+      }
+    }
+    header?.classList.toggle('is-stuck', scrollY > 8);
+    toTop.classList.toggle('is-shown', scrollY > 600);
+  };
+  const queue = () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(update);
+  };
+  addEventListener('scroll', queue, {passive: true});
+  addEventListener('resize', queue, {passive: true});
+  update();
   toTop.addEventListener('click', () => {
     const from = window.scrollY;
     const smooth = !reducedMotion.matches;
