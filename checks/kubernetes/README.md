@@ -13,7 +13,7 @@
 
 The container controls apply to every entry in `initContainers`, `containers` and `ephemeralContainers`. `allowPrivilegeEscalation` is read from the container only, because the pod-level `securityContext` has no such field.
 
-Input objects can be a Pod, or a workload whose pod template is read: Deployment, StatefulSet, DaemonSet, ReplicaSet and Job (`spec.template.spec`), and CronJob (`spec.jobTemplate.spec.template.spec`). Items without a `kind` are treated as Pods, since `kubectl get pods` output may omit it. Other kinds (for example ReplicationController or PodTemplate) are skipped. The input can be a `List` (`.items`) or a single object. Live mode reads only Pods, which already includes the pods created by those controllers. Workload findings are labelled `namespace/kind/name`, for example `apps/deployment/web`. If an object has no `metadata.name`, its `generateName` is used; objects without a namespace are treated as `default`.
+Input objects can be a Pod, or a workload whose pod template is read: Deployment, StatefulSet, DaemonSet, ReplicaSet and Job (`spec.template.spec`), and CronJob (`spec.jobTemplate.spec.template.spec`). Items without a `kind` are treated as Pods, since `kubectl get pods` output may omit it. Other kinds (for example ReplicationController or PodTemplate) are skipped in mixed lists. A nonempty export containing only unsupported kinds is invalid. The input can be a `List` (`.items`) or a single object. Live mode reads only Pods, which already includes the pods created by those controllers. Workload findings are labelled `namespace/kind/name`, for example `apps/deployment/web`. If an object has no `metadata.name`, its `generateName` is used; objects without a namespace are treated as `default`.
 
 Item numbers inside 5.1 and 5.2 change between benchmark versions (and the GKE benchmark numbers its own sections differently), so findings name the section and the control topic. Check the benchmark version you are audited against for the exact IDs.
 
@@ -26,6 +26,8 @@ kubectl get deploy,sts,ds,rs,job,cronjob -A -o json > workloads.json   # templat
 checks/kubernetes/cis-workload-report.sh --pods workloads.json --bindings crb.json
 SYSTEM_NAMESPACES='^(kube-system|istio-system)$' checks/kubernetes/cis-workload-report.sh
 ```
+
+Offline mode requires both files. Export both lists through `kubectl` and record the capture scope. A raw API page with a continuation token or remaining items is incomplete. An apparently final page alone does not establish coverage of earlier pages. Exit codes are 0 for complete inputs with no findings, 1 for findings, and 2 for invalid or unavailable inputs. On exit 2 the report emits an error without control results.
 
 Objects in `kube-system`, `gke-managed-*` and `gmp-system` are skipped by default because node agents legitimately need host access; override with `SYSTEM_NAMESPACES`.
 
