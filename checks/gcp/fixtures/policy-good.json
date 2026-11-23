@@ -13,7 +13,7 @@
       "members": ["serviceAccount:app@example-project.iam.gserviceaccount.com"]
     },
     {
-      "role": "roles/owner",
+      "role": "roles/storage.objectViewer",
       "members": ["group:break-glass@example.com"],
       "condition": {
         "title": "break glass",

@@ -26,6 +26,33 @@ expect 1 "kubernetes bad workloads" kubernetes/cis-workload-report.sh \
 expect 0 "gcp good iam policy" gcp/iam-report.sh --file gcp/fixtures/policy-good.json --domain example.com
 expect 1 "gcp bad iam policy" gcp/iam-report.sh --file gcp/fixtures/policy-bad.json --domain example.com
 
+expect 0 "gcp empty direct policy" gcp/iam-report.sh --file /dev/stdin <<< '{"bindings":[]}'
+expect 0 "gcp direct bindings omitted" gcp/iam-report.sh --file /dev/stdin <<< '{"etag":"fixture"}'
+expect 2 "gcp file argument required" gcp/iam-report.sh --file
+expect 2 "gcp rejects competing input modes" gcp/iam-report.sh --file /dev/stdin --project test
+expect 2 "gcp rejects a raw NUL in JSON input" gcp/iam-report.sh --file /dev/stdin \
+  < <(printf '{"bind\000ings":[]}\n')
+invalid_policies=(
+  '{}'
+  '{"error":{"code":403},"bindings":[]}'
+  '{"bindings":[{}]}'
+  '{"bindings":null}'
+  '{"bindings":[{"role":"roles/storage.objectViewer","members":[]}]}'
+  '{"bindings":[]} {"bindings":[]}'
+  '{"bindings":[],"version":2}'
+  '{"bindings":[{"role":"roles/viewer","members":["user:test@example.com"],"condition":{"expression":"true"}}],"version":3}'
+  '{"bindings":[{"role":"roles/storage.objectViewer_withcond_012abc","members":["user:test@example.com"]}],"version":1}'
+  '{"bindings":[{"role":"projects/test/roles/reader_withcond_012abc","members":["user:test@example.com"]}],"version":1}'
+  '{"bindings":[{"role":"roles/owner","members":["user:test@example.com"],"condition":{"expression":"true"}}],"version":3}'
+)
+for invalid_policy in "${invalid_policies[@]}"; do
+  expect 2 "gcp rejects invalid export" gcp/iam-report.sh --file /dev/stdin <<< "$invalid_policy"
+  if grep -qE '^(PASS|failures:)' "$output"; then
+    echo "FAIL - invalid IAM policy produced control results"
+    fail=1
+  fi
+done
+
 # The bad fixtures must trip every control they were written for.
 expect 0 "gke bad trips 9 failures" bash -c \
   'gke/gke-report.sh --file gke/fixtures/cluster-bad.json | grep -qx "failures: 9"'
