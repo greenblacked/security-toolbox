@@ -1,0 +1,6 @@
+[
+  {"source":"service","event_id":"s-01","occurred_at":"2026-01-01T12:09:00+00:00","ingested_at":"2026-01-01T12:09:10+00:00","summary":"Service reported elevated errors"},
+  {"source":"audit","event_id":"a-02","occurred_at":"2026-01-01T12:08:20+00:00","ingested_at":"2026-01-01T12:08:40+00:00","summary":"Temporary support role granted"},
+  {"source":"identity","event_id":"i-01","occurred_at":"2026-01-01T14:07:40+02:00","ingested_at":"2026-01-01T12:08:00+00:00","summary":"Support operator session started"},
+  {"source":"audit","event_id":"a-01","occurred_at":"2026-01-01T12:07:40+00:00","ingested_at":"2026-01-01T12:08:10+00:00","summary":"Approved deployment completed"}
+]
