@@ -12,3 +12,7 @@ target/
 site/robots.txt
 site/_headers
 site/version.txt
+
+# Generated guide pages
+site/cloudflare/
+site/gitlab/
