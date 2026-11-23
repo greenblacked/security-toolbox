@@ -81,6 +81,7 @@ add('labs', 'Threat model to backlog', 'docs/labs/threat-model.md', '/labs/threa
 add('labs', 'GKE configuration review', 'docs/labs/gke-configuration.md', '/labs/gke-configuration/');
 add('labs', 'Terraform policy gate', 'docs/labs/terraform-policy.md', '/labs/terraform-policy/');
 add('labs', 'Kubernetes workload review', 'docs/labs/kubernetes-workload.md', '/labs/kubernetes-workload/');
+add('labs', 'Verify Kubernetes Pod Security Admission', 'docs/labs/pod-security-admission.md', '/labs/pod-security-admission/');
 add('labs', 'CI identity claims', 'docs/labs/ci-identity.md', '/labs/ci-identity/');
 add('labs', 'Artifact provenance gate', 'docs/labs/artifact-provenance.md', '/labs/artifact-provenance/');
 add('labs', 'Dependency remediation queue', 'docs/labs/dependency-triage.md', '/labs/dependency-triage/');
@@ -472,6 +473,9 @@ const labKitPaths = [
   'labs/ci-identity.mjs',
   'labs/detection-regression.mjs',
   'labs/kubernetes-workload.sh',
+  'labs/pod-admission.sh',
+  'labs/fixtures/pod-admission/restricted.yaml',
+  'labs/fixtures/pod-admission/missing-non-root.yaml',
   'labs/fixtures/ci-identity.json',
   'labs/fixtures/detection-complete.json',
   'labs/fixtures/detection-missing-audit.json',

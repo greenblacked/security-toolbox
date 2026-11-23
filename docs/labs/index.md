@@ -8,6 +8,7 @@ Practice a security control, capture evidence, and verify the result. All exerci
 | [GKE configuration review](gke-configuration.md) | Introductory | 30 min | Bash, jq |
 | [Terraform policy gate](terraform-policy.md) | Intermediate | 45 min | Conftest |
 | [Kubernetes workload review](kubernetes-workload.md) | Intermediate | 40 min | Bash, jq |
+| [Verify Kubernetes Pod Security Admission](pod-security-admission.md) | Intermediate | 25 min | Bash, kubectl, disposable local cluster |
 | [CI identity claims](ci-identity.md) | Intermediate | 40 min | Node.js |
 | [Artifact provenance gate](artifact-provenance.md) | Intermediate | 55 min | Bash, jq, npm, OpenSSL |
 | [Dependency remediation queue](dependency-triage.md) | Introductory | 40 min | Text editor |
@@ -36,4 +37,4 @@ tar -xzf security-toolbox-labs.tar.gz -C security-toolbox-labs
 cd security-toolbox-labs
 ```
 
-The estimates exclude tool installation. The exercises need no cluster or cloud account and create no billable cloud resources. Use synthetic inputs and use a fresh copy of the kit for experiments.
+The estimates exclude tool installation. The Pod Security Admission exercise uses a disposable local cluster. The other exercises run offline with local fixtures. No lab requires a cloud account. Use synthetic inputs and use a fresh copy of the kit for experiments.
