@@ -15,6 +15,16 @@ Practice a security control, capture evidence, and verify the result. All exerci
 
 Start with the threat model to practice deciding what evidence to collect. Continue with a configuration or policy check, then use the detection exercise to practice validation on synthetic telemetry. The [security operations flow](/start/) connects the exercises to incident and control ownership.
 
+## Incident response path
+
+Follow one fictional incident from telemetry through triage and recovery.
+
+| Lab | Experience | Time | Requirements |
+| --- | --- | ---: | --- |
+| [Telemetry health and incident timeline](response-timeline.md) | Intermediate | 30 min | Python |
+| [Incident triage and evidence custody](evidence-custody.md) | Intermediate | 35 min | Bash, Python |
+| [Service restore and recovery objectives](service-restore.md) | Intermediate | 30 min | Python with SQLite |
+
 ## Get the lab kit
 
 [Download the offline lab kit](/labs/security-toolbox-labs.tar.gz). From your download folder, extract it into a fresh directory and run the lab commands there.

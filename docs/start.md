@@ -25,6 +25,8 @@ Collect the telemetry required for priority scenarios. Check that identity, endp
 
 Under the incident lead, preserve relevant evidence while taking steps to limit harm. Coordinate containment, removal of the cause, and recovery with the service owner. Restore from a trusted state, test the affected controls and dependencies, and monitor for recurrence before returning to normal operations. Record major decisions, owners, and follow-up actions. See [NIST incident response recommendations](https://csrc.nist.gov/pubs/sp/800/61/r3/final).
 
+Practice this handoff in the [incident response path](/labs/#incident-response-path).
+
 ## 6. Improve and retest
 
 Use the incident or exercise review to revise the threat model, hardening baselines, telemetry, and response playbooks. Track accepted risks separately from verified fixes. Measure priority scenarios with working detection and response, time to escalate in controlled exercises, and whether remediation passes retesting. Review the results with risk owners and use them to choose the next validation.

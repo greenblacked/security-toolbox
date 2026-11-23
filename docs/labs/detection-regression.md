@@ -20,3 +20,5 @@ The complete fixture produces one alert for the temporary user and no missing so
 The evaluator only reads the supplied files. Delete optional fixture copies and exported output when finished.
 
 Related reading: [Detection engineering](/skills/detection-engineering/) and [Rule record](/skills/detection-engineering/rule-record/).
+
+Continue with [telemetry health and incident timeline](/labs/response-timeline/).
