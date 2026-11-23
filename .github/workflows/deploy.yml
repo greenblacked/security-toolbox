@@ -71,11 +71,16 @@ jobs:
         with:
           python-version: '3.13'
       - name: Build and mark non-production assets
+        id: build
         run: |
           set -Eeuo pipefail
           npm ci --ignore-scripts
           node scripts/build_site.cjs
           python scripts/prepare_stage_site.py
+          if [ "$GITHUB_REF" = refs/heads/dev ]; then
+            archive_sha256=$(sha256sum site/labs/security-toolbox-labs.tar.gz)
+            printf 'lab_archive_sha256=%s\n' "${archive_sha256%% *}" >> "$GITHUB_OUTPUT"
+          fi
           printf '%s\n' "$GITHUB_SHA" > site/version.txt
           python scripts/check_wrangler_pin.py
           cd deploy
@@ -144,3 +149,9 @@ jobs:
             exit 1
           fi
           printf 'url=%s\n' "$expected_domain" >> "$GITHUB_OUTPUT"
+      - name: Verify the dev lab routes and exact published archive
+        if: github.ref == 'refs/heads/dev'
+        env:
+          DEV_URL: ${{ steps.smoke.outputs.url }}
+          LAB_ARCHIVE_SHA256: ${{ steps.build.outputs.lab_archive_sha256 }}
+        run: scripts/smoke_dev_labs.sh "$DEV_URL" "$LAB_ARCHIVE_SHA256"
