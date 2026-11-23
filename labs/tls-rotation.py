@@ -69,6 +69,7 @@ def server_context(pair, intermediate=None):
         chain = leaf.with_name(f"{leaf.stem}-chain.pem")
         chain.write_bytes(leaf.read_bytes() + intermediate.read_bytes())
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
     context.load_cert_chain(chain, key)
     return context
 
@@ -83,6 +84,7 @@ def serve_once(listener, context):
 
 def probe(listener, workers, trust, service):
     client = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    client.minimum_version = ssl.TLSVersion.TLSv1_2
     client.hostname_checks_common_name = False
     client.verify_flags |= ssl.VERIFY_X509_STRICT
     client.load_verify_locations(cafile=trust)

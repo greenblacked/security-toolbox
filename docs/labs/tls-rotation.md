@@ -10,7 +10,7 @@ From the extracted kit, run:
 python3 labs/tls-rotation.py
 ```
 
-The lab generates a temporary root, intermediate and several leaves. It starts a loopback-only listener and connects with the synthetic DNS name `orders.example.test` as SNI and the expected service identity. No DNS lookup or system trust-store change is required. The client trusts only the supplied root, checks the DNS SAN and server purpose, and reads a small readiness response.
+The lab generates a temporary root, intermediate and several leaves. It starts a loopback-only listener and connects with the synthetic DNS name `orders.example.test` as SNI and the expected service identity. No DNS lookup or system trust-store change is required. The client and server require TLS 1.2 or newer. The client trusts only the supplied root, checks the DNS SAN and server purpose, and reads a small readiness response.
 
 ## Read the evidence
 
