@@ -274,7 +274,10 @@ for (const page of pages) {
     ids.set(base, count + 1);
     const id = count ? `${base}-${count}` : base;
     tokens[i].attrSet('id', id);
-    if (tokens[i].tag === 'h2') toc.push([id, text]);
+    if (tokens[i].tag === 'h2') {
+      tokens[i].attrSet('tabindex', '-1');
+      toc.push([id, text]);
+    }
   }
   const content = md.renderer.render(tokens, md.options, env);
 
@@ -358,6 +361,10 @@ for (const page of pages) {
     : '';
 
   const tocList = toc.map(([id, text]) => `<li><a href="#${escape(id)}">${escape(text)}</a></li>`).join('');
+  const guideJump = toc.length
+    ? `<details class="guide-jump"><summary>On this page</summary><nav aria-label="On this page"><ul>${tocList}</ul></nav></details>`
+    : '';
+  const articleContent = guideJump ? content.replace('</h1>', () => `</h1>${guideJump}`) : content;
 
   const structuredData = JSON.stringify({
     '@context': 'https://schema.org',
@@ -390,6 +397,7 @@ for (const page of pages) {
   <script src="/search.js" defer></script>
   <script src="/motion.js" defer></script>
   <script src="/code-copy.js" defer></script>
+  ${toc.length ? '<script src="/guide-navigation.js" defer></script>' : ''}
   <script type="application/ld+json">${structuredData}</script>
 </head>
 <body>
@@ -408,8 +416,7 @@ for (const page of pages) {
     <details class="guide-menu"><summary>Guide navigation</summary><nav aria-label="Guide navigation"><ul class="nav-groups">${nav}</ul></nav></details>
     <main id="main" tabindex="-1">
       <nav class="breadcrumb" aria-label="Breadcrumb"><ol>${crumbs.join('')}</ol></nav>
-      ${toc.length ? `<details class="guide-jump"><summary>On this page</summary><ul>${tocList}</ul></details>` : ''}
-      <article class="guide-content" data-reveal>${content}${referenceList}</article>
+      <article class="guide-content" data-reveal>${articleContent}${referenceList}</article>
       ${footer}
       ${pager}
     </main>

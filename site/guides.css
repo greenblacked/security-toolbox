@@ -47,9 +47,22 @@
 .guide-sidebar :is(a, summary):focus-visible, .guide-toc a:focus-visible { outline-offset: -2px; }
 :is(.guide-sidebar, .guide-menu) a[aria-current] { color: var(--accent); background: var(--panel); font-weight: 700; text-decoration: underline; text-underline-offset: .25em; }
 .guide-menu { display: none; }
-.guide-jump { display: none; margin-bottom: var(--space-4); border-block: 1px solid var(--line); }
+.guide-jump {
+  display: none;
+  margin-block: var(--space-4);
+  border-block: 1px solid var(--line);
+}
 .guide-jump summary, .guide-menu summary { min-height: var(--target); padding: var(--space-1) var(--space-2); cursor: pointer; }
-.guide-jump ul, .guide-menu ul { margin: 0; padding: 0; list-style: none; }
+.guide-content .guide-jump ul, .guide-menu ul { margin: 0; padding: 0; list-style: none; }
+.guide-content .guide-jump li + li { margin-block-start: 0; }
+.guide-content .guide-jump a { color: var(--muted); }
+:is(.guide-toc, .guide-content .guide-jump) a[aria-current="location"] {
+  color: var(--accent);
+  background: var(--panel);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: .25em;
+}
 .guide-jump li { border-top: 1px solid var(--line); }
 .guide-toc { border-inline-start: 1px solid var(--line); }
 .guide-toc strong { display: block; padding: var(--space-2); }
