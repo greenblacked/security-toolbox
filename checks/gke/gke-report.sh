@@ -138,6 +138,7 @@ check_pools "Secure Boot on node pools" \
 check_pools "Integrity monitoring on node pools" \
   '[.nodePools[]? | .config.shieldedInstanceConfig.enableIntegrityMonitoring == true] | (length > 0 and all)' \
   "create node pools with --shielded-integrity-monitoring"
+# shellcheck disable=SC2016 # Variable references are evaluated by jq.
 check "Binary Authorization configured" '
   .binaryAuthorization | .evaluationMode as $mode
   | if $mode == null or $mode == "EVALUATION_MODE_UNSPECIFIED"
@@ -147,6 +148,7 @@ check "NetworkPolicy configured" \
   '.networkConfig.datapathProvider == "ADVANCED_DATAPATH" or .networkPolicy.enabled == true' \
   "use GKE Dataplane V2 (--enable-dataplane-v2) or enable network policy"
 
+# shellcheck disable=SC2016 # Variable references are evaluated by jq.
 private_nodes=$(q '
   def prefer($modern; $legacy): if $modern == null then $legacy else $modern end;
   prefer(.networkConfig.defaultEnablePrivateNodes; .privateClusterConfig.enablePrivateNodes) as $default
@@ -160,6 +162,7 @@ case "$private_nodes" in
   unknown) report WARN "Private nodes" "private-node coverage is unavailable for one or more pools" ;;
 esac
 
+# shellcheck disable=SC2016 # Variable references are evaluated by jq.
 network_status=$(q '
   .controlPlaneEndpointsConfig.ipEndpointsConfig as $ip
   | ($ip.authorizedNetworksConfig // .masterAuthorizedNetworksConfig) as $networks
