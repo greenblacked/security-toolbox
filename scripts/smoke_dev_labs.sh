@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Verify the lab routes and exact archive bytes for the dev deployment.
+# Verify the lab routes and exact archive bytes for the preview deployment.
 set -Eeuo pipefail
 
 url=${1:-}
@@ -44,8 +44,8 @@ if [ "$response" != '200 application/gzip nosniff' ]; then
   exit 1
 fi
 if ! printf '%s  %s\n' "$expected" "$body" | sha256sum --check --status; then
-  echo "::error::$path differs from the archive built for this dev deployment" >&2
+  echo "::error::$path differs from the archive built for this preview deployment" >&2
   exit 1
 fi
 python3 "$(dirname "$0")/check_lab_archive.py" "$body"
-echo "Dev lab routes and archive SHA-256 verified"
+echo "Preview lab routes and archive SHA-256 verified"
