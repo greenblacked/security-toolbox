@@ -91,7 +91,7 @@ systemctl list-timers --all | grep -i certbot
 
 Enable whichever unit that command shows: `certbot-renew.timer` on an EPEL install, `certbot.timer` from Debian or Ubuntu's `apt` package, or `snap.certbot.renew.timer` from the snap. `systemctl` is deliberately left out of this skill's `allowed-tools` alongside `nmap`, since enabling a timer changes host state and should prompt rather than run unattended.
 
-For an orchestrator-managed estate, `cert-manager`'s `Certificate` resource already renews at a third of the certificate's issued lifetime by default when both `renewBefore` and `renewBeforePercentage` are left unset — the same fraction as this skill's lifetime-fraction backstop. Set `renewBeforePercentage` only when a specific certificate needs to renew earlier than that default, for example to `50`:
+For an orchestrator-managed estate, `cert-manager`'s `Certificate` resource already starts renewal when one third of the certificate's issued lifetime remains by default when both `renewBefore` and `renewBeforePercentage` are left unset — the same fraction as this skill's lifetime-fraction backstop. Set `renewBeforePercentage` only when a specific certificate needs to renew earlier than that default, for example to `50`:
 
 ```bash
 kubectl get certificate -A -o custom-columns=NAME:.metadata.name,READY:.status.conditions[0].status,NOTAFTER:.status.notAfter
@@ -129,6 +129,10 @@ Automating issuance does not remove every way a certificate outage still happens
 | Hard-coded certificate chain | A client or appliance bundles a fixed chain file rather than fetching the current one at connection time | Serve the full current chain from the endpoint on every renewal, not a chain file written once at setup |
 | OCSP caching | A client assumes an OCSP responder exists and caches a stapled response indefinitely; Let's Encrypt no longer runs an OCSP service at all | Stop depending on OCSP for a CA that has retired it, and confirm any client-side revocation checking has a working fallback |
 | Appliance with no ACME support | Renewal stays a manual action indefinitely | Put it on a compensating schedule with a named owner and a calendar reminder set from the lifetime-fraction rule, tracked in `references/endpoint-playbooks.md`, and treat it as the estate's highest-priority automation gap |
+
+## Verify the certificate clients receive
+
+The [TLS rotation lab](/labs/tls-rotation/) checks service identity, the served chain, and the expected leaf on fresh connections. An updated file or Secret is issuance evidence. Verify that the actual TLS process has loaded the replacement.
 
 ## Output format
 
