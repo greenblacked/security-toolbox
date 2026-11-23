@@ -44,6 +44,7 @@ else
 fi
 
 # List metadata can be omitted by clients. A raw list with continuation evidence is incomplete.
+# shellcheck disable=SC2016 # Variable references are evaluated by jq.
 list_validation='
   def optional($key; $expected): .[$key] | . == null or type == $expected;
   def nonblank: type == "string" and test("\\S");
