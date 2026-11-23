@@ -17,6 +17,12 @@
   scrollbar-width: thin;
   scrollbar-color: var(--control-line) transparent;
 }
+.guide-sidebar {
+  padding: var(--space-1);
+  border: 1px solid var(--line);
+  border-radius: var(--surface-radius);
+  background: var(--panel);
+}
 .guide-menu li { border-bottom: 1px solid var(--line); }
 /* Group wrappers hold links, so only the links carry the rule. */
 .nav-groups > li { border-bottom: 0; }
@@ -50,7 +56,9 @@
 .guide-jump {
   display: none;
   margin-block: var(--space-4);
-  border-block: 1px solid var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
 }
 .guide-jump summary, .guide-menu summary { min-height: var(--target); padding: var(--space-1) var(--space-2); cursor: pointer; }
 .guide-content .guide-jump ul, .guide-menu ul { margin: 0; padding: 0; list-style: none; }
@@ -73,17 +81,16 @@
   font: 700 .7rem/1.4 var(--mono);
 }
 .guide-sidebar a, .guide-toc a, .guide-menu a { font-size: .88rem; line-height: 1.4; }
-.guide-sidebar nav { border-block-start: 1px solid var(--line); }
 .guide-sidebar .nav-group + .nav-group { margin-top: 0; }
 .guide-sidebar .nav-group [open] > summary { border-bottom: 0; }
 .guide-sidebar .nav-group [open] > ul { margin-block-end: var(--space-1); }
 .guide-sidebar a { padding-inline-start: var(--space-4); }
-.guide-sidebar a[aria-current] { box-shadow: inset .15rem 0 var(--accent); }
+.guide-sidebar a[aria-current] { border-radius: var(--radius); background: var(--inset); box-shadow: inset .15rem 0 var(--accent); }
 .guide-content { max-width: 74ch; overflow-wrap: anywhere; }
 .guide-content h1, .missing-page h1 {
-  font-family: var(--serif);
-  font-weight: 400;
-  font-size: clamp(3rem, 4.8vw, 4.75rem);
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: clamp(2.65rem, 4.4vw, 4.25rem);
   line-height: 1.05;
   letter-spacing: -.045em;
   text-wrap: balance;

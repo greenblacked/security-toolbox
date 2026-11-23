@@ -18,9 +18,12 @@
     </div>
     <form role="search">
       <label for="search-query">Search terms</label>
-      <div class="search-input-wrap">
-        ${searchIcon}
-        <input id="search-query" name="q" type="search" placeholder="OIDC or pod security" autocomplete="off" autofocus>
+      <div class="search-form-row">
+        <div class="search-input-wrap">
+          ${searchIcon}
+          <input id="search-query" name="q" type="search" placeholder="OIDC or pod security" autocomplete="off" enterkeyhint="search" autofocus>
+        </div>
+        <button type="submit" class="search-submit">Search</button>
       </div>
     </form>
     <p id="search-status" role="status"></p>
@@ -30,6 +33,7 @@
 
   const form = dialog.querySelector('form');
   const input = dialog.querySelector('input');
+  const submit = dialog.querySelector('.search-submit');
   const status = dialog.querySelector('#search-status');
   const browse = dialog.querySelector('.search-browse');
   const results = dialog.querySelector('#search-results');
@@ -161,6 +165,7 @@
       fragment.append(item);
     }
     results.append(fragment);
+    submit.textContent = 'Open first';
   }
 
   function loadIndex() {
@@ -187,6 +192,7 @@
     const query = input.value.trim();
     const terms = words(query);
     results.replaceChildren();
+    submit.textContent = 'Search';
     browse.hidden = true;
     if (!terms.length) {
       status.textContent = 'Find guides, checks, policies, and security skills.';
@@ -225,6 +231,14 @@
   }
 
   const headerTrigger = document.querySelector('.site-header [data-search-open]');
+  if (headerTrigger) {
+    const shortcut = document.createElement('kbd');
+    shortcut.className = 'search-shortcut';
+    shortcut.textContent = '/';
+    shortcut.setAttribute('aria-hidden', 'true');
+    headerTrigger.setAttribute('aria-keyshortcuts', '/');
+    headerTrigger.append(shortcut);
+  }
   document.querySelectorAll('[data-search-open]').forEach(enableTrigger);
   if (headerTrigger && 'IntersectionObserver' in window) {
     const floating = document.createElement('button');
