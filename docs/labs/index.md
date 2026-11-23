@@ -1,6 +1,6 @@
 # Hands-on security labs
 
-Practice a security control, capture evidence, and verify the result. All exercises in this catalog use local fixtures. Run commands from the repository root after cloning [Security Toolbox](https://github.com/greenblacked/security-toolbox).
+Practice a security control, capture evidence, and verify the result. All exercises use local fixtures.
 
 | Lab | Experience | Time | Requirements |
 | --- | --- | ---: | --- |
@@ -15,4 +15,14 @@ Practice a security control, capture evidence, and verify the result. All exerci
 
 Start with the threat model to practice deciding what evidence to collect. Continue with a configuration or policy check, then use the detection exercise to practice validation on synthetic telemetry. The [security operations flow](/start/) connects the exercises to incident and control ownership.
 
-The estimates exclude tool installation. The exercises need no cluster or cloud account and create no billable cloud resources. Use synthetic inputs and keep your working copies outside the repository.
+## Get the lab kit
+
+[Download the offline lab kit](/labs/security-toolbox-labs.tar.gz). From your download folder, extract it into a fresh directory and run the lab commands there.
+
+```bash
+mkdir security-toolbox-labs
+tar -xzf security-toolbox-labs.tar.gz -C security-toolbox-labs
+cd security-toolbox-labs
+```
+
+The estimates exclude tool installation. The exercises need no cluster or cloud account and create no billable cloud resources. Use synthetic inputs and use a fresh copy of the kit for experiments.

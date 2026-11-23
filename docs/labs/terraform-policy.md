@@ -4,7 +4,7 @@ Use local plan fixtures to practice interpreting a GCP policy gate. Allow 45 min
 
 ## Exercise
 
-Run Conftest from the repository root. The Terraform plan fixtures are synthetic. This exercise needs neither Terraform nor Google Cloud credentials.
+Run Conftest from the [extracted lab kit directory](/labs/#get-the-lab-kit). The Terraform plan fixtures are synthetic. This exercise needs neither Terraform nor Google Cloud credentials.
 
 ```bash
 (

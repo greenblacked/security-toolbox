@@ -4,7 +4,7 @@ Use two local workload and RBAC fixture pairs to identify policy findings. Allow
 
 ## Exercise
 
-Run the fixture-only wrapper from the repository root. Each invocation requires both file paths.
+Run the fixture-only wrapper from the [extracted lab kit directory](/labs/#get-the-lab-kit). Each invocation requires both file paths.
 
 ```bash
 (

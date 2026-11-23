@@ -4,6 +4,8 @@ Verify a release signature and an independent provenance signature, then bind th
 
 ## Exercise
 
+Run the script from the [extracted lab kit directory](/labs/#get-the-lab-kit).
+
 ```bash
 labs/artifact-provenance.sh
 ```

@@ -4,7 +4,7 @@ Test an unexpected role-grant rule and a separate ingestion health check. Allow 
 
 ## Exercise
 
-Read the synthetic fixtures, then run the local evaluator from the repository root.
+Read the synthetic fixtures, then run the local evaluator from the [extracted lab kit directory](/labs/#get-the-lab-kit).
 
 ```bash
 node labs/detection-regression.mjs labs/fixtures/detection-complete.json

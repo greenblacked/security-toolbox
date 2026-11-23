@@ -4,7 +4,7 @@ Read fixture-backed GKE findings and distinguish a failing control from a warnin
 
 ## Exercise
 
-Run the report from the repository root. The subshell stops on setup errors and removes its temporary copy.
+Run the report from the [extracted lab kit directory](/labs/#get-the-lab-kit). The subshell stops on setup errors and removes its temporary copy.
 
 ```bash
 (

@@ -6,8 +6,8 @@ if [[ $# -ne 2 || ! -f "$1" || ! -r "$1" || ! -f "$2" || ! -r "$2" ]]; then
   exit 2
 fi
 
-repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+kit_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 lab_home=$(mktemp -d)
 trap 'rm -rf -- "$lab_home"' EXIT
 env -i PATH="$PATH" HOME="$lab_home" KUBECONFIG="$lab_home/config" \
-  bash "$repo_root/checks/kubernetes/cis-workload-report.sh" --pods "$1" --bindings "$2"
+  bash "$kit_root/checks/kubernetes/cis-workload-report.sh" --pods "$1" --bindings "$2"

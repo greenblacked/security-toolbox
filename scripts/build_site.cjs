@@ -364,7 +364,7 @@ for (const page of pages) {
     : '';
 
   const updated = lastUpdated(page.source);
-  const editLink = page.source
+  const editLink = page.source && page.group !== 'labs'
     ? `<a href="${escape(`${repoUrl}/blob/main/${page.source}`)}">Edit this page on GitHub <span aria-hidden="true">↗</span></a>`
     : '';
   const footer = (editLink || updated)
@@ -437,8 +437,8 @@ for (const page of pages) {
     <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><rect x="1" y="1" width="30" height="30" rx="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 10.5 15 16 9.5 21.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="17.5" y="20.4" width="6.6" height="3" rx="1.5" fill="currentColor"/></svg></span>Security Toolbox</a>
     <div class="footer-links">
       <a href="/start/">Start here</a>
-      <a href="${repoUrl}">View on GitHub <span aria-hidden="true">↗</span></a>
-      <a href="/contributing/">Contribute a guide</a>
+      ${page.group === 'labs' ? '<a href="/labs/">Labs</a>' : `<a href="${repoUrl}">View on GitHub <span aria-hidden="true">↗</span></a>
+      <a href="/contributing/">Contribute a guide</a>`}
       <a href="/about/">Security domains</a>
     </div>
   </div></footer>
@@ -450,6 +450,33 @@ for (const page of pages) {
 }
 
 // ------------------------------------------------------------------- artifacts
+// Publish only the files needed by the offline exercises.
+const labKitPaths = [
+  'LICENSE',
+  'checks/gke/gke-report.sh',
+  'checks/gke/fixtures/cluster-good.json',
+  'checks/gke/fixtures/cluster-bad.json',
+  'checks/kubernetes/cis-workload-report.sh',
+  'checks/kubernetes/fixtures/pods-good.json',
+  'checks/kubernetes/fixtures/pods-bad.json',
+  'checks/kubernetes/fixtures/bindings-good.json',
+  'checks/kubernetes/fixtures/bindings-bad.json',
+  'policies/opa/terraform/gcp.rego',
+  'policies/opa/terraform/fixtures/plan-good.json',
+  'policies/opa/terraform/fixtures/plan-bad.json',
+  'labs/artifact-provenance.sh',
+  'labs/ci-identity.mjs',
+  'labs/detection-regression.mjs',
+  'labs/kubernetes-workload.sh',
+  'labs/fixtures/ci-identity.json',
+  'labs/fixtures/detection-complete.json',
+  'labs/fixtures/detection-missing-audit.json',
+];
+execFileSync('tar', ['-czf', path.join(target, 'labs', 'security-toolbox-labs.tar.gz'), ...labKitPaths], {
+  cwd: root,
+  env: {...process.env, COPYFILE_DISABLE: '1'},
+});
+
 const searchDir = path.join(target, 'search');
 fs.mkdirSync(searchDir, {recursive: true});
 fs.writeFileSync(path.join(searchDir, 'search_index.json'), JSON.stringify({docs: searchItems}));

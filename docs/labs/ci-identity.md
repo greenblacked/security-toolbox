@@ -4,14 +4,14 @@ Practice defining a workload identity trust condition for a synthetic GitHub rep
 
 ## Exercise
 
-1. Read `labs/fixtures/ci-identity.json`. For each provider, identify the issuer, audience, stable identity, and approved deployment context.
+1. In the [extracted lab kit directory](/labs/#get-the-lab-kit), read `labs/fixtures/ci-identity.json`. For each provider, identify the issuer, audience, stable identity, and approved deployment context.
 2. Run the evaluator and explain how a failed condition changes the decision.
 
 ```bash
 node labs/ci-identity.mjs
 ```
 
-3. In a disposable copy of the repository, add a GitLab case with the expected audience and branch but a different project ID. Predict the decision, rerun the evaluator, and compare.
+3. In a disposable copy of the lab kit, add a GitLab case with the expected audience and branch but a different project ID. Predict the decision, rerun the evaluator, and compare.
 
 The evaluator assumes synthetic claims have already been decoded. A production relying party must verify token authenticity, issuer, audience, expiry, and other protocol requirements before applying its provider-specific policy. The fixtures do not make live federation calls.
 
