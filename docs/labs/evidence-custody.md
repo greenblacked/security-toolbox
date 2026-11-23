@@ -1,6 +1,6 @@
 # Incident triage and evidence custody
 
-Turn a timeline into an incident decision and verify that a working copy still matches the supplied evidence. Allow 35 minutes. Use Bash, Python 3.8 or later, and the [offline lab kit](/labs/#get-the-lab-kit).
+Turn a timeline into an incident decision and verify that a working copy still matches the supplied evidence. Allow 35 minutes. Use Bash, Python 3.11 or later, and the [offline lab kit](/labs/#get-the-lab-kit).
 
 ## Check the evidence copy
 

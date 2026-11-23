@@ -15,7 +15,9 @@ WRITES = [(1, 30), (2, 60), (3, 100)]
 def exercise(directory):
     recovery_dir = Path(directory)
     with closing(sqlite3.connect(recovery_dir / "source.db")) as source:
-        source.execute("CREATE TABLE orders (id INTEGER PRIMARY KEY, committed_at INTEGER NOT NULL)")
+        source.execute(
+            "CREATE TABLE orders (id INTEGER PRIMARY KEY, committed_at INTEGER NOT NULL)"
+        )
         source.executemany("INSERT INTO orders VALUES (?, ?)", WRITES[:2])
         source.commit()
         with closing(sqlite3.connect(recovery_dir / "backup.db")) as backup:
@@ -29,12 +31,15 @@ def exercise(directory):
                 if restored.execute("PRAGMA integrity_check").fetchall() != [("ok",)]:
                     raise RuntimeError("restored database failed its integrity check")
                 # Read through the same query the sample order service uses.
-                rows = restored.execute("SELECT id, committed_at FROM orders ORDER BY id").fetchall()
+                rows = restored.execute(
+                    "SELECT id, committed_at FROM orders ORDER BY id"
+                ).fetchall()
                 if rows != WRITES[:2]:
                     raise RuntimeError("order read returned unexpected data")
                 elapsed = monotonic() - start
             missing = [
-                order for (order,) in source.execute("SELECT id FROM orders ORDER BY id")
+                order
+                for (order,) in source.execute("SELECT id FROM orders ORDER BY id")
                 if order not in {order_id for order_id, _ in rows}
             ]
 

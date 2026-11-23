@@ -1,6 +1,6 @@
 # Telemetry health and incident timeline
 
-Decide whether an incident timeline has enough evidence for triage. Allow 30 minutes. Use Python 3.8 or later and the [offline lab kit](/labs/#get-the-lab-kit). Start here after the [detection regression lab](/labs/detection-regression/).
+Decide whether an incident timeline has enough evidence for triage. Allow 30 minutes. Use Python 3.11 or later and the [offline lab kit](/labs/#get-the-lab-kit). Start here after the [detection regression lab](/labs/detection-regression/).
 
 ## Compare the two case files
 

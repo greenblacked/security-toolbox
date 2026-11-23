@@ -1,6 +1,6 @@
 # Service restore and recovery objectives
 
-Restore a temporary SQLite order store and prove what data the service can read. Allow 30 minutes. Use Python 3.8 or later with its standard SQLite module and the [offline lab kit](/labs/#get-the-lab-kit). For this exercise, assume the incident lead has authorized recovery and the supplied backup is trusted.
+Restore a temporary SQLite order store and prove what data the service can read. Allow 30 minutes. Use Python 3.11 or later with its standard SQLite module and the [offline lab kit](/labs/#get-the-lab-kit). For this exercise, assume the incident lead has authorized recovery and the supplied backup is trusted.
 
 ## Run the restore
 

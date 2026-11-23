@@ -3,7 +3,7 @@
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 CUT_OFF = datetime.fromisoformat("2026-01-01T12:10:00+00:00")
@@ -20,7 +20,7 @@ def timestamp(value):
     parsed = datetime.fromisoformat(value)
     if parsed.tzinfo is None:
         raise ValueError("timestamps must include a UTC offset")
-    return parsed.astimezone(timezone.utc)
+    return parsed.astimezone(UTC)
 
 
 def analyze(records):
@@ -60,12 +60,16 @@ def analyze(records):
             issues.append("stale")
         if delay > INGEST_DELAY_SECONDS:
             issues.append("late")
-        health.append({"source": source, "status": "degraded" if issues else "healthy", "issues": issues})
+        status = "degraded" if issues else "healthy"
+        health.append({"source": source, "status": status, "issues": issues})
 
     timeline = [
         {
-            "source": source, "event_id": event_id, "occurred_at": occurred.isoformat(),
-            "ingested_at": ingested.isoformat(), "summary": summary,
+            "source": source,
+            "event_id": event_id,
+            "occurred_at": occurred.isoformat(),
+            "ingested_at": ingested.isoformat(),
+            "summary": summary,
         }
         for (source, event_id), (occurred, ingested, summary) in sorted(
             by_id.items(), key=lambda item: (item[1][0], item[0])
