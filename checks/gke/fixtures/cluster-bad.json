@@ -2,7 +2,7 @@
   "name": "legacy",
   "location": "europe-west1-b",
   "shieldedNodes": {"enabled": false},
-  "networkConfig": {"datapathProvider": "LEGACY_DATAPATH"},
+  "networkConfig": {"datapathProvider": "LEGACY_DATAPATH", "defaultEnablePrivateNodes": false},
   "legacyAbac": {"enabled": true},
   "masterAuth": {"clientKey": "redacted-placeholder"},
   "nodePools": [
