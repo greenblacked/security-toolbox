@@ -18,7 +18,7 @@ Not everything sensitive is a secret, and the difference decides how it is store
 | Kind | Example | Lifetime | If it leaks |
 | --- | --- | --- | --- |
 | Long-lived credential | Service-account key, PAT, API key, database password | Months to never | Full access as that identity until someone notices |
-| Short-lived token | OIDC token, access token, signed URL, session cookie | Minutes to hours | Access until expiry; revocable only by revoking the session |
+| Short-lived token | OIDC token, access token, signed URL, session cookie | Minutes to hours | Impact depends on scope, expiry and provider-specific revocation |
 | Encryption key | KMS key, DEK | Years | Every ciphertext it protected, plus future ones |
 | Configuration with a secret inside | Connection string, `.env`, Terraform state | As long as the file | Whatever the embedded credential grants |
 | Personal data | Customer record, email, address | As long as the retention policy | A privacy obligation, not just an access problem |
@@ -57,8 +57,8 @@ Delivery is where most leaks happen, because the value has to exist somewhere th
 The strongest answer to "where is the secret" is that there isn't one.
 
 - **Cloud SQL IAM database authentication**: the application authenticates with its workload identity and a short-lived token instead of a password.
-- **Vault dynamic secrets**: a database or cloud credential is issued on demand with a TTL, and revocation is immediate and central.
-- **Workload identity everywhere else**: GKE, Cloud Run, Cloud Functions, CI. The credential is minted for the workload, expires, and cannot be copied off the host in a usable form.
+- **Vault dynamic secrets**: a database or cloud credential is issued on demand with a TTL. Verify revocation at the backing service because the provider and secrets engine determine when access ends.
+- **Workload identity everywhere else**: GKE, Cloud Run, Cloud Functions, CI. Federation avoids distributing a long-lived key. An issued bearer token can still be used by a holder within its scope and lifetime. Keep tokens out of logs and exports. [Google Cloud token types](https://docs.cloud.google.com/docs/authentication/token-types).
 - **STS and token exchange** for cross-cloud access, so one cloud's identity is exchanged for another's short-lived credential rather than a shared key.
 
 Each of these removes a rotation problem and a copy of the secret from disk. Where they are available, a static secret is a choice, not a constraint.
