@@ -56,3 +56,24 @@ site/       # hand-written homepage, styles and headers; generated routes are gi
 `scripts/build_site.cjs` renders `docs/`, `checks/`, `policies/` and `plugins/` into `site/`. The Markdown stays the source of truth, and the generated routes are ignored by Git so a local build leaves a clean tree.
 
 See [docs/](docs/) and the live site when published.
+
+## Roll back the dev preview
+
+Use the [Deploy workflow runs](https://github.com/greenblacked/security-toolbox/actions/workflows/deploy.yml?query=branch%3Adev)
+to identify the current deployment and the last known good `dev` push. Record
+both run links, commit SHAs and the current value at
+[dev's version endpoint](https://dev.security.szolotov.com/version.txt).
+Wait for any queued or active dev deploys before starting.
+
+In the known-good run, check that **build and attest dev site** and **deploy dev**
+succeeded and that its `dev-site-*` artifact still exists. The artifact is kept
+for seven days. Open the **deploy dev** job and select **Re-run job**. Re-running
+that job downloads the original artifact by ID and verifies its signature,
+source commit and dev ref before replacing the named dev preview. Re-running the
+whole workflow creates a new build. If the artifact has expired, restore the
+desired source through a normal dev PR and let CI build and sign it again.
+
+Check that the new job attempt passes both preview smoke checks. Confirm that
+dev's version endpoint serves the selected SHA and that the lab archive matches
+the digest printed by the job. If you are running a drill, re-run **deploy dev**
+from the run that was serving before the drill and repeat those checks.
