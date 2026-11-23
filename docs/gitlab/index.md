@@ -27,3 +27,7 @@ Record current runner assignments, protection settings, job-token allowlists and
 Monitor runner registration and configuration changes, protected-ref and CI configuration changes, job-token authentication activity where available, and unexpected access failures. Alert on changes to deployment runner scope or privileged execution settings.
 
 If isolation is suspected to have failed, pause the affected runner, stop or cancel affected jobs, preserve logs and evidence, and replace the underlying execution environment. Revoke and rotate any potentially exposed downstream credentials and runner authentication credentials through the appropriate GitLab procedure. Restore a reviewed runner configuration and the previous allowlist only where still justified. Rebuild a suspect runner from a trusted image. Re-run the validation matrix, verify dependent pipelines, and monitor for renewed access attempts.
+
+## Hands-on lab
+
+Practice locally in the [CI identity claims](/labs/ci-identity/) lab.

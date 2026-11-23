@@ -21,6 +21,7 @@ site/gcp/
 site/github/
 site/gitlab/
 site/kubernetes/
+site/labs/
 site/policies/
 site/secrets/
 site/skills/

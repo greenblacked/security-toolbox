@@ -76,6 +76,16 @@ add('policies', 'Terraform GCP policy', 'docs/policies/terraform.md', '/policies
 add('policies', 'Kubernetes pod security policy', 'docs/policies/kubernetes.md', '/policies/kubernetes/');
 add('policies', 'Checkov GCP checks', 'docs/policies/checkov.md', '/policies/checkov/');
 
+add('labs', 'Hands-on security labs', 'docs/labs/index.md', '/labs/');
+add('labs', 'Threat model to backlog', 'docs/labs/threat-model.md', '/labs/threat-model/');
+add('labs', 'GKE configuration review', 'docs/labs/gke-configuration.md', '/labs/gke-configuration/');
+add('labs', 'Terraform policy gate', 'docs/labs/terraform-policy.md', '/labs/terraform-policy/');
+add('labs', 'Kubernetes workload review', 'docs/labs/kubernetes-workload.md', '/labs/kubernetes-workload/');
+add('labs', 'CI identity claims', 'docs/labs/ci-identity.md', '/labs/ci-identity/');
+add('labs', 'Artifact provenance gate', 'docs/labs/artifact-provenance.md', '/labs/artifact-provenance/');
+add('labs', 'Dependency remediation queue', 'docs/labs/dependency-triage.md', '/labs/dependency-triage/');
+add('labs', 'Detection rule regression', 'docs/labs/detection-regression.md', '/labs/detection-regression/');
+
 // Skills are published from the plugin that ships them: SKILL.md is the page and
 // each references/*.md is a sub-page, so the procedure a reader gets here is the
 // same one an agent loads.
@@ -135,7 +145,7 @@ for (const skill of skills) {
 }
 
 const GROUP_LABELS = {
-  overview: 'Overview', guides: 'Guides', checks: 'Checks', policies: 'Policies', skills: 'Skills',
+  overview: 'Overview', guides: 'Guides', checks: 'Checks', policies: 'Policies', labs: 'Labs', skills: 'Skills',
 };
 
 // Existing Markdown links that point at repository paths keep working.
@@ -406,7 +416,7 @@ for (const page of pages) {
   <a class="skip" href="#main">Skip to content</a>
   <header class="site-header"><div class="wrap header-inner">
     <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><rect x="1" y="1" width="30" height="30" rx="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 10.5 15 16 9.5 21.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="17.5" y="20.4" width="6.6" height="3" rx="1.5" fill="currentColor"/></svg></span>Security Toolbox</a>
-    <nav class="guide-header-nav" aria-label="Main navigation"><a href="/start/">Start here</a><a href="/#guides">Guides</a><a href="/#checks">Checks &amp; policies</a></nav>
+    <nav class="guide-header-nav" aria-label="Main navigation"><a href="/start/">Start here</a><a href="/#guides">Guides</a><a href="/labs/">Labs</a><a href="/#checks">Checks &amp; policies</a></nav>
     <div class="header-actions">
       <button type="button" class="repo-link search-trigger" data-search-open aria-haspopup="dialog" hidden>Search</button>
       <button type="button" id="theme-toggle" hidden>Theme</button>

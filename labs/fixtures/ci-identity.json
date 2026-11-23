@@ -1,0 +1,15 @@
+{
+  "policies": {
+    "github": {"iss":"https://token.actions.githubusercontent.com","aud":"security-toolbox-lab","repository_id":"10001","ref":"refs/heads/main","environment":"production"},
+    "gitlab": {"iss":"https://gitlab.com","aud":"security-toolbox-lab","project_id":"20001","ref_path":"refs/heads/main","ref_protected":"true"}
+  },
+  "cases": [
+    {"name":"github-allowed","provider":"github","claims":{"iss":"https://token.actions.githubusercontent.com","aud":"security-toolbox-lab","repository_id":"10001","ref":"refs/heads/main","environment":"production"}},
+    {"name":"github-wrong-audience","provider":"github","claims":{"iss":"https://token.actions.githubusercontent.com","aud":"unrelated-service","repository_id":"10001","ref":"refs/heads/main","environment":"production"}},
+    {"name":"github-wrong-issuer","provider":"github","claims":{"iss":"https://identity.example.invalid","aud":"security-toolbox-lab","repository_id":"10001","ref":"refs/heads/main","environment":"production"}},
+    {"name":"github-wrong-identity","provider":"github","claims":{"iss":"https://token.actions.githubusercontent.com","aud":"security-toolbox-lab","repository_id":"10002","ref":"refs/heads/main","environment":"production"}},
+    {"name":"github-missing-context","provider":"github","claims":{"iss":"https://token.actions.githubusercontent.com","aud":"security-toolbox-lab","repository_id":"10001","ref":"refs/heads/main"}},
+    {"name":"gitlab-allowed","provider":"gitlab","claims":{"iss":"https://gitlab.com","aud":"security-toolbox-lab","project_id":"20001","ref_path":"refs/heads/main","ref_protected":"true"}},
+    {"name":"gitlab-unprotected","provider":"gitlab","claims":{"iss":"https://gitlab.com","aud":"security-toolbox-lab","project_id":"20001","ref_path":"refs/heads/main","ref_protected":"false"}}
+  ]
+}

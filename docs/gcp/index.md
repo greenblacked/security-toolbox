@@ -187,3 +187,7 @@ gcloud resource-manager org-policies describe constraints/iam.disableServiceAcco
 - [Policies](https://github.com/greenblacked/security-toolbox/blob/main/policies/README.md) — the Conftest and Checkov rules that deny public buckets, open admin ports and service-account keys.
 
 Planned: Cloud Custodian policies for running resources under `policies/custodian/`.
+
+## Hands-on lab
+
+Practice with offline fixtures in the [GKE configuration review](/labs/gke-configuration/) lab.
