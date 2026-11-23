@@ -11,7 +11,9 @@ checks/gke/gke-report.sh --file prod.json
 
 ## Checklist
 
-FAIL items are blockers for a production cluster; WARN items need a recorded reason if left off.
+Exit 0 means no FAIL. Review WARN results, including controls with unavailable evidence. Exit 1 means at least one FAIL, and exit 2 means the cluster export was invalid or unavailable. Supply either a file or a live cluster and location. Redact certificate keys and other credentials from any cluster export you retain.
+
+The report prefers modern fields where present and honours explicit false. Private-node coverage comes from listed pool settings and the cluster defaults, with a pool override taking precedence. Empty or omitted pool lists leave pool-level coverage unverified for both Standard and Autopilot. When direct IP access is explicitly disabled, IP authorised networks are N/A. Verify DNS endpoint access separately. The report checks configuration. Independently verify actual NetworkPolicy enforcement and whether Binary Authorization rules are enforcing or in dry-run mode.
 
 | Control | Level | Why | How |
 | --- | --- | --- | --- |
@@ -21,11 +23,11 @@ FAIL items are blockers for a production cluster; WARN items need a recorded rea
 | Integrity monitoring | FAIL | Detects boot-level tampering on nodes | `--shielded-integrity-monitoring` on node pools |
 | Secure Boot | WARN | Blocks unsigned kernel modules; breaks some third-party drivers, so test first | `--shielded-secure-boot` on node pools |
 | Binary Authorization | WARN | Only images that meet a policy (allowed registries, attestations from your build) are admitted | `--binauthz-evaluation-mode=PROJECT_SINGLETON_POLICY_ENFORCE`, start the policy in dry-run, then enforce; pair with image signing (see the `image-hardening` skill) |
-| NetworkPolicy enforcement | FAIL | Without an enforcing dataplane, `NetworkPolicy` objects are silently ignored | GKE Dataplane V2 (`--enable-dataplane-v2`, default for Autopilot) or `--enable-network-policy`; then a default-deny policy per namespace |
+| NetworkPolicy configuration | FAIL | Without an enforcing dataplane, `NetworkPolicy` objects are silently ignored | GKE Dataplane V2 (`--enable-dataplane-v2`, default for Autopilot) or `--enable-network-policy`; then a default-deny policy per namespace |
 | Private nodes | FAIL | Nodes without external IPs are not directly reachable from the internet | `--enable-private-nodes`, Cloud NAT for egress |
 | Control plane authorised networks | WARN | Limits who can reach the Kubernetes API endpoint | `--enable-master-authorized-networks --master-authorized-networks=CIDR,...` or DNS-based endpoint with IAM |
 | Legacy ABAC disabled | FAIL | ABAC grants bypass RBAC | `--no-enable-legacy-authorization` |
-| No static client certificate | FAIL | A client certificate is a non-revocable cluster credential | Create clusters without `--issue-client-certificate`; rotate credentials if one exists |
+| No static client certificate issuance | FAIL / WARN when unavailable | A client certificate is a non-revocable cluster credential | Create clusters without `--issue-client-certificate`; rotate credentials if one exists |
 | Dedicated node service account | FAIL | The Compute default SA usually holds Editor on the project | Node SA with `roles/container.defaultNodeServiceAccount` only |
 | Release channel | WARN | Security patches arrive on a schedule instead of when someone remembers | `--release-channel=regular` (or `stable`) |
 | Node auto-upgrade | WARN | Keeps node images patched | `--enable-autoupgrade` on node pools, with maintenance windows |
@@ -45,4 +47,4 @@ spec:
 
 Add explicit allows per workload, including egress to `kube-dns` on port 53.
 
-Workload-level controls (privileged pods, hostPath, root) are covered by [`../kubernetes/`](../kubernetes/) and the Pod Security Admission `restricted` profile. Not covered here: Security Command Center findings, GKE security posture dashboard, Autopilot-specific defaults (most of the above are already enforced on Autopilot).
+Workload-level controls (privileged pods, hostPath, root) are covered by [`../kubernetes/`](../kubernetes/) and the Pod Security Admission `restricted` profile. Security Command Center findings, the GKE security posture dashboard and controls unavailable from the cluster description require separate evidence.

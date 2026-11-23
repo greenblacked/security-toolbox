@@ -19,6 +19,65 @@ expect() { # expect <exit code> <description> <command...>
 
 expect 0 "gke good cluster" gke/gke-report.sh --file gke/fixtures/cluster-good.json
 expect 1 "gke bad cluster" gke/gke-report.sh --file gke/fixtures/cluster-bad.json
+gke_good=gke/fixtures/cluster-good.json
+gke_report=gke/gke-report.sh
+
+gke_case() { # gke_case <exit> <description> <jq fixture variant> <expected output pattern>
+  local fixture
+  fixture=$(jq "$3" "$gke_good")
+  expect "$1" "$2" "$gke_report" --file /dev/stdin <<< "$fixture"
+  if ! grep -Eq "$4" "$output"; then
+    echo "FAIL - $2 (expected $4)"; cat "$output"; fail=1
+  fi
+}
+
+gke_case 0 "gke accepts legacy Binary Authorization" '.binaryAuthorization = {enabled:true}' \
+  '^PASS +Binary Authorization configured'
+gke_case 0 "gke prefers explicitly disabled evaluation mode" \
+  '.binaryAuthorization = {enabled:true,evaluationMode:"DISABLED"}' '^WARN +Binary Authorization configured'
+gke_case 0 "gke requires the exact Binary Authorization mode" \
+  '.binaryAuthorization.evaluationMode = "NOT_ENFORCED"' '^WARN +Binary Authorization configured'
+gke_case 0 "gke IP networks N/A when modern IP access is disabled" \
+  '.controlPlaneEndpointsConfig.ipEndpointsConfig = {enabled:false}' '^N/A +Control plane authorised networks'
+gke_case 0 "gke modern authorised networks override legacy settings" \
+  '.controlPlaneEndpointsConfig.ipEndpointsConfig = {enabled:true,authorizedNetworksConfig:{enabled:false}}' \
+  '^WARN +Control plane authorised networks'
+gke_case 0 "gke warns about an unrestricted CIDR" \
+  '.masterAuthorizedNetworksConfig.cidrBlocks = [{cidrBlock:"0.0.0.0/0"},{cidrBlock:"::/0"}]' \
+  '^WARN +Control plane authorised networks +an authorised CIDR allows all addresses'
+gke_case 0 "gke distinguishes private endpoint enforcement" \
+  '.controlPlaneEndpointsConfig.ipEndpointsConfig = {enabled:true,enablePublicEndpoint:false,authorizedNetworksConfig:{enabled:true}}' \
+  '^WARN +Control plane authorised networks +private endpoint allowlist'
+gke_case 0 "gke accepts configured private endpoint enforcement" \
+  '.controlPlaneEndpointsConfig.ipEndpointsConfig = {enabled:true,enablePublicEndpoint:false,authorizedNetworksConfig:{enabled:true,privateEndpointEnforcementEnabled:true}}' \
+  '^PASS +Control plane authorised networks'
+gke_case 1 "gke honours explicit public pool override" \
+  '.networkConfig.defaultEnablePrivateNodes = true | .nodePools[0].networkConfig.enablePrivateNodes = false' \
+  '^FAIL +Private nodes'
+gke_case 1 "gke honours explicit public cluster default" \
+  '.networkConfig.defaultEnablePrivateNodes = false' '^FAIL +Private nodes'
+gke_case 0 "gke Standard export may lack pools" 'del(.nodePools)' '^WARN +Private nodes'
+gke_case 0 "gke Autopilot pool evidence may be unavailable" \
+  'del(.nodePools) | .autopilot.enabled = true' '^WARN +Secure Boot on node pools +Autopilot'
+gke_case 1 "gke detects certificate issuance without returned certificate data" \
+  '.masterAuth.clientCertificateConfig.issueClientCertificate = true' '^FAIL +Static client certificate issuance'
+gke_case 0 "gke cannot verify omitted issuance configuration" \
+  'del(.masterAuth)' '^WARN +Static client certificate issuance'
+gke_case 1 "gke requires a project in the Workload Identity pool" \
+  '.workloadIdentityConfig.workloadPool = ".svc.id.goog"' '^FAIL +Workload Identity'
+gke_case 0 "gke rejects an empty release channel as unconfigured" \
+  '.releaseChannel.channel = ""' '^WARN +Release channel set'
+
+for invalid_cluster in '' '{}' '{"error":{"code":403},"name":"x","location":"y"}' \
+  '{"name":"x","location":"y","nodePools":[1]}' '{"name":"x","location":"y","legacyAbac":{"enabled":"false"}}' \
+  '{"name":"x","location":"y"} {"name":"x","location":"y"}'; do
+  expect 2 "gke rejects invalid cluster description" "$gke_report" --file /dev/stdin <<< "$invalid_cluster"
+  if grep -qE '^(PASS|FAIL|WARN|failures:)' "$output"; then
+    echo "FAIL - invalid GKE description emitted control results"; fail=1
+  fi
+done
+expect 2 "gke rejects competing input modes" "$gke_report" --file "$gke_good" --cluster sample --location europe-west1
+
 expect 0 "kubernetes good workloads" kubernetes/cis-workload-report.sh \
   --pods kubernetes/fixtures/pods-good.json --bindings kubernetes/fixtures/bindings-good.json
 expect 1 "kubernetes bad workloads" kubernetes/cis-workload-report.sh \

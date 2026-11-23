@@ -8,7 +8,7 @@
   "privateClusterConfig": {"enablePrivateNodes": true},
   "masterAuthorizedNetworksConfig": {"enabled": true},
   "legacyAbac": {},
-  "masterAuth": {},
+  "masterAuth": {"clientCertificateConfig": {"issueClientCertificate": false}},
   "releaseChannel": {"channel": "REGULAR"},
   "nodePools": [
     {
