@@ -48,9 +48,9 @@ jobs:
           ./node_modules/.bin/wrangler deploy --dry-run --config wrangler.json \
             --no-autoconfig --no-install-skills
 
-  build-dev:
-    name: build and attest dev site
-    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+  build-preview:
+    name: build and attest ${{ github.ref_name }} site
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/stage')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -71,7 +71,7 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: '3.13'
-      - name: Build and package the final dev site
+      - name: Build and package the final preview site
         run: |
           set -Eeuo pipefail
           npm ci --ignore-scripts
@@ -79,35 +79,32 @@ jobs:
           python scripts/prepare_stage_site.py
           printf '%s\n' "$GITHUB_SHA" > site/version.txt
           python scripts/check_site.py site
-          tar -czf "$RUNNER_TEMP/dev-site.tar.gz" -C site .
-      - name: Attest the dev deployment archive
+          tar -czf "$RUNNER_TEMP/preview-site.tar.gz" -C site .
+      - name: Attest the preview deployment archive
         id: attest
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6  # v4.2.2
         with:
-          subject-path: ${{ runner.temp }}/dev-site.tar.gz
+          subject-path: ${{ runner.temp }}/preview-site.tar.gz
       - name: Stage the signed bundle for transfer
         env:
           BUNDLE_PATH: ${{ steps.attest.outputs.bundle-path }}
-        run: cp -- "$BUNDLE_PATH" "$RUNNER_TEMP/dev-site.bundle.jsonl"
+        run: cp -- "$BUNDLE_PATH" "$RUNNER_TEMP/preview-site.bundle.jsonl"
       - name: Upload the archive and attestation
         id: upload
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
-          name: dev-site-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ${{ github.ref_name }}-site-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            ${{ runner.temp }}/dev-site.tar.gz
-            ${{ runner.temp }}/dev-site.bundle.jsonl
+            ${{ runner.temp }}/preview-site.tar.gz
+            ${{ runner.temp }}/preview-site.bundle.jsonl
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
 
   deploy:
     name: deploy ${{ github.ref_name }}
-    needs: build-dev
-    if: >-
-      !cancelled() && github.event_name == 'push' &&
-      (github.ref == 'refs/heads/stage' ||
-      (github.ref == 'refs/heads/dev' && needs.build-dev.result == 'success'))
+    needs: build-preview
+    if: needs.build-preview.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -127,47 +124,41 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: '3.13'
-      - name: Download the dev build from this workflow run
-        if: github.ref == 'refs/heads/dev'
+      - name: Download the preview build from this workflow run
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
-          artifact-ids: ${{ needs.build-dev.outputs.artifact-id }}
-          path: ${{ runner.temp }}/verified-dev-site
-      - name: Verify dev provenance before extracting deployment assets
-        if: github.ref == 'refs/heads/dev'
-        id: dev-assets
+          artifact-ids: ${{ needs.build-preview.outputs.artifact-id }}
+          path: ${{ runner.temp }}/verified-preview-site
+      - name: Verify preview provenance before extracting deployment assets
+        id: preview-assets
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
-          artifact="$RUNNER_TEMP/verified-dev-site"
-          archive="$artifact/dev-site.tar.gz"
+          artifact="$RUNNER_TEMP/verified-preview-site"
+          archive="$artifact/preview-site.tar.gz"
+          case "$GITHUB_REF" in
+            refs/heads/dev|refs/heads/stage) ;;
+            *) echo '::error::unexpected preview branch'; exit 1 ;;
+          esac
           gh attestation verify "$archive" \
-            --bundle "$artifact/dev-site.bundle.jsonl" \
+            --bundle "$artifact/preview-site.bundle.jsonl" \
             --repo "$GITHUB_REPOSITORY" \
             --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/deploy.yml" \
             --signer-digest "$GITHUB_SHA" \
-            --source-ref refs/heads/dev \
+            --source-ref "$GITHUB_REF" \
             --source-digest "$GITHUB_SHA" \
             --predicate-type https://slsa.dev/provenance/v1 \
             --deny-self-hosted-runners
 
           site_sha256=$(sha256sum "$archive")
-          printf 'Verified dev site archive sha256:%s for %s\n' "${site_sha256%% *}" "$GITHUB_SHA"
+          printf 'Verified %s site archive sha256:%s for %s\n' "$GITHUB_REF_NAME" "${site_sha256%% *}" "$GITHUB_SHA"
           mv -- site "$artifact/checkout-site"
           mkdir site
           tar -xzf "$archive" --no-same-owner --no-same-permissions -C site
           cmp -s site/version.txt <(printf '%s\n' "$GITHUB_SHA")
           archive_sha256=$(sha256sum site/labs/security-toolbox-labs.tar.gz)
           printf 'lab_archive_sha256=%s\n' "${archive_sha256%% *}" >> "$GITHUB_OUTPUT"
-      - name: Build and mark staging assets
-        if: github.ref == 'refs/heads/stage'
-        run: |
-          set -Eeuo pipefail
-          npm ci --ignore-scripts
-          node scripts/build_site.cjs
-          python scripts/prepare_stage_site.py
-          printf '%s\n' "$GITHUB_SHA" > site/version.txt
       - name: Install the pinned deployment tooling
         run: |
           set -Eeuo pipefail
@@ -238,11 +229,10 @@ jobs:
             exit 1
           fi
           printf 'url=%s\n' "$expected_domain" >> "$GITHUB_OUTPUT"
-      - name: Verify the dev lab routes and exact published archive
-        if: github.ref == 'refs/heads/dev'
+      - name: Verify the preview lab routes and exact published archive
         env:
           # Use the same named preview as the primary smoke. The custom
           # domain can challenge CI requests to HTML and download routes.
-          DEV_URL: ${{ steps.deploy.outputs.url }}
-          LAB_ARCHIVE_SHA256: ${{ steps.dev-assets.outputs.lab_archive_sha256 }}
-        run: scripts/smoke_dev_labs.sh "$DEV_URL" "$LAB_ARCHIVE_SHA256"
+          PREVIEW_URL: ${{ steps.deploy.outputs.url }}
+          LAB_ARCHIVE_SHA256: ${{ steps.preview-assets.outputs.lab_archive_sha256 }}
+        run: scripts/smoke_dev_labs.sh "$PREVIEW_URL" "$LAB_ARCHIVE_SHA256"
