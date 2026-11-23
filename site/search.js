@@ -13,23 +13,25 @@
   dialog.setAttribute('aria-labelledby', 'search-title');
   dialog.innerHTML = `
     <div class="search-heading">
-      <h2 id="search-title">Search guides</h2>
+      <h2 id="search-title">Search toolbox</h2>
       <button type="button" class="search-close" aria-label="Close search">&#215;</button>
     </div>
     <form role="search">
       <label for="search-query">Search terms</label>
       <div class="search-input-wrap">
         ${searchIcon}
-        <input id="search-query" name="q" type="search" autocomplete="off" autofocus>
+        <input id="search-query" name="q" type="search" placeholder="OIDC or pod security" autocomplete="off" autofocus>
       </div>
     </form>
     <p id="search-status" role="status"></p>
+    <a class="text-link search-browse" href="/#guides" hidden>Browse topics</a>
     <ul id="search-results"></ul>`;
   document.body.append(dialog);
 
   const form = dialog.querySelector('form');
   const input = dialog.querySelector('input');
   const status = dialog.querySelector('#search-status');
+  const browse = dialog.querySelector('.search-browse');
   const results = dialog.querySelector('#search-results');
   let indexRequest;
   let returnFocus;
@@ -63,6 +65,10 @@
   // Prefer the section that mentions the most terms, so the deep link and the
   // snippet point at the same place.
   function excerpt(doc, terms) {
+    const title = doc.title.toLowerCase();
+    if (doc.summary && terms.every(term => title.includes(term))) {
+      return {text: doc.summary, section: null};
+    }
     const sections = doc.sections || [];
     const matches = terms.map(term => term.toLowerCase());
     const ranked = sections
@@ -103,7 +109,8 @@
   function render(entries, terms, query) {
     results.replaceChildren();
     if (!entries.length) {
-      status.textContent = `No resources match “${query}”. Try fewer words, or browse the guides from the homepage.`;
+      status.textContent = `No resources match "${query}". Try fewer words.`;
+      browse.hidden = false;
       return;
     }
     status.textContent = `${entries.length} ${entries.length === 1 ? 'resource' : 'resources'} found for “${query}”.`;
@@ -112,6 +119,12 @@
       const link = document.createElement('a');
       const {text, section} = excerpt(entry.doc, terms);
       link.href = entry.doc.location + (section && section.id ? '#' + section.id : '');
+      if (entry.doc.category) {
+        const category = document.createElement('span');
+        category.className = 'search-category';
+        category.textContent = entry.doc.category;
+        link.append(category);
+      }
       const title = document.createElement('strong');
       title.textContent = entry.doc.title;
       link.append(title);
@@ -153,8 +166,10 @@
     const query = input.value.trim();
     const terms = words(query);
     results.replaceChildren();
+    browse.hidden = true;
     if (!terms.length) {
-      status.textContent = 'Enter a word or phrase to search.';
+      status.textContent = 'Find guides, checks, policies, and security skills.';
+      browse.hidden = false;
       return;
     }
     status.textContent = 'Searching…';
@@ -169,6 +184,7 @@
     } catch {
       if (dialog.open && input.value.trim() === query) {
         status.textContent = 'Search is unavailable. Please try again.';
+        browse.hidden = false;
       }
     }
   }
@@ -193,7 +209,7 @@
     const floating = document.createElement('button');
     floating.type = 'button';
     floating.className = 'search-floating';
-    floating.setAttribute('aria-label', 'Search guides');
+    floating.setAttribute('aria-label', 'Search toolbox');
     floating.setAttribute('aria-haspopup', 'dialog');
     floating.innerHTML = searchIcon;
     enableTrigger(floating);
@@ -206,6 +222,11 @@
     observer.observe(headerTrigger);
   }
   dialog.querySelector('.search-close').addEventListener('click', () => dialog.close());
+  browse.addEventListener('click', event => {
+    if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    returnFocus = null;
+    dialog.close();
+  });
   dialog.addEventListener('click', event => {
     if (event.target !== dialog) return;
     const bounds = dialog.getBoundingClientRect();
