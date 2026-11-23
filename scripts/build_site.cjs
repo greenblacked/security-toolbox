@@ -59,6 +59,8 @@ add('guides', 'Kubernetes / GKE', 'docs/kubernetes/index.md', '/kubernetes/');
 add('guides', 'Google Cloud', 'docs/gcp/index.md', '/gcp/');
 add('guides', 'Terraform', 'docs/terraform/index.md', '/terraform/');
 add('guides', 'GitHub Actions', 'docs/github/index.md', '/github/');
+add('guides', 'GitLab CI runner isolation', 'docs/gitlab/index.md', '/gitlab/');
+add('guides', 'Cloudflare Workers deployment security', 'docs/cloudflare/index.md', '/cloudflare/');
 add('guides', 'Supply chain', 'docs/supply-chain/index.md', '/supply-chain/');
 add('guides', 'Secrets', 'docs/secrets/index.md', '/secrets/');
 
@@ -311,7 +313,7 @@ for (const page of pages) {
     const current = group === page.group;
     const currentValue = page.reference ? 'location' : 'page';
     const links = pages.filter(item => item.group === group && !item.reference)
-      .map(item => `<li><a href="${item.url}"${item.url === navCurrent ? ` aria-current="${currentValue}"` : ''}>${escape(item.label)}</a></li>`)
+      .map(item => `<li><a href="${escape(item.url)}"${item.url === navCurrent ? ` aria-current="${currentValue}"` : ''}>${escape(item.label)}</a></li>`)
       .join('');
     return `<li class="nav-group"><details${current ? ' open' : ''}><summary class="nav-group-label">${escape(groupLabel)}</summary><ul>${links}</ul></details></li>`;
   }).join('');
@@ -320,7 +322,7 @@ for (const page of pages) {
   if (page.reference) {
     const parent = pages.find(item => item.url === page.parent);
     crumbs.push(`<li><a href="/skills/">Skills</a></li>`);
-    crumbs.push(`<li><a href="${page.parent}">${escape(parent ? parent.label : 'Skills')}</a></li>`);
+    crumbs.push(`<li><a href="${escape(page.parent)}">${escape(parent ? parent.label : 'Skills')}</a></li>`);
   } else if (page.group === 'skills') {
     if (page.url !== '/skills/') crumbs.push(`<li><a href="/skills/">Skills</a></li>`);
   } else {
@@ -333,8 +335,8 @@ for (const page of pages) {
   const previous = index > 0 ? siblings[index - 1] : null;
   const next = index >= 0 && index < siblings.length - 1 ? siblings[index + 1] : null;
   const pager = (previous || next) ? `<nav class="page-nav" aria-label="Previous and next pages">
-      ${previous ? `<a class="page-nav-link" href="${previous.url}" rel="prev"><span aria-hidden="true">←</span><span><small>Previous</small>${escape(previous.label)}</span></a>` : '<span></span>'}
-      ${next ? `<a class="page-nav-link next" href="${next.url}" rel="next"><span><small>Next</small>${escape(next.label)}</span><span aria-hidden="true">→</span></a>` : ''}
+      ${previous ? `<a class="page-nav-link" href="${escape(previous.url)}" rel="prev"><span aria-hidden="true">←</span><span><small>Previous</small>${escape(previous.label)}</span></a>` : '<span></span>'}
+      ${next ? `<a class="page-nav-link next" href="${escape(next.url)}" rel="next"><span><small>Next</small>${escape(next.label)}</span><span aria-hidden="true">→</span></a>` : ''}
     </nav>` : '';
 
   const references_ = page.url.startsWith('/skills/') && !page.reference
@@ -343,13 +345,13 @@ for (const page of pages) {
   const referenceList = references_.length
     ? `<aside class="reference-list" aria-labelledby="reference-title">
       <h2 id="reference-title">Reference files</h2>
-      <ul>${references_.map(item => `<li><a href="${item.url}">${escape(item.label)}</a></li>`).join('')}</ul>
+      <ul>${references_.map(item => `<li><a href="${escape(item.url)}">${escape(item.label)}</a></li>`).join('')}</ul>
     </aside>`
     : '';
 
   const updated = lastUpdated(page.source);
   const editLink = page.source
-    ? `<a href="${repoUrl}/blob/main/${page.source}">Edit this page on GitHub <span aria-hidden="true">↗</span></a>`
+    ? `<a href="${escape(`${repoUrl}/blob/main/${page.source}`)}">Edit this page on GitHub <span aria-hidden="true">↗</span></a>`
     : '';
   const footer = (editLink || updated)
     ? `<footer class="guide-footer">${editLink}${updated ? `<span class="updated">Last updated <time datetime="${updated}">${updated}</time></span>` : ''}</footer>`
