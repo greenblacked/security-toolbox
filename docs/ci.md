@@ -22,8 +22,8 @@ The preview build job signs the final site archive after writing the revision
 marker and adding noindex. The deploy job downloads that run's artifact by ID
 and verifies its digest, repository, signer workflow, expected branch and commit
 before extraction. The named preview must serve the exact CSS and theme script
-bytes from the verified archive, and the custom domain must serve the expected
-revision.
+bytes from the verified archive and include `X-Content-Type-Options: nosniff` on
+both responses. The custom domain must serve the expected revision.
 
 For rollback after two successful signed deployments, pick the known-good run
 for the same branch and re-run its deploy job only. The original signed archive
