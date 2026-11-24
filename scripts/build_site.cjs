@@ -13,6 +13,18 @@ const root = path.resolve(__dirname, '..');
 const target = path.resolve(process.argv[2] || path.join(root, 'site'));
 const siteUrl = 'https://security.szolotov.com';
 const repoUrl = 'https://github.com/greenblacked/security-toolbox';
+const home = fs.readFileSync(path.join(root, 'site/index.html'), 'utf8');
+const mainNav = home.match(/<nav class="site-nav"[^>]*>[\s\S]*?<\/nav>/)?.[0];
+if (!mainNav) throw new Error('Homepage main navigation is missing');
+let sourceRevision;
+try {
+  sourceRevision = execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim();
+} catch {
+  sourceRevision = process.env.GITHUB_SHA;
+}
+if (!/^[a-f0-9]{40}$/.test(sourceRevision || '')) sourceRevision = null;
 
 const escape = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;','<': '&lt;','>': '&gt;','"': '&quot;',"'": '&#39;'}[c]));
 const titleCase = s => s.split('-').map(w => w ? w[0].toUpperCase() + w.slice(1) : w).join(' ');
@@ -54,6 +66,7 @@ add('overview', 'Security operations flow', 'docs/start.md', '/start/');
 add('overview', 'Red, blue, and purple teams', 'docs/teams.md', '/teams/');
 add('overview', 'Glossary', 'docs/glossary.md', '/glossary/');
 add('overview', 'Security domains', 'docs/index.md', '/about/');
+add('overview', 'Project story', 'docs/story.md', '/story/');
 add('overview', 'Contributing', 'docs/contributing.md', '/contributing/');
 
 add('guides', 'Kubernetes / GKE', 'docs/kubernetes/index.md', '/kubernetes/');
@@ -207,7 +220,15 @@ md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
   return linkOpen(tokens, idx, options, env, self);
 };
 // Keep the table's native layout and semantics inside a locally scrollable container.
-md.renderer.rules.table_open = () => '<div class="table-scroll" role="region" aria-label="Scrollable table" tabindex="0">\n<table>\n';
+md.renderer.rules.table_open = (tokens, index, options, env) => {
+  const columns = [];
+  for (let i = index + 1; i < tokens.length && tokens[i].type !== 'thead_close'; i++) {
+    if (tokens[i].type === 'inline') columns.push(inlineText(tokens[i]));
+  }
+  env.tables = (env.tables || 0) + 1;
+  const label = columns.length ? `Table ${env.tables}: ${columns.join(', ')}` : `Table ${env.tables}`;
+  return `<div class="table-scroll" data-table-label="${escape(label)}">\n<table>\n`;
+};
 md.renderer.rules.table_close = () => '</table>\n</div>\n';
 
 // Every code block gets a copy button. The markup is built here because the CSP
@@ -301,28 +322,28 @@ for (const page of pages) {
 
   // Search: the page plus one entry per H2 so a hit can deep-link to its section.
   const sections = [];
-  let section = null;
+  const lead = {text: ''};
+  let section = lead;
   for (const token of tokens) {
     if (token.type === 'heading_open' && token.tag === 'h2') {
-      section = {id: token.attrGet('id'), title: '', text: ''};
+      const id = token.attrGet('id');
+      section = {id, title: toc[sections.length][1], text: ''};
       sections.push(section);
     } else if (token.type === 'inline') {
-      if (section) section.text += ' ' + inlineText(token);
+      section.text += ' ' + inlineText(token);
+    } else if (token.type === 'fence' && /^(?:bash|sh|zsh|shell|console)(?:\s|$)/i.test(token.info.trim())) {
+      // Index command names and paths without adding configuration dumps.
+      section.text += ' ' + token.content.slice(0, 512);
     }
   }
-  for (const entry of sections) {
-    const heading = toc.find(([id]) => id === entry.id);
-    entry.title = heading ? heading[1] : '';
-    entry.text = plainText(entry.text);
-  }
-  const bodyText = plainText(tokens.filter(token => token.type === 'inline').map(inlineText).join(' '));
+  for (const entry of [lead, ...sections]) entry.text = plainText(entry.text);
   const description = truncate(leadParagraph(tokens) || page.label);
   searchItems.push({
     title: page.label,
     category: page.reference ? 'Skill reference' : GROUP_LABELS[page.group],
     location: page.url,
     summary: description,
-    text: bodyText,
+    text: lead.text,
     sections,
   });
   sitemap.push(page.url);
@@ -346,6 +367,8 @@ for (const page of pages) {
     crumbs.push(`<li><a href="${escape(page.parent)}">${escape(parent ? parent.label : 'Skills')}</a></li>`);
   } else if (page.group === 'skills') {
     if (page.url !== '/skills/') crumbs.push(`<li><a href="/skills/">Skills</a></li>`);
+  } else if (page.group === 'labs') {
+    if (page.url !== '/labs/') crumbs.push('<li><a href="/labs/">Labs</a></li>');
   } else {
     crumbs.push(`<li><span>${escape(GROUP_LABELS[page.group])}</span></li>`);
   }
@@ -371,8 +394,8 @@ for (const page of pages) {
     : '';
 
   const updated = lastUpdated(page.source);
-  const editLink = page.source && page.group !== 'labs'
-    ? `<a href="${escape(`${repoUrl}/blob/main/${page.source}`)}">Edit this page on GitHub <span aria-hidden="true">↗</span></a>`
+  const editLink = page.source && sourceRevision && page.group !== 'labs'
+    ? `<a href="${escape(`${repoUrl}/blob/${sourceRevision}/${page.source}`)}">View source on GitHub <span aria-hidden="true">↗</span></a>`
     : '';
   const footer = (editLink || updated)
     ? `<footer class="guide-footer">${editLink}${updated ? `<span class="updated">Last updated <time datetime="${updated}">${updated}</time></span>` : ''}</footer>`
@@ -415,7 +438,7 @@ for (const page of pages) {
   <script src="/search.js" defer></script>
   <script src="/motion.js" defer></script>
   <script src="/code-copy.js" defer></script>
-  ${toc.length ? '<script src="/guide-navigation.js" defer></script>' : ''}
+  ${toc.length || env.tables ? '<script src="/guide-navigation.js" defer></script>' : ''}
   <script type="application/ld+json">${structuredData}</script>
 </head>
 <body>
@@ -423,18 +446,18 @@ for (const page of pages) {
   <a class="skip" href="#main">Skip to content</a>
   <header class="site-header"><div class="wrap header-inner">
     <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><rect x="1" y="1" width="30" height="30" rx="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 10.5 15 16 9.5 21.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="17.5" y="20.4" width="6.6" height="3" rx="1.5" fill="currentColor"/></svg></span>Security Toolbox</a>
-    <nav class="guide-header-nav" aria-label="Main navigation"><a href="/start/">Start here</a><a href="/#guides">Guides</a><a href="/labs/">Labs</a><a href="/#checks">Checks &amp; policies</a></nav>
     <div class="header-actions">
       <button type="button" class="repo-link search-trigger" data-search-open aria-haspopup="dialog" hidden>Search</button>
       <button type="button" id="theme-toggle" hidden>Theme</button>
     </div>
+    ${mainNav.replace(`href="${page.url}"`, `href="${page.url}" aria-current="page"`)}
   </div></header>
   <div class="wrap guide-layout">
     <aside class="guide-sidebar"><nav aria-label="Guide navigation"><ul class="nav-groups">${nav}</ul></nav></aside>
     <details class="guide-menu"><summary>Guide navigation</summary><nav aria-label="Guide navigation"><ul class="nav-groups">${nav}</ul></nav></details>
     <main id="main" tabindex="-1">
       <nav class="breadcrumb" aria-label="Breadcrumb"><ol>${crumbs.join('')}</ol></nav>
-      <article class="guide-content" data-reveal>${articleContent}${referenceList}</article>
+      <article class="guide-content${page.url === '/labs/' ? ' lab-catalog' : ''}" data-reveal>${articleContent}${referenceList}</article>
       ${footer}
       ${pager}
     </main>

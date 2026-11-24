@@ -21,14 +21,15 @@
       <div class="search-form-row">
         <div class="search-input-wrap">
           ${searchIcon}
-          <input id="search-query" name="q" type="search" placeholder="OIDC or pod security" autocomplete="off" enterkeyhint="search" autofocus>
+          <input id="search-query" name="q" type="search" maxlength="120" placeholder="OIDC or pod security" autocomplete="off" enterkeyhint="search" autofocus>
         </div>
         <button type="submit" class="search-submit">Search</button>
       </div>
     </form>
     <p id="search-status" role="status"></p>
     <a class="text-link search-browse" href="/#guides" hidden>Browse topics</a>
-    <ul id="search-results"></ul>`;
+    <div class="search-results-scroll"><ul id="search-results"></ul>
+    <button type="button" class="repo-link search-more" hidden>Show more results</button></div>`;
   document.body.append(dialog);
 
   const form = dialog.querySelector('form');
@@ -37,6 +38,11 @@
   const status = dialog.querySelector('#search-status');
   const browse = dialog.querySelector('.search-browse');
   const results = dialog.querySelector('#search-results');
+  const more = dialog.querySelector('.search-more');
+  const scroller = dialog.querySelector('.search-results-scroll');
+  const pageSize = 8;
+  let currentResults;
+  let rendered = 0;
   let indexRequest;
   let searchVersion = 0;
   let returnFocus;
@@ -93,7 +99,7 @@
       bestHits = hits;
       if (hits === terms.length) break;
     }
-    const text = best ? best.text : doc.text;
+    const text = best ? best.text : doc.text || doc.summary;
     const lower = text.toLowerCase();
     let at = -1;
     for (const term of terms) {
@@ -122,17 +128,32 @@
     return fragment;
   }
 
-  function render(entries, terms, query) {
+  function render(entries, terms, query, remembered) {
+    currentResults = {entries, terms};
+    rendered = 0;
     if (!entries.length) {
       status.textContent = `No resources match "${query}". Try fewer words.`;
       browse.hidden = false;
       return;
     }
     status.textContent = `${entries.length} ${entries.length === 1 ? 'resource' : 'resources'} found for “${query}”.`;
+    appendResults(remembered?.count || pageSize);
+    submit.textContent = 'Open first';
+    if (remembered) {
+      const link = [...results.querySelectorAll('a')].find(item => item.pathname + item.hash === remembered.target);
+      link?.focus({preventScroll: true});
+      scroller.scrollTop = remembered.scroll;
+      dialog.scrollTop = remembered.dialogScroll;
+    }
+  }
+
+  function appendResults(amount) {
+    const {entries, terms} = currentResults;
     const fragment = document.createDocumentFragment();
     // words() only yields letters and numbers, which are literal regex matches.
     const pattern = new RegExp(`(${terms.join('|')})`, 'gi');
-    for (const entry of entries) {
+    const batch = entries.slice(rendered, rendered + amount);
+    for (const entry of batch) {
       const item = document.createElement('li');
       const link = document.createElement('a');
       const {text, section} = excerpt(entry.doc, terms);
@@ -165,8 +186,15 @@
       fragment.append(item);
     }
     results.append(fragment);
-    submit.textContent = 'Open first';
+    rendered += batch.length;
+    more.hidden = rendered === entries.length;
   }
+
+  more.addEventListener('click', () => {
+    const firstNew = rendered;
+    appendResults(pageSize);
+    results.children[firstNew]?.querySelector('a')?.focus();
+  });
 
   function loadIndex() {
     indexRequest ||= fetch('/search/search_index.json')
@@ -177,7 +205,7 @@
       .then(data => data.docs.map(doc => ({
         doc,
         title: doc.title.toLowerCase(),
-        body: doc.text.toLowerCase(),
+        body: [doc.text, ...(doc.sections || []).map(section => section.text)].join(' ').toLowerCase(),
         headings: (doc.sections || []).map(section => section.title.toLowerCase()),
       })))
       .catch(error => {
@@ -187,15 +215,17 @@
     return indexRequest;
   }
 
-  async function search() {
+  async function search(remembered) {
     const version = ++searchVersion;
     const query = input.value.trim();
     const terms = words(query);
     results.replaceChildren();
+    more.hidden = true;
+    currentResults = undefined;
     submit.textContent = 'Search';
     browse.hidden = true;
     if (!terms.length) {
-      status.textContent = 'Find guides, checks, policies, and security skills.';
+      status.textContent = 'Find guides, checks, policies, labs, and security skills.';
       browse.hidden = false;
       return;
     }
@@ -207,7 +237,7 @@
         .map(entry => ({doc: entry.doc, score: score(entry, terms)}))
         .filter(entry => entry.score > 0)
         .sort((a, b) => b.score - a.score || a.doc.title.localeCompare(b.doc.title));
-      render(entries, terms, query);
+      render(entries, terms, query, remembered);
     } catch {
       if (dialog.open && version === searchVersion && input.value.trim() === query) {
         status.textContent = 'Search is unavailable. Please try again.';
@@ -216,13 +246,13 @@
     }
   }
 
-  function openSearch(trigger) {
+  function openSearch(trigger, remembered) {
     if (dialog.open) return;
     returnFocus = trigger;
     dialog.showModal();
     input.focus();
     input.select();
-    search();
+    search(remembered);
   }
 
   function enableTrigger(button) {
@@ -234,9 +264,9 @@
   if (headerTrigger) {
     const shortcut = document.createElement('kbd');
     shortcut.className = 'search-shortcut';
-    shortcut.textContent = '/';
+    shortcut.textContent = 'Ctrl/⌘ K';
     shortcut.setAttribute('aria-hidden', 'true');
-    headerTrigger.setAttribute('aria-keyshortcuts', '/');
+    headerTrigger.setAttribute('aria-keyshortcuts', 'Control+k Meta+k');
     headerTrigger.append(shortcut);
   }
   document.querySelectorAll('[data-search-open]').forEach(enableTrigger);
@@ -271,7 +301,7 @@
   dialog.addEventListener('close', () => {
     if (!dialog.open) returnFocus?.focus({preventScroll: true});
   });
-  input.addEventListener('input', search);
+  input.addEventListener('input', () => search());
   form.addEventListener('submit', event => {
     event.preventDefault();
     const first = results.querySelector('a');
@@ -279,9 +309,16 @@
     else search();
   });
   results.addEventListener('click', event => {
-    if (event.target.closest('a') && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
-      dialog.close();
+    const link = event.target.closest('a');
+    if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    // A same-page anchor jump keeps its native history behavior.
+    if (link.pathname !== location.pathname) {
+      history.replaceState({...history.state, toolboxSearch: {
+        query: input.value, count: rendered, scroll: scroller.scrollTop,
+        dialogScroll: dialog.scrollTop, target: link.pathname + link.hash,
+      }}, '');
     }
+    dialog.close();
   });
   dialog.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
@@ -302,12 +339,23 @@
   document.addEventListener('keydown', event => {
     if (event.defaultPrevented || event.altKey || dialog.open || document.querySelector('dialog[open]')) return;
     const shortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k';
-    const target = event.target;
-    if (!shortcut && (event.key !== '/' || event.ctrlKey || event.metaKey ||
-      (target instanceof HTMLElement && (target.isContentEditable || target.matches('input, textarea, select'))))) return;
+    if (!shortcut) return;
     event.preventDefault();
     openSearch(document.activeElement);
   });
+
+  function restoreSearch() {
+    const remembered = history.state?.toolboxSearch;
+    if (!remembered) return;
+    const state = {...history.state};
+    delete state.toolboxSearch;
+    history.replaceState(state, '');
+    input.value = remembered.query;
+    openSearch(headerTrigger, remembered);
+  }
+
+  // pageshow also runs when the browser restores the page from its back cache.
+  addEventListener('pageshow', restoreSearch);
 
   const url = new URL(location.href);
   const initial = url.pathname === '/' && url.searchParams.get('q');
