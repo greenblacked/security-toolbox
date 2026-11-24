@@ -184,6 +184,24 @@ class PrepareStageSite(unittest.TestCase):
         self.assertTrue(merged.endswith(NOINDEX_BLOCK))
         self.assertEqual(merge_headers(merged), merged)
 
+    def test_merge_headers_extends_the_catch_all_block(self) -> None:
+        existing = "/*\n  X-Frame-Options: DENY\n\n/fonts/*\n  Cache-Control: public\n"
+        merged = merge_headers(existing)
+        self.assertIn("/*\n  X-Frame-Options: DENY\n  X-Robots-Tag: noindex\n", merged)
+        self.assertEqual([line for line in merged.splitlines() if line.strip() == "/*"], ["/*"])
+        self.assertEqual(merge_headers(merged), merged)
+
+    def test_untracked_headers_are_merged_not_replaced(self) -> None:
+        # A preview must keep the security headers it ships with. Only a missing
+        # file may be created from scratch.
+        site, _, _ = self._site()
+        existing = "/*\n  X-Frame-Options: DENY\n"
+        (site / "_headers").write_text(existing, encoding="utf-8")
+        self.assertEqual(prepare_main([str(site)]), 0)
+        merged = (site / "_headers").read_text(encoding="utf-8")
+        self.assertIn("X-Frame-Options: DENY", merged)
+        self.assertIn("X-Robots-Tag: noindex", merged)
+
     def test_merges_tracked_headers(self) -> None:
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)

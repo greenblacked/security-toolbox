@@ -16,6 +16,22 @@ A push to `main` runs Cut release. It requires the pushed SHA to be current `mai
 
 Release also accepts a manually pushed tag or manual dispatch on a tag, validates the same exact promotion and current `main` HEAD, publishes a GitHub Release with changelog notes, then enters the protected `production` environment for deployment. The Worker job repeats provenance verification and checks that `main` has not moved immediately before deployment. Serialize promotions: a newer push can race the final check. The job builds the site and guides, records the active Worker version, deploys, verifies the commit and contents on `workers.dev`, confirms the custom domain and checks the new version serves 100% of traffic. If a later step fails after deployment begins, it attempts rollback to the recorded version. Custom-domain requests from GitHub runners may be blocked by Bot Fight Mode, so they are informational. Cut and release publication do not use Cloudflare credentials.
 
+## Verified preview artifacts
+
+The preview build job signs the final site archive after writing the revision
+marker and adding noindex. The deploy job downloads that run's artifact by ID
+and verifies its digest, repository, signer workflow, expected branch and commit
+before extraction. The named preview must serve the exact CSS and theme script
+bytes from the verified archive, and the custom domain must serve the expected
+revision.
+
+For rollback after two successful signed deployments, pick the known-good run
+for the same branch and re-run its deploy job only. The original signed archive
+must still be available within its seven-day retention window. Verify the
+reported archive digest, the named preview assets and the custom domain
+revision after the replay. During initial rollout or after artifact expiration,
+recover through a reviewed source revert and a new signed build.
+
 ## Credentials and GitHub environments
 
 Create `development` and `staging` GitHub environments restricted to `dev` and `stage`, respectively. The existing repository secret `CLOUDFLARE_API_TOKEN` is used for deployments unless an optional environment-specific secret is set: `CLOUDFLARE_DEV_API_TOKEN`, `CLOUDFLARE_STAGE_API_TOKEN`, or `CLOUDFLARE_PROD_API_TOKEN`. Set `CLOUDFLARE_ACCOUNT_ID` as a repository or environment variable or secret. Retain the required reviewer on the `production` environment. The shared token must have the permissions needed for each deployment. Scope and rotate tokens as narrowly as Cloudflare supports. Tokens in the same account may still have broad Worker script authority; strict provider isolation requires separate accounts or a broker that enforces per-Worker access. Deploying custom domains requires appropriate Workers and zone permissions. Never use the global API key.
@@ -34,7 +50,7 @@ The first release cannot roll back if `security` has no previous production depl
 
 Enable preview traffic on the production custom domain and verify DNS and certificate readiness. Then promote reviewed revisions through `dev` and `stage` to upload their named previews. Existing direct domain routes can shadow preview routing; assess and perform any DNS or route cutover separately. Removing obsolete Wrangler config files does not remove Workers, routes, or DNS records. Check the reported named workers.dev URL and each custom hostname directly: `curl -fsS https://stage.security.szolotov.com/version.txt` and `curl -fsS https://dev.security.szolotov.com/version.txt` must each equal the full SHA of the corresponding branch deployment, with no redirects. The workflow also checks HTTP 200 and exact bytes. A blocked or stale hostname is not verified.
 
-After deployment, verify the Worker revision and status in Cloudflare, and check each domain from a client not blocked by Bot Fight Mode. If a production release fails, inspect the workflow rollback result and active version. If automatic rollback fails, use the Cloudflare dashboard or `wrangler rollback VERSION_ID --config deploy/wrangler.json --yes` with an authorised token, then verify the active version and site. Development and staging can be restored by a reviewed revert and a new branch push. Do not enable a separate branch-triggered production deployment path.
+After deployment, verify the Worker revision and status in Cloudflare, and check each domain from a client not blocked by Bot Fight Mode. If a production release fails, inspect the workflow rollback result and active version. If automatic rollback fails, use the Cloudflare dashboard or `wrangler rollback VERSION_ID --config deploy/wrangler.json --yes` with an authorised token, then verify the active version and site. Development and staging recovery follows the verified preview artifact procedure above. Do not enable a separate branch-triggered production deployment path.
 
 ## Local checks
 

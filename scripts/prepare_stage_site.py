@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Write a stage-only ``_headers`` file with ``X-Robots-Tag: noindex``.
+"""Add ``X-Robots-Tag: noindex`` for a stage preview.
 
 The hand-written ``site/index.html`` is left unchanged. Production deploys do
 not run this script. Custom-domain Previews do not get Cloudflare's automatic
 noindex header, so the header has to come from ``_headers`` in the assets
-directory. ``robots.txt`` must not block crawling, or crawlers never see the
-header: this script does not write one, and it removes an untracked leftover.
+directory. The committed ``site/_headers`` already matches every path, so the
+rule is merged into that block rather than appended as a second one.
+``robots.txt`` must not block crawling, or crawlers never see the header: this
+script does not write one, and it removes an untracked leftover.
 """
 
 from __future__ import annotations
@@ -20,9 +22,20 @@ NOINDEX_BLOCK = "/*\n  X-Robots-Tag: noindex\n"
 
 
 def merge_headers(existing: str) -> str:
-    """Append the noindex rule unless that header is already present."""
+    """Add the noindex rule to the ``/*`` block, or append one when absent."""
     if "X-Robots-Tag: noindex" in existing:
         return existing if existing.endswith("\n") else existing + "\n"
+    lines = existing.splitlines()
+    for index, line in enumerate(lines):
+        if line.strip() != "/*":
+            continue
+        # Keep the rule inside the block that already matches every path, so the
+        # file has one set of rules for the whole site rather than two.
+        end = index + 1
+        while end < len(lines) and lines[end].strip() and lines[end][:1].isspace():
+            end += 1
+        lines.insert(end, "  X-Robots-Tag: noindex")
+        return "\n".join(lines) + "\n"
     text = existing
     if text and not text.endswith("\n"):
         text += "\n"
@@ -63,9 +76,11 @@ def prepare(site: Path) -> int:
         print(f"missing {index}", file=sys.stderr)
         return 1
     headers = site / "_headers"
-    if headers.is_file() and is_tracked(headers):
+    # Merge whenever the file exists, tracked or not: overwriting it would drop the
+    # security headers this site ships with, and merging is idempotent anyway.
+    if headers.is_file():
         headers.write_text(merge_headers(headers.read_text(encoding="utf-8")), encoding="utf-8")
-        print(f"merged noindex into tracked {headers}")
+        print(f"merged noindex into {headers}")
     else:
         headers.write_text(NOINDEX_BLOCK, encoding="utf-8")
         print(f"wrote {headers}")
