@@ -18,6 +18,7 @@ site/checks/
 site/cloudflare/
 site/contributing/
 site/gcp/
+site/labs/
 site/github/
 site/gitlab/
 site/kubernetes/
@@ -31,3 +32,4 @@ site/start/
 site/glossary/
 site/supply-chain/
 site/teams/
+site/story/

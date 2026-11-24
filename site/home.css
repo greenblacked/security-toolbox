@@ -672,7 +672,16 @@ html:has(#site-search[open]) { overflow: hidden; }
   color: var(--muted);
   font: 600 .75rem/1.4 var(--mono);
 }
-.search-browse[hidden] { display: none; }
+.search-browse[hidden], .search-more[hidden] { display: none; }
+.search-more {
+  margin-block-start: var(--space-2);
+  padding-inline: var(--space-2);
+  border: 1px solid var(--control-line);
+  border-radius: var(--radius);
+  background: var(--inset);
+  color: var(--ink);
+  cursor: pointer;
+}
 .search-section, .search-snippet { display: block; margin-top: .25rem; font-size: .9375rem; }
 .search-section { color: var(--muted); }
 .search-snippet { color: var(--ink); }
@@ -703,8 +712,8 @@ html:has(#site-search[open]) { overflow: hidden; }
 
 @media (max-width: 40rem) and (min-height: 20rem) {
   #site-search[open] { display: flex; flex-direction: column; overflow: hidden; }
-  #site-search > :not(#search-results) { flex: none; }
-  #site-search #search-results {
+  #site-search > :not(.search-results-scroll) { flex: none; }
+  #site-search .search-results-scroll {
     min-height: 0;
     overflow: auto;
     overscroll-behavior: contain;
@@ -726,13 +735,9 @@ body:has(.hero) { background-image: none; }
 .header-inner { min-height: 4.25rem; }
 .brand { font-size: 1.05rem; letter-spacing: -.025em; }
 .brand-mark { width: 2rem; }
-.site-nav { order: 0; margin-left: auto; margin-right: 2rem; }
-.header-actions { order: 1; margin-left: 0; }
-.home-header .header-actions { order: 0; margin-inline-start: auto; }
-.home-header .site-nav { margin-inline: var(--space-4) 0; }
-.guide-header-nav { display: flex; gap: 1.5rem; margin-left: auto; margin-right: 2rem; }
-.guide-header-nav a { display: inline-flex; align-items: center; min-height: var(--target); color: var(--muted); text-decoration: none; font-size: .9rem; font-weight: 600; }
-.guide-header-nav a:hover { color: var(--accent); }
+.site-nav { margin-inline: var(--space-3) 0; }
+.site-nav a[aria-current="page"] { color: var(--accent); text-decoration: underline; }
+.header-actions { flex-wrap: nowrap; margin-inline-start: auto; }
 .header-actions .search-trigger {
   gap: var(--space-2);
   padding-inline: var(--space-2);
@@ -802,17 +807,17 @@ body:has(.hero) { background-image: none; }
 .project-story p { max-width: 45ch; margin-block: 1rem; color: var(--muted); font-size: 1.2rem; }
 .site-footer { border-top-width: 1px; background: var(--panel); }
 #search-results a { border-radius: 0; border-bottom: 1px solid var(--line); }
-@media (max-width: 65rem) { .site-nav, .guide-header-nav { gap: .8rem; margin-right: 1rem; } .section-layout { gap: 2rem; } }
-@media (max-width: 55rem) { .hero { grid-template-columns: minmax(0, 1fr); } .quickstart { max-width: none; } .guide-header-nav { display: none; } .section-layout { grid-template-columns: 1fr; } }
-@media (max-width: 49rem) {
+@media (max-width: 65rem) { .site-nav { gap: .8rem; } .section-layout { gap: 2rem; } }
+@media (max-width: 55rem) { .hero { grid-template-columns: minmax(0, 1fr); } .quickstart { max-width: none; } .section-layout { grid-template-columns: 1fr; } }
+@media (max-width: 65rem) {
   .header-inner { min-height: 0; }
-  .home-header .header-inner {
+  .site-header .header-inner {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: .25rem var(--space-2);
   }
   .header-actions { margin-inline-start: auto; }
-  .home-header .site-nav {
+  .site-header .site-nav {
     grid-column: 1 / -1;
     justify-content: space-between;
     margin: 0;
@@ -823,8 +828,8 @@ body:has(.hero) { background-image: none; }
   .wrap { width: calc(100% - 2rem); }
   .site-nav { order: 0; margin: 0; flex-wrap: wrap; justify-content: flex-start; gap: 0 1.2rem; }
   .header-actions { order: 0; }
-  .home-header .site-nav { margin-inline: 0; }
-  .site-nav a { white-space: nowrap; font-size: .8rem; }
+  .site-header .site-nav { margin-inline: 0; }
+  .site-nav a { padding-inline: .25rem; white-space: nowrap; font-size: .8rem; }
   .hero { padding-block: var(--space-5); gap: var(--space-4); }
   .hero h1 { font-size: clamp(2.5rem, 10.75vw, 3.75rem); }
   .hero-copy .eyebrow { margin: 0 0 var(--space-3); }
@@ -850,7 +855,7 @@ body:has(.hero) { background-image: none; }
   .header-inner .brand-mark { width: 1.5rem; }
   .header-actions { column-gap: .25rem; }
   .header-actions #theme-toggle { padding-inline: .45rem; font-size: .875rem; }
-  .home-header .site-nav { column-gap: .35rem; }
+  .site-header .site-nav { column-gap: .35rem; }
 }
 
 @media print {

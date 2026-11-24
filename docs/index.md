@@ -2,6 +2,8 @@
 
 Start with the business service or security outcome you need to protect. Most investigations and exercises cross several domains, so identify dependencies and owners as you go.
 
+Learn how the guides, checks, and exercises fit together in the [project story](/story/).
+
 ## Identity, endpoints, and networks
 
 - **Identity:** review privileged access, joiner and leaver processes, service identities, strong authentication, and emergency access. Use [access review](/skills/access-review/) and [secret rotation](/skills/secret-rotation/).

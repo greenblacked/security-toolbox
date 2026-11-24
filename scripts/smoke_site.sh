@@ -77,6 +77,8 @@ check_route /skills/iac-review/ 'IaC Review'
 check_route /skills/access-review/ 'Access Review'
 check_route /skills/access-review/evidence-queries/ 'Evidence Queries'
 check_route /about/ 'Identity, endpoints, and networks'
+check_route /story/ 'The Security Toolbox story'
+check_route /labs/ 'Pick an exercise'
 check_route /sitemap.xml '<urlset'
 check_route /favicon.svg '<svg'
 check_route /guides.css '.guide-layout'
@@ -85,6 +87,7 @@ check_route / 'data-search-open'
 check_route /kubernetes/ 'data-search-open'
 check_route /search.js 'showModal'
 check_route /search/search_index.json 'Kubernetes / GKE'
+check_route /search/search_index.json 'python3 labs/tls-rotation.py'
 
 if [ "${3:-}" = noindex ]; then
   headers="$(mktemp)"

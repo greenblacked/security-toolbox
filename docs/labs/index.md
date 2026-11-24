@@ -1,20 +1,31 @@
 # Hands-on security labs
 
-Practice a security control, capture evidence, and verify the result. All exercises use local fixtures.
+Practice a security control, capture evidence, and verify the result. All exercises use local fixtures. Start with the [threat model lab](threat-model.md) or [download the lab kit](#get-the-lab-kit).
 
-| Lab | Experience | Time | Requirements |
-| --- | --- | ---: | --- |
-| [Threat model to backlog](threat-model.md) | Introductory | 35 min | Text editor |
-| [GKE configuration review](gke-configuration.md) | Introductory | 30 min | Bash, jq |
-| [Terraform policy gate](terraform-policy.md) | Intermediate | 45 min | Conftest |
-| [Kubernetes workload review](kubernetes-workload.md) | Intermediate | 40 min | Bash, jq |
-| [Verify Kubernetes Pod Security Admission](pod-security-admission.md) | Intermediate | 25 min | Bash, kubectl, disposable local cluster |
-| [Verify TLS certificate rotation](tls-rotation.md) | Intermediate | 30 min | Python, OpenSSL |
-| [CI identity claims](ci-identity.md) | Intermediate | 40 min | Node.js |
-| [Artifact provenance gate](artifact-provenance.md) | Intermediate | 55 min | Bash, jq, npm, OpenSSL |
-| [Dependency remediation queue](dependency-triage.md) | Introductory | 40 min | Text editor |
-| [API authorization and tenant isolation](api-authorization.md) | Intermediate | 30 min | Python |
-| [Detection rule regression](detection-regression.md) | Intermediate | 45 min | Node.js |
+## Pick an exercise
+
+- **[Threat model to backlog](threat-model.md)**\
+  Introductory · 35 min · Text editor
+- **[GKE configuration review](gke-configuration.md)**\
+  Introductory · 30 min · Bash, jq
+- **[Terraform policy gate](terraform-policy.md)**\
+  Intermediate · 45 min · Conftest
+- **[Kubernetes workload review](kubernetes-workload.md)**\
+  Intermediate · 40 min · Bash, jq
+- **[Verify Kubernetes Pod Security Admission](pod-security-admission.md)**\
+  Intermediate · 25 min · Bash, kubectl, disposable local cluster
+- **[Verify TLS certificate rotation](tls-rotation.md)**\
+  Intermediate · 30 min · Python, OpenSSL
+- **[CI identity claims](ci-identity.md)**\
+  Intermediate · 40 min · Node.js
+- **[Artifact provenance gate](artifact-provenance.md)**\
+  Intermediate · 55 min · Bash, jq, npm, OpenSSL
+- **[Dependency remediation queue](dependency-triage.md)**\
+  Introductory · 40 min · Text editor
+- **[API authorization and tenant isolation](api-authorization.md)**\
+  Intermediate · 30 min · Python
+- **[Detection rule regression](detection-regression.md)**\
+  Intermediate · 45 min · Node.js
 
 Start with the threat model to practice deciding what evidence to collect. Continue with a configuration or policy check, then use the detection exercise to practice validation on synthetic telemetry. The [security operations flow](/start/) connects the exercises to incident and control ownership.
 
@@ -22,12 +33,14 @@ Start with the threat model to practice deciding what evidence to collect. Conti
 
 Follow one fictional incident from telemetry through triage and recovery.
 
-| Lab | Experience | Time | Requirements |
-| --- | --- | ---: | --- |
-| [Telemetry health and incident timeline](response-timeline.md) | Intermediate | 30 min | Python |
-| [Incident triage and evidence custody](evidence-custody.md) | Intermediate | 35 min | Bash, Python |
-| [Service restore and recovery objectives](service-restore.md) | Intermediate | 30 min | Python with SQLite |
-| [Choose a trusted restore point](trusted-restore-point.md) | Intermediate | 30 min | Python with SQLite |
+- **[Telemetry health and incident timeline](response-timeline.md)**\
+  Intermediate · 30 min · Python
+- **[Incident triage and evidence custody](evidence-custody.md)**\
+  Intermediate · 35 min · Bash, Python
+- **[Service restore and recovery objectives](service-restore.md)**\
+  Intermediate · 30 min · Python with SQLite
+- **[Choose a trusted restore point](trusted-restore-point.md)**\
+  Intermediate · 30 min · Python with SQLite
 
 ## Get the lab kit
 
