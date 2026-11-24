@@ -232,10 +232,14 @@ jobs:
           body=$(mktemp)
           trap 'rm -f -- "$body"' EXIT
           for asset in home.css theme.js; do
-            status=$(curl --silent --show-error --max-time 15 --retry 2 \
-              --output "$body" --write-out '%{http_code}' "$PREVIEW_URL/$asset")
-            if [ "$status" != 200 ] || ! cmp -s "site/$asset" "$body"; then
-              echo "::error::$asset differs from the signed preview or returned HTTP $status"
+            response=$(curl --silent --show-error --max-time 15 --retry 2 \
+              --output "$body" --write-out '%{http_code} %header{x-content-type-options}' "$PREVIEW_URL/$asset")
+            if [ "$response" != '200 nosniff' ]; then
+              echo "::error::$asset did not return HTTP 200 with X-Content-Type-Options: nosniff ($response)"
+              exit 1
+            fi
+            if ! cmp -s "site/$asset" "$body"; then
+              echo "::error::$asset differs from the signed preview archive"
               exit 1
             fi
             printf 'Verified %s against the signed archive\n' "$asset"
